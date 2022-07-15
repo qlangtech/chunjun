@@ -5,7 +5,7 @@
 	<parent>
 		<artifactId>chunjun-connectors</artifactId>
 		<groupId>com.dtstack.chunjun</groupId>
-		<version>1.12-SNAPSHOT</version>
+		<version>1.12.5</version>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 
@@ -29,10 +29,10 @@
 
 	<build>
 		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-shade-plugin</artifactId>
-			</plugin>
+<!--			<plugin>-->
+<!--				<groupId>org.apache.maven.plugins</groupId>-->
+<!--				<artifactId>maven-shade-plugin</artifactId>-->
+<!--			</plugin>-->
 
 			<plugin>
 				<artifactId>maven-antrun-plugin</artifactId>
@@ -40,7 +40,8 @@
 					<execution>
 						<id>copy-resources</id>
 						<!-- here the phase you need -->
-						<phase>package</phase>
+<!--						<phase>package</phase>-->
+						<phase>none</phase>
 						<goals>
 							<goal>run</goal>
 						</goals>

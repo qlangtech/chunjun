@@ -8,7 +8,7 @@
 	<artifactId>chunjun</artifactId>
 	<name>ChunJun</name>
 	<packaging>pom</packaging>
-	<version>1.12-SNAPSHOT</version>
+	<version>1.12.5</version>
 
 	<modules>
 		<module>chunjun-core</module>
