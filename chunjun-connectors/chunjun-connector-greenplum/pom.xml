@@ -18,11 +18,11 @@
 			<artifactId>chunjun-connector-postgresql</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		<dependency>
-			<groupId>com.pivotal</groupId>
-			<artifactId>greenplum-jdbc</artifactId>
-			<version>5.1.4.000275</version>
-		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>com.pivotal</groupId>-->
+<!--			<artifactId>greenplum-jdbc</artifactId>-->
+<!--			<version>5.1.4.000275</version>-->
+<!--		</dependency>-->
 	</dependencies>
 
 	<build>
@@ -33,7 +33,7 @@
 				<version>3.1.0</version>
 				<executions>
 					<execution>
-						<phase>package</phase>
+						<phase>none</phase>
 						<goals>
 							<goal>shade</goal>
 						</goals>
@@ -67,7 +67,7 @@
 					<execution>
 						<id>copy-resources</id>
 						<!-- here the phase you need -->
-						<phase>package</phase>
+						<phase>none</phase>
 						<goals>
 							<goal>run</goal>
 						</goals>

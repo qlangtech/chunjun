@@ -49,7 +49,8 @@
 				<version>3.1.0</version>
 				<executions>
 					<execution>
-						<phase>package</phase>
+<!--						<phase>package</phase>-->
+						<phase>none</phase>
 						<goals>
 							<goal>shade</goal>
 						</goals>
@@ -97,7 +98,8 @@
 					<execution>
 						<id>copy-resources</id>
 						<!-- here the phase you need -->
-						<phase>package</phase>
+<!--						<phase>package</phase>-->
+						<phase>none</phase>
 						<goals>
 							<goal>run</goal>
 						</goals>
