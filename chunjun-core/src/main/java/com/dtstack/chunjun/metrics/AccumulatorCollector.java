@@ -25,6 +25,7 @@ import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.accumulators.StringifiedAccumulatorResult;
 import org.apache.flink.runtime.executiongraph.ArchivedExecutionGraph;
 import org.apache.flink.runtime.jobmaster.JobMasterGateway;
+import org.apache.flink.runtime.scheduler.ExecutionGraphInfo;
 import org.apache.flink.runtime.taskexecutor.TaskManagerConfiguration;
 import org.apache.flink.runtime.taskexecutor.rpc.RpcGlobalAggregateManager;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
@@ -76,10 +77,11 @@ public class AccumulatorCollector {
 
         // 比task manager心跳间隔多1秒
         this.period =
-                ((TaskManagerConfiguration) context.getTaskManagerRuntimeInfo())
-                                .getTimeout()
-                                .toMilliseconds()
-                        + 1000;
+//                ((TaskManagerConfiguration) context.getTaskManagerRuntimeInfo())
+//                                .getTimeout()
+//                                .toMilliseconds()
+//                        +
+                        5000;
         RpcGlobalAggregateManager globalAggregateManager =
                 ((RpcGlobalAggregateManager) (context).getGlobalAggregateManager());
         Field field = ReflectionUtils.getDeclaredField(globalAggregateManager, "jobMasterGateway");
@@ -111,30 +113,30 @@ public class AccumulatorCollector {
 
     /** 收集累加器信息 */
     public void collectAccumulator() {
-        CompletableFuture<ArchivedExecutionGraph> archivedExecutionGraphFuture =
-                gateway.requestJob(Time.seconds(10));
-        ArchivedExecutionGraph archivedExecutionGraph;
-        try {
-            archivedExecutionGraph = archivedExecutionGraphFuture.get();
-        } catch (Exception e) {
-            // 限制最大出错次数，超过最大次数则使任务失败，如果不失败，统计数据没有及时更新，会影响速率限制，错误控制等功能
-            collectErrorTimes++;
-            if (collectErrorTimes > MAX_COLLECT_ERROR_TIMES) {
-                // 主动关闭线程和资源，防止异常情况下没有关闭
-                close();
-                throw new RuntimeException(
-                        "The number of errors in updating statistics data exceeds the maximum limit of 100 times. To ensure the correctness of the data, the task automatically fails");
-            }
-            return;
-        }
-        StringifiedAccumulatorResult[] accumulatorResult =
-                archivedExecutionGraph.getAccumulatorResultsStringified();
-        for (StringifiedAccumulatorResult result : accumulatorResult) {
-            ValueAccumulator valueAccumulator = valueAccumulatorMap.get(result.getName());
-            if (valueAccumulator != null) {
-                valueAccumulator.setGlobal(Long.parseLong(result.getValue()));
-            }
-        }
+//        CompletableFuture<ExecutionGraphInfo> archivedExecutionGraphFuture =
+//                gateway.requestJob(Time.seconds(10));
+//        ExecutionGraphInfo archivedExecutionGraph;
+//        try {
+//            archivedExecutionGraph = archivedExecutionGraphFuture.get();
+//        } catch (Exception e) {
+//            // 限制最大出错次数，超过最大次数则使任务失败，如果不失败，统计数据没有及时更新，会影响速率限制，错误控制等功能
+//            collectErrorTimes++;
+//            if (collectErrorTimes > MAX_COLLECT_ERROR_TIMES) {
+//                // 主动关闭线程和资源，防止异常情况下没有关闭
+//                close();
+//                throw new RuntimeException(
+//                        "The number of errors in updating statistics data exceeds the maximum limit of 100 times. To ensure the correctness of the data, the task automatically fails");
+//            }
+//            return;
+//        }
+//        StringifiedAccumulatorResult[] accumulatorResult =
+//                archivedExecutionGraph.getAccumulatorResultsStringified();
+//        for (StringifiedAccumulatorResult result : accumulatorResult) {
+//            ValueAccumulator valueAccumulator = valueAccumulatorMap.get(result.getName());
+//            if (valueAccumulator != null) {
+//                valueAccumulator.setGlobal(Long.parseLong(result.getValue()));
+//            }
+//        }
     }
 
     /**

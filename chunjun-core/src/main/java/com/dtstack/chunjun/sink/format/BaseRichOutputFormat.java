@@ -158,7 +158,7 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
     /** 对象大小计算器 */
     protected RowSizeCalculator rowSizeCalculator;
 
-    protected LongCounter bytesWriteCounter;
+  //  protected LongCounter bytesWriteCounter;
     protected LongCounter durationCounter;
     protected LongCounter numWriteCounter;
     protected LongCounter snapshotWriteCounter;
@@ -180,6 +180,10 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
     private boolean useAbstractColumn;
 
     private transient volatile Exception timerWriteException;
+
+    public AbstractRowConverter getRowConverter() {
+        return this.rowConverter;
+    }
 
     @Override
     public void initializeGlobal(int parallelism) {
@@ -280,7 +284,7 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
             }
         }
         updateDuration();
-        bytesWriteCounter.add(rowSizeCalculator.getObjectSize(rowData));
+       // bytesWriteCounter.add(rowSizeCalculator.getObjectSize(rowData));
         if (checkpointEnabled) {
             snapshotWriteCounter.add(size);
         }
@@ -369,7 +373,7 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
         otherErrCounter = context.getLongCounter(Metrics.NUM_OTHER_ERRORS);
         numWriteCounter = context.getLongCounter(Metrics.NUM_WRITES);
         snapshotWriteCounter = context.getLongCounter(Metrics.SNAPSHOT_WRITES);
-        bytesWriteCounter = context.getLongCounter(Metrics.WRITE_BYTES);
+       // bytesWriteCounter = context.getLongCounter(Metrics.WRITE_BYTES);
         durationCounter = context.getLongCounter(Metrics.WRITE_DURATION);
 
         outputMetric = new BaseMetric(context);
@@ -380,7 +384,7 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
         outputMetric.addMetric(Metrics.NUM_OTHER_ERRORS, otherErrCounter);
         outputMetric.addMetric(Metrics.NUM_WRITES, numWriteCounter, true);
         outputMetric.addMetric(Metrics.SNAPSHOT_WRITES, snapshotWriteCounter);
-        outputMetric.addMetric(Metrics.WRITE_BYTES, bytesWriteCounter, true);
+       // outputMetric.addMetric(Metrics.WRITE_BYTES, bytesWriteCounter, true);
         outputMetric.addMetric(Metrics.WRITE_DURATION, durationCounter);
         outputMetric.addDirtyMetric(
                 Metrics.DIRTY_DATA_COUNT, this.dirtyManager.getConsumedMetric());
@@ -416,7 +420,7 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
             numWriteCounter.add(formatState.getMetricValue(Metrics.NUM_WRITES));
 
             snapshotWriteCounter.add(formatState.getMetricValue(Metrics.SNAPSHOT_WRITES));
-            bytesWriteCounter.add(formatState.getMetricValue(Metrics.WRITE_BYTES));
+           // bytesWriteCounter.add(formatState.getMetricValue(Metrics.WRITE_BYTES));
             durationCounter.add(formatState.getMetricValue(Metrics.WRITE_DURATION));
         }
     }

@@ -299,32 +299,34 @@ public abstract class AbstractLruTableFunction extends AsyncTableFunction<RowDat
     }
 
     private ProcessingTimeService getProcessingTimeService() {
-        try {
-            Field runtimeContextField =
-                    RichAsyncFunction.RichAsyncFunctionRuntimeContext.class.getDeclaredField(
-                            "runtimeContext");
-            runtimeContextField.setAccessible(true);
-            RichAsyncFunction.RichAsyncFunctionRuntimeContext functionRuntimeContext =
-                    (RichAsyncFunction.RichAsyncFunctionRuntimeContext)
-                            runtimeContextField.get(runtimeContext);
-
-            Field streamingRuntimeContextField =
-                    RichAsyncFunction.RichAsyncFunctionRuntimeContext.class.getDeclaredField(
-                            "runtimeContext");
-            streamingRuntimeContextField.setAccessible(true);
-            StreamingRuntimeContext streamingRuntimeContext =
-                    (StreamingRuntimeContext)
-                            streamingRuntimeContextField.get(functionRuntimeContext);
-
-            Field processingTimeServiceField =
-                    StreamingRuntimeContext.class.getDeclaredField("processingTimeService");
-            processingTimeServiceField.setAccessible(true);
-            ProcessingTimeService processingTimeService =
-                    (ProcessingTimeService) processingTimeServiceField.get(streamingRuntimeContext);
-            return processingTimeService;
-        } catch (IllegalAccessException | NoSuchFieldException e) {
-            throw new RuntimeException(e);
-        }
+//        try {
+//            Field runtimeContextField =
+//                    RichAsyncFunction.RichAsyncFunctionRuntimeContext.class.getDeclaredField(
+//                            "runtimeContext");
+//            runtimeContextField.setAccessible(true);
+//            RichAsyncFunction.RichAsyncFunctionRuntimeContext functionRuntimeContext =
+//                    (RichAsyncFunction.RichAsyncFunctionRuntimeContext)
+//                            runtimeContextField.get(runtimeContext);
+//
+//            Field streamingRuntimeContextField =
+//                    RichAsyncFunction.RichAsyncFunctionRuntimeContext.class.getDeclaredField(
+//                            "runtimeContext");
+//            streamingRuntimeContextField.setAccessible(true);
+//            StreamingRuntimeContext streamingRuntimeContext =
+//                    (StreamingRuntimeContext)
+//                            streamingRuntimeContextField.get(functionRuntimeContext);
+//
+//            Field processingTimeServiceField =
+//                    StreamingRuntimeContext.class.getDeclaredField("processingTimeService");
+//            processingTimeServiceField.setAccessible(true);
+//            ProcessingTimeService processingTimeService =
+//                    (ProcessingTimeService) processingTimeServiceField.get(streamingRuntimeContext);
+//            return processingTimeService;
+//        } catch (IllegalAccessException | NoSuchFieldException e) {
+//            throw new RuntimeException(e);
+//        }
+        // baisui comment
+        return null;
     }
 
     protected ScheduledFuture<?> registerTimer(
