@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 
+import java.lang.invoke.MethodHandles;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -27,7 +28,9 @@ import static com.dtstack.chunjun.restore.mysql.MysqlFetcherConstant.INSERT_CHEC
  */
 public class MysqlStore extends StoreBase {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+   // private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    protected static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private static final String DATABASE_KEY = "database";
 

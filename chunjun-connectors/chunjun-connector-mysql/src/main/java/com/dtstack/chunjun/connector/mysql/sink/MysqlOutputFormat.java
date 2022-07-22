@@ -26,11 +26,12 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.List;
 
 public class MysqlOutputFormat extends JdbcOutputFormat {
+    public MysqlOutputFormat() {
+        super();
+    }
 
     /**
      * for override. because some databases have case-sensitive metadata。
-     *
-     * @return
      */
     protected Pair<List<String>, List<String>> getTableMetaData() {
         return JdbcUtil.getTableMetaData(jdbcConf.getSchema(), null, jdbcConf.getTable(), dbConn);

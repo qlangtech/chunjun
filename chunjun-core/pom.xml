@@ -295,18 +295,18 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.dtstack.chunjun.Main</mainClass>
-                                </transformer>
-                            </transformers>
+                            <createDependencyReducedPom>true</createDependencyReducedPom>
+<!--                            <transformers>-->
+<!--                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">-->
+<!--                                    <mainClass>com.dtstack.chunjun.Main</mainClass>-->
+<!--                                </transformer>-->
+<!--                            </transformers>-->
                             <artifactSet>
                                 <includes>
                                     <include>com.google.guava:*</include>
                                     <include>com.google.code.gson:*</include>
-                                    <include>ch.qos.logback:*</include>
-                                    <include>org.slf4j:*</include>
+<!--                                    <include>ch.qos.logback:*</include>-->
+<!--                                    <include>org.slf4j:*</include>-->
                                     <include>org.apache.httpcomponents:*</include>
                                     <include>io.prometheus:*</include>
                                     <include>org.apache.avro:*</include>
@@ -315,6 +315,10 @@
                                 </includes>
                             </artifactSet>
                             <relocations>
+<!--								<relocation>-->
+<!--									<pattern>com.google.gson</pattern>-->
+<!--									<shadedPattern>shade.core.com.google.gson</shadedPattern>-->
+<!--								</relocation>-->
                                 <relocation>
                                     <pattern>com.google.common</pattern>
                                     <shadedPattern>shade.core.com.google.common</shadedPattern>

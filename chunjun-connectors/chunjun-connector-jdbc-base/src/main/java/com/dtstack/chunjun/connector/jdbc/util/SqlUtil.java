@@ -28,10 +28,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 
 public class SqlUtil {
-    protected final Logger LOG = LoggerFactory.getLogger(getClass());
+   // protected final Logger LOG = LoggerFactory.getLogger(getClass());
+
+    protected static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     public static String buildQuerySplitRangeSql(JdbcConf jdbcConf, JdbcDialect jdbcDialect) {
         // 构建where条件

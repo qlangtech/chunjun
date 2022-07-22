@@ -59,6 +59,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -92,7 +93,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
         implements CleanupWhenUnsuccessful, InitializeOnMaster, FinalizeOnMaster {
 
-    protected final Logger LOG = LoggerFactory.getLogger(getClass());
+   // protected final Logger LOG = LoggerFactory.getLogger(getClass());
+    protected static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     public static final int LOG_PRINT_INTERNAL = 2000;
 
@@ -149,16 +151,16 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
     protected long rowsOfCurrentTransaction;
 
     /** A collection of field names filled in user scripts with constants removed */
-    protected List<String> columnNameList = new ArrayList<>();
+    public List<String> columnNameList = new ArrayList<>();
     /** A collection of field types filled in user scripts with constants removed */
-    protected List<String> columnTypeList = new ArrayList<>();
+    public List<String> columnTypeList = new ArrayList<>();
 
     /** 累加器收集器 */
     protected AccumulatorCollector accumulatorCollector;
     /** 对象大小计算器 */
     protected RowSizeCalculator rowSizeCalculator;
 
-  //  protected LongCounter bytesWriteCounter;
+    //  protected LongCounter bytesWriteCounter;
     protected LongCounter durationCounter;
     protected LongCounter numWriteCounter;
     protected LongCounter snapshotWriteCounter;
@@ -182,7 +184,7 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
     private transient volatile Exception timerWriteException;
 
     public AbstractRowConverter getRowConverter() {
-        return this.rowConverter;
+        return Objects.requireNonNull(this.rowConverter, "rowConverter can not be null");
     }
 
     @Override
@@ -205,7 +207,6 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
      *
      * @param taskNumber 任务索引id
      * @param numTasks 子任务数量
-     * @throws IOException
      */
     @Override
     public void open(int taskNumber, int numTasks) throws IOException {
@@ -284,7 +285,7 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
             }
         }
         updateDuration();
-       // bytesWriteCounter.add(rowSizeCalculator.getObjectSize(rowData));
+        // bytesWriteCounter.add(rowSizeCalculator.getObjectSize(rowData));
         if (checkpointEnabled) {
             snapshotWriteCounter.add(size);
         }
@@ -362,7 +363,8 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
     }
 
     @Override
-    public void tryCleanupOnError() throws Exception {}
+    public void tryCleanupOnError() throws Exception {
+    }
 
     /** 初始化累加器指标 */
     protected void initStatisticsAccumulator() {
@@ -373,7 +375,7 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
         otherErrCounter = context.getLongCounter(Metrics.NUM_OTHER_ERRORS);
         numWriteCounter = context.getLongCounter(Metrics.NUM_WRITES);
         snapshotWriteCounter = context.getLongCounter(Metrics.SNAPSHOT_WRITES);
-       // bytesWriteCounter = context.getLongCounter(Metrics.WRITE_BYTES);
+        // bytesWriteCounter = context.getLongCounter(Metrics.WRITE_BYTES);
         durationCounter = context.getLongCounter(Metrics.WRITE_DURATION);
 
         outputMetric = new BaseMetric(context);
@@ -384,7 +386,7 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
         outputMetric.addMetric(Metrics.NUM_OTHER_ERRORS, otherErrCounter);
         outputMetric.addMetric(Metrics.NUM_WRITES, numWriteCounter, true);
         outputMetric.addMetric(Metrics.SNAPSHOT_WRITES, snapshotWriteCounter);
-       // outputMetric.addMetric(Metrics.WRITE_BYTES, bytesWriteCounter, true);
+        // outputMetric.addMetric(Metrics.WRITE_BYTES, bytesWriteCounter, true);
         outputMetric.addMetric(Metrics.WRITE_DURATION, durationCounter);
         outputMetric.addDirtyMetric(
                 Metrics.DIRTY_DATA_COUNT, this.dirtyManager.getConsumedMetric());
@@ -420,7 +422,7 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
             numWriteCounter.add(formatState.getMetricValue(Metrics.NUM_WRITES));
 
             snapshotWriteCounter.add(formatState.getMetricValue(Metrics.SNAPSHOT_WRITES));
-           // bytesWriteCounter.add(formatState.getMetricValue(Metrics.WRITE_BYTES));
+            // bytesWriteCounter.add(formatState.getMetricValue(Metrics.WRITE_BYTES));
             durationCounter.add(formatState.getMetricValue(Metrics.WRITE_DURATION));
         }
     }
@@ -513,6 +515,7 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
      *
      * @param pos 异常字段索引
      * @param rowData 当前读取的数据
+     *
      * @return 脏数据异常信息记录
      */
     protected String recordConvertDetailErrorMessage(int pos, Object rowData) {
@@ -531,8 +534,6 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
 
     /**
      * 更新checkpoint状态缓存map
-     *
-     * @return
      */
     public synchronized FormatState getFormatState() throws Exception {
         // not EXACTLY_ONCE model,Does not interact with the db
@@ -572,23 +573,19 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
 
     /**
      * pre commit data
-     *
-     * @throws Exception
      */
-    protected void preCommit() throws Exception {}
+    protected void preCommit() throws Exception {
+    }
 
     /**
      * 写出单条数据
      *
      * @param rowData 数据
-     * @throws WriteRecordException
      */
     protected abstract void writeSingleRecordInternal(RowData rowData) throws WriteRecordException;
 
     /**
      * 写出多条数据
-     *
-     * @throws Exception
      */
     protected abstract void writeMultipleRecordsInternal() throws Exception;
 
@@ -597,21 +594,16 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
      *
      * @param taskNumber 通道索引
      * @param numTasks 通道数量
-     * @throws IOException
      */
     protected abstract void openInternal(int taskNumber, int numTasks) throws IOException;
 
     /**
      * 子类实现，关闭资源
-     *
-     * @throws IOException
      */
     protected abstract void closeInternal() throws IOException;
 
     /**
      * checkpoint成功时操作
-     *
-     * @param checkpointId
      */
     public synchronized void notifyCheckpointComplete(long checkpointId) {
         if (Semantic.EXACTLY_ONCE == semantic) {
@@ -626,7 +618,8 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
         }
     }
 
-    protected void preExecuteDdlRwoData(DdlRowData rowData) throws Exception {}
+    protected void preExecuteDdlRwoData(DdlRowData rowData) throws Exception {
+    }
 
     protected void executeDdlRwoData(DdlRowData ddlRowData) throws Exception {
         throw new UnsupportedOperationException("not support execute ddlRowData");
@@ -646,16 +639,12 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
 
     /**
      * commit data
-     *
-     * @param checkpointId
-     * @throws Exception
      */
-    public void commit(long checkpointId) throws Exception {}
+    public void commit(long checkpointId) throws Exception {
+    }
 
     /**
      * checkpoint失败时操作
-     *
-     * @param checkpointId
      */
     public synchronized void notifyCheckpointAborted(long checkpointId) {
         if (Semantic.EXACTLY_ONCE == semantic) {
@@ -673,11 +662,9 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
 
     /**
      * rollback data
-     *
-     * @param checkpointId
-     * @throws Exception
      */
-    public void rollback(long checkpointId) throws Exception {}
+    public void rollback(long checkpointId) throws Exception {
+    }
 
     public void setRestoreState(FormatState formatState) {
         this.formatState = formatState;

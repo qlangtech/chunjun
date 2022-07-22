@@ -28,6 +28,7 @@ import org.apache.flink.metrics.MetricGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,7 +38,8 @@ import java.util.Map;
  */
 public class BaseMetric {
 
-    protected final Logger LOG = LoggerFactory.getLogger(getClass());
+   // protected final Logger LOG = LoggerFactory.getLogger(getClass());
+    protected static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private final Long delayPeriodMill = 20000L;
 

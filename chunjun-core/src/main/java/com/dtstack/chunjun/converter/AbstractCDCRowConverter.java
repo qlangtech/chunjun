@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
@@ -73,7 +74,8 @@ public abstract class AbstractCDCRowConverter<SourceT, T> implements Serializabl
                     .append(DateTimeFormatter.ISO_LOCAL_TIME)
                     .appendPattern("'Z'")
                     .toFormatter();
-    protected final Logger LOG = LoggerFactory.getLogger(getClass());
+   // protected final Logger LOG = LoggerFactory.getLogger(getClass());
+    protected static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     protected final Map<String, List<IDeserializationConverter>> cdcConverterCacheMap =
             new ConcurrentHashMap<>(32);
     protected final SnowflakeIdWorker idWorker = new SnowflakeIdWorker(1, 1);

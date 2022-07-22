@@ -50,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -67,7 +68,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class BaseRichInputFormat extends RichInputFormat<RowData, InputSplit> {
     protected static final long serialVersionUID = 1L;
 
-    protected final Logger LOG = LoggerFactory.getLogger(getClass());
+   // protected final Logger LOG = LoggerFactory.getLogger(getClass());
+
+    protected static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     /** BaseRichInputFormat是否结束 */
     private final AtomicBoolean isClosed = new AtomicBoolean(false);

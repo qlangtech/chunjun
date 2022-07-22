@@ -27,29 +27,31 @@ import org.apache.commons.lang.StringUtils;
 /** @author sishu.yss @Company: www.dtstack.com */
 public class JdbcOutputFormatBuilder extends BaseRichOutputFormatBuilder {
 
-    protected JdbcOutputFormat format;
+   // protected JdbcOutputFormat format;
 
     public JdbcOutputFormatBuilder(JdbcOutputFormat format) {
-        super.format = this.format = format;
+      //  super.format = this.format = format;
+        super(format);
     }
 
     public void setJdbcConf(JdbcConf jdbcConf) {
-        super.setConfig(jdbcConf);
-        format.setJdbcConf(jdbcConf);
+        this.setConfig(jdbcConf);
+        ((JdbcOutputFormat)format).setJdbcConf(jdbcConf);
+     //   format.setJdbcConf(jdbcConf);
     }
 
     public void setJdbcDialect(JdbcDialect JdbcDialect) {
-        format.setJdbcDialect(JdbcDialect);
+        ((JdbcOutputFormat)format).setJdbcDialect(JdbcDialect);
     }
 
-    @Override
-    public void setRowConverter(AbstractRowConverter rowConverter) {
-        format.setRowConverter(rowConverter);
-    }
+//    @Override
+//    public void setRowConverter(AbstractRowConverter rowConverter) {
+//        format.setRowConverter(rowConverter);
+//    }
 
     @Override
     protected void checkFormat() {
-        JdbcConf jdbcConf = format.getJdbcConf();
+        JdbcConf jdbcConf = ((JdbcOutputFormat)format).getJdbcConf();
         StringBuilder sb = new StringBuilder(256);
         if (StringUtils.isBlank(jdbcConf.getUsername())) {
             sb.append("No username supplied;\n");

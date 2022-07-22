@@ -33,6 +33,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.SynchronousQueue;
 
@@ -45,7 +46,9 @@ import static com.dtstack.chunjun.connector.socket.inputformat.SocketInputFormat
  */
 public class DtClientHandler extends ChannelInboundHandlerAdapter {
 
-    protected final Logger LOG = LoggerFactory.getLogger(getClass());
+   // protected final Logger LOG = LoggerFactory.getLogger(getClass());
+
+    protected static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     protected SynchronousQueue<RowData> queue;
 

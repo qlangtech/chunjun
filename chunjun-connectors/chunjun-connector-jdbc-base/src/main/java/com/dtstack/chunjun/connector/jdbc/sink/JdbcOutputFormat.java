@@ -41,6 +41,7 @@ import org.apache.flink.table.types.logical.RowType;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +68,7 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
     protected JdbcConf jdbcConf;
     protected JdbcDialect jdbcDialect;
 
-    protected transient Connection dbConn;
+    public transient Connection dbConn;
     protected boolean autoCommit = true;
 
     protected transient PreparedStmtProxy stmtProxy;
@@ -139,7 +140,7 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
     }
 
     /** init columnNameList、 columnTypeList and hasConstantField */
-    protected void initColumnList() {
+    public void initColumnList() {
         Pair<List<String>, List<String>> pair = getTableMetaData();
 
         List<FieldConf> fieldList = jdbcConf.getColumn();
@@ -150,8 +151,6 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
 
     /**
      * for override. because some databases have case-sensitive metadata。
-     *
-     * @return
      */
     protected Pair<List<String>, List<String>> getTableMetaData() {
         return JdbcUtil.getTableMetaData(null, jdbcConf.getSchema(), jdbcConf.getTable(), dbConn);
@@ -159,10 +158,6 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
 
     /**
      * detailed logic for handling column
-     *
-     * @param fieldList
-     * @param fullColumnList
-     * @param fullColumnTypeList
      */
     protected void handleColumnList(
             List<FieldConf> fieldList,
@@ -287,13 +282,11 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
 
     /**
      * 执行pre、post SQL
-     *
-     * @param sqlList
      */
     protected void executeBatch(List<String> sqlList) {
         if (CollectionUtils.isNotEmpty(sqlList)) {
             try (Connection conn = getConnection();
-                    Statement stmt = conn.createStatement()) {
+                 Statement stmt = conn.createStatement()) {
                 for (String sql : sqlList) {
                     // 兼容多条SQL写在同一行的情况
                     String[] strings = sql.split(";");
@@ -386,9 +379,6 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
 
     /**
      * write all data and commit transaction before execute ddl sql
-     *
-     * @param ddlRowData
-     * @throws Exception
      */
     @Override
     protected void preExecuteDdlRwoData(DdlRowData ddlRowData) throws Exception {

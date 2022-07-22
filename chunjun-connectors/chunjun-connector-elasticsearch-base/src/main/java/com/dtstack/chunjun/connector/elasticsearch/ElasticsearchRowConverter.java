@@ -37,6 +37,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Date;
@@ -62,7 +63,8 @@ public class ElasticsearchRowConverter
                 Map<String, Object>, Map<String, Object>, Map<String, Object>, LogicalType> {
 
     private static final long serialVersionUID = 1L;
-    private final Logger LOG = LoggerFactory.getLogger(ElasticsearchRowConverter.class);
+   // private final Logger LOG = LoggerFactory.getLogger(ElasticsearchRowConverter.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private final List<Tuple3<String, Integer, LogicalType>> typeIndexList = new ArrayList<>();
 

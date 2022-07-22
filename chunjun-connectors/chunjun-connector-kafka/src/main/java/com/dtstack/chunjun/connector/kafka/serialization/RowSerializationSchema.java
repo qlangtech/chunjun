@@ -27,6 +27,9 @@ import org.apache.flink.streaming.connectors.kafka.partitioner.FlinkKafkaPartiti
 import org.apache.flink.table.data.RowData;
 
 import org.apache.kafka.clients.producer.ProducerRecord;
+
+import java.lang.invoke.MethodHandles;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +43,8 @@ import javax.annotation.Nullable;
 public class RowSerializationSchema extends DynamicKafkaSerializationSchema {
 
     private static final long serialVersionUID = 1L;
-    protected final Logger LOG = LoggerFactory.getLogger(getClass());
+   // protected final Logger LOG = LoggerFactory.getLogger(getClass());
+    protected static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     /** kafka key converter */
     private final AbstractRowConverter<String, Object, byte[], String> keyConverter;
     /** kafka value converter */

@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.util.concurrent.SynchronousQueue;
 
@@ -61,7 +62,9 @@ public class DtSocketClient implements Closeable, Serializable {
     protected EventLoopGroup group = new NioEventLoopGroup();
     protected SynchronousQueue<RowData> queue;
 
-    protected final Logger LOG = LoggerFactory.getLogger(getClass());
+  //  protected final Logger LOG = LoggerFactory.getLogger(getClass());
+
+    protected static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     public Channel channel;
 

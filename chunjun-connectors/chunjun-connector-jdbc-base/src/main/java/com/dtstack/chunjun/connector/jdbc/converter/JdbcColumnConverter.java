@@ -42,6 +42,7 @@ import org.apache.flink.table.types.logical.TimestampType;
 import org.apache.flink.table.types.logical.YearMonthIntervalType;
 
 import io.vertx.core.json.JsonArray;
+
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
@@ -49,12 +50,13 @@ import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.util.List;
 
 /** Base class for all converters that convert between JDBC object and Flink internal object. */
 public class JdbcColumnConverter
         extends AbstractRowConverter<
-                ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType> {
+        ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType> {
 
     public JdbcColumnConverter(RowType rowType) {
         this(rowType, null);
@@ -74,15 +76,24 @@ public class JdbcColumnConverter
 
     @Override
     protected ISerializationConverter<FieldNamedPreparedStatement>
-            wrapIntoNullableExternalConverter(
-                    ISerializationConverter serializationConverter, LogicalType type) {
+    wrapIntoNullableExternalConverter(
+            ISerializationConverter serializationConverter, LogicalType type) {
+
         return (val, index, statement) -> {
-            if (((ColumnRowData) val).getField(index) == null) {
+            if (val.isNullAt(index)) {
                 statement.setObject(index, null);
             } else {
                 serializationConverter.serialize(val, index, statement);
             }
         };
+
+//        return (val, index, statement) -> {
+//            if (((ColumnRowData) val).getField(index) == null) {
+//                statement.setObject(index, null);
+//            } else {
+//                serializationConverter.serialize(val, index, statement);
+//            }
+//        };
     }
 
     @Override
@@ -136,7 +147,9 @@ public class JdbcColumnConverter
                 return val -> new BigDecimalColumn(((Integer) val).byteValue());
             case SMALLINT:
             case INTEGER:
-                return val -> new BigDecimalColumn((Integer) val);
+                return val -> {
+                    return new BigDecimalColumn((Integer) val);
+                };
             case INTERVAL_YEAR_MONTH:
                 return (IDeserializationConverter<Object, AbstractBaseColumn>)
                         val -> {
@@ -198,45 +211,57 @@ public class JdbcColumnConverter
             case INTERVAL_YEAR_MONTH:
                 return (val, index, statement) -> {
                     int a = 0;
-                    try {
-                        a = ((ColumnRowData) val).getField(index).asYearInt();
-                    } catch (Exception e) {
-                        LOG.error("val {}, index{}", val, index, e);
-                    }
-
+//                    try {
+//                        a = ((ColumnRowData) val).getField(index).asYearInt();
+//                    } catch (Exception e) {
+//                        LOG.error("val {}, index{}", val, index, e);
+//                    }
+                    a = val.getInt(index);
                     statement.setInt(index, a);
                 };
             case FLOAT:
                 return (val, index, statement) ->
                         statement.setFloat(index, ((ColumnRowData) val).getField(index).asFloat());
             case DOUBLE:
-                return (val, index, statement) ->
-                        statement.setDouble(
-                                index, ((ColumnRowData) val).getField(index).asDouble());
-
+                return (val, index, statement) -> {
+//                    statement.setDouble(
+//                            index, ((ColumnRowData) val).getField(index).asDouble());
+                    statement.setDouble(
+                            index, val.getDouble(index));
+                };
             case BIGINT:
-                return (val, index, statement) ->
-                        statement.setLong(index, ((ColumnRowData) val).getField(index).asLong());
+                return (val, index, statement) -> {
+                    // statement.setLong(index, ((ColumnRowData) val).getField(index).asLong());
+                    statement.setLong(index, val.getLong(index));
+                };
             case DECIMAL:
                 return (val, index, statement) ->
                         statement.setBigDecimal(
                                 index, ((ColumnRowData) val).getField(index).asBigDecimal());
             case CHAR:
             case VARCHAR:
-                return (val, index, statement) ->
-                        statement.setString(
-                                index, ((ColumnRowData) val).getField(index).asString());
+                return (val, index, statement) -> {
+//                    statement.setString(
+//                            index, ((ColumnRowData) val).getField(index).asString());
+                    statement.setString(
+                            index, val.getString(index).toString());
+                };
             case DATE:
-                return (val, index, statement) ->
-                        statement.setDate(index, ((ColumnRowData) val).getField(index).asSqlDate());
+                return (val, index, statement) -> {
+                    //  statement.setDate(index, ((ColumnRowData) val).getField(index).asSqlDate());
+                    statement.setDate(index, Date.valueOf(LocalDate.ofEpochDay(val.getInt(index))));
+                };
             case TIME_WITHOUT_TIME_ZONE:
                 return (val, index, statement) ->
                         statement.setTime(index, ((ColumnRowData) val).getField(index).asTime());
             case TIMESTAMP_WITH_TIME_ZONE:
             case TIMESTAMP_WITHOUT_TIME_ZONE:
-                return (val, index, statement) ->
-                        statement.setTimestamp(
-                                index, ((ColumnRowData) val).getField(index).asTimestamp());
+                return (val, index, statement) -> {
+//                    statement.setTimestamp(
+//                            index, ((ColumnRowData) val).getField(index).asTimestamp());
+                    statement.setTimestamp(
+                            index, val.getTimestamp(index, -1).toTimestamp());
+                };
 
             case BINARY:
             case VARBINARY:

@@ -18,6 +18,8 @@
 
 package com.dtstack.chunjun.source.format;
 
+import java.lang.invoke.MethodHandles;
+
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 
@@ -34,7 +36,9 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class BaseRichInputFormatBuilder<T extends BaseRichInputFormat> {
 
-    protected final Logger LOG = LoggerFactory.getLogger(getClass());
+   // protected final Logger LOG = LoggerFactory.getLogger(getClass());
+
+    protected static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     protected T format;
 

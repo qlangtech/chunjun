@@ -18,14 +18,16 @@
 
 package com.dtstack.chunjun.connector.ftp.client.excel;
 
+import java.lang.invoke.MethodHandles;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** @author by dujie @Description @Date 2021/12/20 */
 public class ExcelReaderExceptionHandler implements Thread.UncaughtExceptionHandler {
 
-    protected final Logger LOG = LoggerFactory.getLogger(getClass());
-
+  //  protected final Logger LOG = LoggerFactory.getLogger(getClass());
+    protected static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     @Override
     public void uncaughtException(Thread t, Throwable e) {
         LOG.error(

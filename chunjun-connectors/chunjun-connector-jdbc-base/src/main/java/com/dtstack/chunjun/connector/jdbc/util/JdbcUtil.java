@@ -92,27 +92,28 @@ public class JdbcUtil {
      */
     public static Connection getConnection(JdbcConf jdbcConf, JdbcDialect jdbcDialect) {
         TelnetUtil.telnet(jdbcConf.getJdbcUrl());
-        ClassUtil.forName(
-                jdbcDialect.defaultDriverName().get(),
-                Thread.currentThread().getContextClassLoader());
-        Properties prop = jdbcConf.getProperties();
-        if (prop == null) {
-            prop = new Properties();
-        }
-        if (org.apache.commons.lang3.StringUtils.isNotBlank(jdbcConf.getUsername())) {
-            prop.put("user", jdbcConf.getUsername());
-        }
-        if (org.apache.commons.lang3.StringUtils.isNotBlank(jdbcConf.getPassword())) {
-            prop.put("password", jdbcConf.getPassword());
-        }
-        Properties finalProp = prop;
-        synchronized (ClassUtil.LOCK_STR) {
-            return RetryUtil.executeWithRetry(
-                    () -> DriverManager.getConnection(jdbcConf.getJdbcUrl(), finalProp),
-                    3,
-                    2000,
-                    false);
-        }
+        throw new UnsupportedOperationException();
+//        ClassUtil.forName(
+//                jdbcDialect.defaultDriverName().get(),
+//                Thread.currentThread().getContextClassLoader());
+//        Properties prop = jdbcConf.getProperties();
+//        if (prop == null) {
+//            prop = new Properties();
+//        }
+//        if (org.apache.commons.lang3.StringUtils.isNotBlank(jdbcConf.getUsername())) {
+//            prop.put("user", jdbcConf.getUsername());
+//        }
+//        if (org.apache.commons.lang3.StringUtils.isNotBlank(jdbcConf.getPassword())) {
+//            prop.put("password", jdbcConf.getPassword());
+//        }
+//        Properties finalProp = prop;
+//        synchronized (ClassUtil.LOCK_STR) {
+//            return RetryUtil.executeWithRetry(
+//                    () -> DriverManager.getConnection(jdbcConf.getJdbcUrl(), finalProp),
+//                    3,
+//                    2000,
+//                    false);
+//        }
     }
 
     public static Connection getConnection(

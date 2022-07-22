@@ -18,6 +18,8 @@
 
 package com.dtstack.chunjun.sink.format;
 
+import java.lang.invoke.MethodHandles;
+
 import com.dtstack.chunjun.cdc.monitor.MonitorConf;
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
 import com.dtstack.chunjun.constants.ConstantValue;
@@ -34,9 +36,18 @@ import org.slf4j.LoggerFactory;
  * @author huyifan.zju@163.com
  */
 public abstract class BaseRichOutputFormatBuilder {
-    protected final Logger LOG = LoggerFactory.getLogger(getClass());
+   // protected final Logger LOG = LoggerFactory.getLogger(getClass());
+
+    protected static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     protected BaseRichOutputFormat format;
+
+    public BaseRichOutputFormatBuilder(BaseRichOutputFormat format) {
+        this.format = format;
+    }
+
+    public BaseRichOutputFormatBuilder() {
+    }
 
     public void setConfig(ChunJunCommonConf config) {
         format.setConfig(config);
