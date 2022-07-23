@@ -22,6 +22,7 @@ import com.dtstack.chunjun.connector.greenplum.converter.GreenplumRawTypeConvert
 import com.dtstack.chunjun.connector.postgresql.dialect.PostgresqlDialect;
 import com.dtstack.chunjun.converter.RawTypeConverter;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -67,7 +68,7 @@ public class GreenplumDialect extends PostgresqlDialect {
 
     @Override
     public Optional<String> getReplaceStatement(
-            String schema, String tableName, String[] fieldNames) {
+            String schema, String tableName, List<String> fieldNames) {
         throw new RuntimeException("Greenplum does not support replace sql");
     }
 }

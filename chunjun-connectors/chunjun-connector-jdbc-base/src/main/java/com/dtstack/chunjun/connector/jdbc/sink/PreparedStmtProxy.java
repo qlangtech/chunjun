@@ -30,7 +30,10 @@ import org.apache.flink.types.RowKind;
 import com.esotericsoftware.minlog.Log;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.StringUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +52,7 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -71,7 +75,7 @@ public class PreparedStmtProxy implements FieldNamedPreparedStatement {
     private final int cacheDurationMin = 10;
 
     /** LUR cache key info: database_table_rowkind * */
-    protected Cache<String, DynamicPreparedStmt> pstmtCache;
+    protected Cache<String, Optional<DynamicPreparedStmt>> pstmtCache;
 
     /** 当前的执行sql的preparestatement */
     protected transient FieldNamedPreparedStatement currentFieldNamedPstmt;
@@ -110,15 +114,18 @@ public class PreparedStmtProxy implements FieldNamedPreparedStatement {
         initCache(false);
         this.pstmtCache.put(
                 getPstmtCacheKey(jdbcConf.getSchema(), jdbcConf.getTable(), RowKind.INSERT),
-                DynamicPreparedStmt.buildStmt(
+                Optional.of(DynamicPreparedStmt.buildStmt(
                         jdbcDialect,
                         jdbcConf.getColumn(),
                         currentRowConverter,
-                        currentFieldNamedPstmt));
+                        currentFieldNamedPstmt)));
     }
 
-    public void convertToExternal(RowData row) throws Exception {
-        getOrCreateFieldNamedPstmt(row);
+    public boolean convertToExternal(RowData row) throws Exception {
+        if (!getOrCreateFieldNamedPstmt(row)) {
+            return false;
+        }
+
         if (!writeExtInfo) {
             if (row instanceof ColumnRowData) {
                 ColumnRowData copy = ((ColumnRowData) row).copy();
@@ -130,14 +137,16 @@ public class PreparedStmtProxy implements FieldNamedPreparedStatement {
         currentFieldNamedPstmt =
                 (FieldNamedPreparedStatement)
                         currentRowConverter.toExternal(row, this.currentFieldNamedPstmt);
+        return true;
     }
 
-    public void getOrCreateFieldNamedPstmt(RowData row) throws ExecutionException {
+    public boolean getOrCreateFieldNamedPstmt(RowData row) throws ExecutionException {
+        DynamicPreparedStmt statement = null;
         if (row instanceof ColumnRowData) {
             ColumnRowData columnRowData = (ColumnRowData) row;
             Map<String, Integer> head = columnRowData.getHeaderInfo();
             if (MapUtils.isEmpty(head)) {
-                return;
+                return false;
             }
             int dataBaseIndex = head.get(CDCConstantValue.SCHEMA);
             int tableIndex = head.get(CDCConstantValue.TABLE);
@@ -146,7 +155,7 @@ public class PreparedStmtProxy implements FieldNamedPreparedStatement {
             String tableName = row.getString(tableIndex).toString();
             String key = getPstmtCacheKey(database, tableName, row.getRowKind());
 
-            DynamicPreparedStmt fieldNamedPreparedStatement =
+            Optional<DynamicPreparedStmt> fieldNamedPreparedStatement =
                     pstmtCache.get(
                             key,
                             () -> {
@@ -166,12 +175,17 @@ public class PreparedStmtProxy implements FieldNamedPreparedStatement {
                                 }
                             });
 
-            currentFieldNamedPstmt = fieldNamedPreparedStatement.getFieldNamedPreparedStatement();
-            currentRowConverter = fieldNamedPreparedStatement.getRowConverter();
+            if (fieldNamedPreparedStatement.isPresent()) {
+                statement = fieldNamedPreparedStatement.get();
+                currentFieldNamedPstmt = statement.getFieldNamedPreparedStatement();
+                currentRowConverter = statement.getRowConverter();
+                return true;
+            }
+
         } else {
             String key =
                     getPstmtCacheKey(jdbcConf.getSchema(), jdbcConf.getTable(), row.getRowKind());
-            DynamicPreparedStmt fieldNamedPreparedStatement =
+            Optional<DynamicPreparedStmt> fieldNamedPreparedStatement =
                     pstmtCache.get(
                             key,
                             () -> {
@@ -189,8 +203,16 @@ public class PreparedStmtProxy implements FieldNamedPreparedStatement {
                                     return null;
                                 }
                             });
-            currentFieldNamedPstmt = fieldNamedPreparedStatement.getFieldNamedPreparedStatement();
+
+            if (fieldNamedPreparedStatement.isPresent()) {
+                statement = fieldNamedPreparedStatement.get();
+                currentFieldNamedPstmt = statement.getFieldNamedPreparedStatement();
+                return true;
+            }
+
         }
+
+        return false;
     }
 
     public void writeSingleRecordInternal(RowData row) throws Exception {
@@ -202,14 +224,16 @@ public class PreparedStmtProxy implements FieldNamedPreparedStatement {
     }
 
     protected void initCache(boolean isExpired) {
-        CacheBuilder<String, DynamicPreparedStmt> cacheBuilder =
+        CacheBuilder<String, Optional<DynamicPreparedStmt>> cacheBuilder =
                 CacheBuilder.newBuilder()
                         .maximumSize(cacheSize)
                         .removalListener(
                                 notification -> {
                                     try {
                                         assert notification.getValue() != null;
-                                        notification.getValue().close();
+                                        if (notification.getValue().isPresent()) {
+                                            notification.getValue().get().close();
+                                        }
                                     } catch (SQLException e) {
                                         Log.error("", e);
                                     }
@@ -221,6 +245,9 @@ public class PreparedStmtProxy implements FieldNamedPreparedStatement {
     }
 
     public String getPstmtCacheKey(String schema, String table, RowKind rowKind) {
+        if (StringUtils.isEmpty(schema)) {
+            throw new IllegalArgumentException("param schema can not be empty");
+        }
         return String.format("%s_%s_%s", schema, table, rowKind);
     }
 

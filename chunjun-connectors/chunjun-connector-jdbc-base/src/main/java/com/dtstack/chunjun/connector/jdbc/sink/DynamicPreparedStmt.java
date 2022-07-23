@@ -30,6 +30,7 @@ import org.apache.flink.table.types.logical.RowType;
 import org.apache.flink.types.RowKind;
 
 import org.apache.commons.lang3.tuple.Pair;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +39,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -63,7 +65,7 @@ public class DynamicPreparedStmt {
     private JdbcDialect jdbcDialect;
     private AbstractRowConverter<?, ?, ?, ?> rowConverter;
 
-    public static DynamicPreparedStmt buildStmt(
+    public static Optional<DynamicPreparedStmt> buildStmt(
             Map<String, Integer> header,
             Set<String> extHeader,
             String schemaName,
@@ -81,15 +83,18 @@ public class DynamicPreparedStmt {
         dynamicPreparedStmt.getColumnMeta(schemaName, tableName, connection);
         dynamicPreparedStmt.buildRowConvert();
 
-        String sql = dynamicPreparedStmt.prepareTemplates(rowKind, schemaName, tableName);
+        Optional<String> sql = dynamicPreparedStmt.prepareTemplates(rowKind, schemaName, tableName);
+        if (!sql.isPresent()) {
+            return Optional.empty();
+        }
         String[] fieldNames = new String[dynamicPreparedStmt.columnNameList.size()];
         dynamicPreparedStmt.columnNameList.toArray(fieldNames);
         dynamicPreparedStmt.fieldNamedPreparedStatement =
-                FieldNamedPreparedStatementImpl.prepareStatement(connection, sql, fieldNames);
-        return dynamicPreparedStmt;
+                FieldNamedPreparedStatementImpl.prepareStatement(connection, sql.get(), fieldNames);
+        return Optional.of(dynamicPreparedStmt);
     }
 
-    public static DynamicPreparedStmt buildStmt(
+    public static Optional<DynamicPreparedStmt> buildStmt(
             String schemaName,
             String tableName,
             RowKind rowKind,
@@ -108,10 +113,13 @@ public class DynamicPreparedStmt {
             dynamicPreparedStmt.columnNameList.add(fieldConf.getName());
             dynamicPreparedStmt.columnTypeList.add(fieldConf.getType());
         }
-        String sql = dynamicPreparedStmt.prepareTemplates(rowKind, schemaName, tableName);
+        Optional<String> sql = dynamicPreparedStmt.prepareTemplates(rowKind, schemaName, tableName);
+        if (!sql.isPresent()) {
+            return Optional.empty();
+        }
         dynamicPreparedStmt.fieldNamedPreparedStatement =
-                FieldNamedPreparedStatementImpl.prepareStatement(connection, sql, fieldNames);
-        return dynamicPreparedStmt;
+                FieldNamedPreparedStatementImpl.prepareStatement(connection, sql.get(), fieldNames);
+        return Optional.of(dynamicPreparedStmt);
     }
 
     public static DynamicPreparedStmt buildStmt(
@@ -131,27 +139,41 @@ public class DynamicPreparedStmt {
         return dynamicPreparedStmt;
     }
 
-    protected String prepareTemplates(RowKind rowKind, String schemaName, String tableName) {
+    private String createInsertIntoStatement(String schemaName, String tableName) {
+        return jdbcDialect.getInsertIntoStatement(
+                schemaName, tableName, columnNameList.toArray(new String[0]));
+    }
+
+    protected Optional<String> prepareTemplates(RowKind rowKind, String schemaName, String tableName) {
         String singleSql = null;
         switch (rowKind) {
             case INSERT:
-            case UPDATE_AFTER:
-                singleSql =
-                        jdbcDialect.getInsertIntoStatement(
-                                schemaName, tableName, columnNameList.toArray(new String[0]));
-                break;
+                // case UPDATE_AFTER:
+            {
+                singleSql = createInsertIntoStatement(schemaName, tableName);
+//                        jdbcDialect.getInsertIntoStatement(
+//                                schemaName, tableName, columnNameList.toArray(new String[0]));
+                return Optional.of(singleSql);
+            }
+            case UPDATE_AFTER: {
+                Optional<String> replaceSql = jdbcDialect.getReplaceStatement(schemaName, tableName, columnNameList);
+                return replaceSql.isPresent() ? replaceSql : Optional.of(createInsertIntoStatement(schemaName, tableName));
+            }
             case DELETE:
-            case UPDATE_BEFORE:
-                String[] columnNames = new String[columnNameList.size()];
-                columnNameList.toArray(columnNames);
-                singleSql = jdbcDialect.getDeleteStatement(schemaName, tableName, columnNames);
-                break;
-            default:
+                //String[] columnNames = new String[columnNameList.size()];
+                singleSql = jdbcDialect.getDeleteStatement(schemaName, tableName, columnNameList);
+                return Optional.of(singleSql);
+            case UPDATE_BEFORE: {
+                return jdbcDialect.getUpdateBeforeStatement(schemaName, tableName, columnNameList);
+            }
+            default: {
                 // TODO 异常如何处理
-                LOG.warn("not support RowKind: {}", rowKind);
+                //LOG.warn("not support RowKind: {}", rowKind);
+                throw new IllegalArgumentException("not support RowKind: " + rowKind);
+            }
         }
 
-        return singleSql;
+        //  return singleSql;
     }
 
     public void getColumnNameList(Map<String, Integer> header, Set<String> extHeader) {

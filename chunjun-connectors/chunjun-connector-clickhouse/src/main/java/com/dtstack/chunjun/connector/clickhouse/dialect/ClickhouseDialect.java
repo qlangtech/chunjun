@@ -24,6 +24,7 @@ import com.dtstack.chunjun.connector.jdbc.source.JdbcInputSplit;
 import com.dtstack.chunjun.converter.RawTypeConverter;
 import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -61,12 +62,12 @@ public class ClickhouseDialect implements JdbcDialect {
 
     @Override
     public Optional<String> getReplaceStatement(
-            String schema, String tableName, String[] fieldNames) {
+            String schema, String tableName, List<String> fieldNames) {
         throw new ChunJunRuntimeException("Clickhouse does not support replace sql");
     }
 
     @Override
-    public String getDeleteStatement(String schema, String tableName, String[] conditionFields) {
+    public String getDeleteStatement(String schema, String tableName, List<String> conditionFields) {
         throw new ChunJunRuntimeException("Clickhouse does not support delete sql");
     }
 

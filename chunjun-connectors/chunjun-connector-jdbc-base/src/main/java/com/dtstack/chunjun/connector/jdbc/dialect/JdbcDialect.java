@@ -33,11 +33,13 @@ import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.table.types.logical.RowType;
 
 import io.vertx.core.json.JsonArray;
+
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
 import java.sql.ResultSet;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -58,6 +60,7 @@ public interface JdbcDialect extends Serializable {
      * Check if this dialect instance can handle a certain jdbc url.
      *
      * @param url the jdbc url.
+     *
      * @return True if the dialect can be applied on the given jdbc url.
      */
     boolean canHandle(String url);
@@ -69,10 +72,11 @@ public interface JdbcDialect extends Serializable {
      * Get converter that convert jdbc object and Flink internal object each other.
      *
      * @param rowType the given row type
+     *
      * @return a row converter for the database
      */
     default AbstractRowConverter<ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType>
-            getRowConverter(RowType rowType) {
+    getRowConverter(RowType rowType) {
         return new JdbcRowConverter(rowType);
     }
 
@@ -82,7 +86,7 @@ public interface JdbcDialect extends Serializable {
      * @return a row converter for the database
      */
     default AbstractRowConverter<ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType>
-            getColumnConverter(RowType rowType) {
+    getColumnConverter(RowType rowType) {
         return getColumnConverter(rowType, null);
     }
 
@@ -92,7 +96,7 @@ public interface JdbcDialect extends Serializable {
      * @return a row converter for the database
      */
     default AbstractRowConverter<ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType>
-            getColumnConverter(RowType rowType, ChunJunCommonConf commonConf) {
+    getColumnConverter(RowType rowType, ChunJunCommonConf commonConf) {
         return new JdbcColumnConverter(rowType, commonConf);
     }
 
@@ -100,13 +104,15 @@ public interface JdbcDialect extends Serializable {
      * Check if this dialect instance support a specific data type in table schema.
      *
      * @param schema the table schema.
+     *
      * @throws ValidationException in case of the table schema contains unsupported type.
      */
-    default void validate(TableSchema schema) throws ValidationException {}
+    default void validate(TableSchema schema) throws ValidationException {
+    }
 
     /**
      * @return the default driver class name, if user not configure the driver class name, then will
-     *     use this one.
+     *         use this one.
      */
     default Optional<String> defaultDriverName() {
         return Optional.empty();
@@ -129,9 +135,10 @@ public interface JdbcDialect extends Serializable {
      * @param fieldNames array of field-name
      * @param uniqueKeyFields array of unique-key
      * @param allReplace Whether to replace the original value with a null value ，if true replace
-     *     else not replace
+     *         else not replace
+     *
      * @return None if dialect does not support upsert statement, the writer will degrade to the use
-     *     of select + update/insert, this performance is poor.
+     *         of select + update/insert, this performance is poor.
      */
     default Optional<String> getUpsertStatement(
             String schema,
@@ -143,7 +150,7 @@ public interface JdbcDialect extends Serializable {
     }
 
     default Optional<String> getReplaceStatement(
-            String schema, String tableName, String[] fieldNames) {
+            String schema, String tableName, List<String> fieldNames) {
         return Optional.empty();
     }
 
@@ -225,15 +232,18 @@ public interface JdbcDialect extends Serializable {
      * Get delete one row statement by condition fields, default not use limit 1, because limit 1 is
      * a sql dialect.
      */
-    default String getDeleteStatement(String schema, String tableName, String[] conditionFields) {
-        String conditionClause =
-                Arrays.stream(conditionFields)
-                        .map(f -> format("%s = :%s", quoteIdentifier(f), f))
-                        .collect(Collectors.joining(" AND "));
+    default String getDeleteStatement(String schema, String tableName, List<String> conditionFields) {
+        String conditionClause = conditionFields.stream()
+                .map(f -> format("%s = :%s", quoteIdentifier(f), f))
+                .collect(Collectors.joining(" AND "));
         return "DELETE FROM "
                 + buildTableInfoWithSchema(schema, tableName)
                 + " WHERE "
                 + conditionClause;
+    }
+
+    default Optional<String> getUpdateBeforeStatement(String schema, String tableName, List<String> conditionFields) {
+        return Optional.of(getDeleteStatement(schema, tableName, conditionFields));
     }
 
     /** Get select fields statement by condition fields. Default use SELECT. */

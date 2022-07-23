@@ -208,9 +208,10 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
     protected void writeMultipleRecordsInternal() throws Exception {
         try {
             for (RowData row : rows) {
-                stmtProxy.convertToExternal(row);
-                stmtProxy.addBatch();
-                lastRow = row;
+                if (stmtProxy.convertToExternal(row)) {
+                    stmtProxy.addBatch();
+                    lastRow = row;
+                }
             }
             stmtProxy.executeBatch();
             // 开启了cp，但是并没有使用2pc方式让下游数据可见
@@ -319,7 +320,7 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
                             .getReplaceStatement(
                                     jdbcConf.getSchema(),
                                     jdbcConf.getTable(),
-                                    columnNameList.toArray(new String[0]))
+                                    columnNameList)
                             .get();
         } else if (EWriteMode.UPDATE.name().equalsIgnoreCase(jdbcConf.getMode())) {
             singleSql =

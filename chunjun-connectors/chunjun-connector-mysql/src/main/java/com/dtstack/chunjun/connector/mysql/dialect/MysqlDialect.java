@@ -23,6 +23,7 @@ import com.dtstack.chunjun.connector.mysql.converter.MysqlRawTypeConverter;
 import com.dtstack.chunjun.converter.RawTypeConverter;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -100,13 +101,13 @@ public class MysqlDialect implements JdbcDialect {
 
     @Override
     public Optional<String> getReplaceStatement(
-            String schema, String tableName, String[] fieldNames) {
+            String schema, String tableName, List<String> fieldNames) {
         String columns =
-                Arrays.stream(fieldNames)
+                (fieldNames.stream())
                         .map(this::quoteIdentifier)
                         .collect(Collectors.joining(", "));
         String placeholders =
-                Arrays.stream(fieldNames).map(f -> ":" + f).collect(Collectors.joining(", "));
+                (fieldNames.stream()).map(f -> ":" + f).collect(Collectors.joining(", "));
         return Optional.of(
                 "REPLACE INTO "
                         + buildTableInfoWithSchema(schema, tableName)
@@ -116,5 +117,13 @@ public class MysqlDialect implements JdbcDialect {
                         + " VALUES ("
                         + placeholders
                         + ")");
+    }
+
+    /**
+     * mysql 执行before 直接跳过
+     */
+    @Override
+    public Optional<String> getUpdateBeforeStatement(String schema, String tableName, List<String> conditionFields) {
+        return Optional.empty();
     }
 }

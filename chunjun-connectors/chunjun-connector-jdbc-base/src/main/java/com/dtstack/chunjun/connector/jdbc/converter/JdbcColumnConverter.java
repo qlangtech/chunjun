@@ -201,9 +201,11 @@ public class JdbcColumnConverter
             LogicalType type) {
         switch (type.getTypeRoot()) {
             case BOOLEAN:
-                return (val, index, statement) ->
-                        statement.setBoolean(
-                                index, ((ColumnRowData) val).getField(index).asBoolean());
+                return (val, index, statement) -> {
+//                    statement.setBoolean(
+//                            index, ((ColumnRowData) val).getField(index).asBoolean());
+                    statement.setBoolean(index, val.getBoolean(index));
+                };
             case TINYINT:
                 return (val, index, statement) -> statement.setByte(index, val.getByte(index));
             case SMALLINT:
@@ -220,8 +222,11 @@ public class JdbcColumnConverter
                     statement.setInt(index, a);
                 };
             case FLOAT:
-                return (val, index, statement) ->
-                        statement.setFloat(index, ((ColumnRowData) val).getField(index).asFloat());
+                return (val, index, statement) ->{
+                   // statement.setFloat(index, ((ColumnRowData) val).getField(index).asFloat());
+
+                    statement.setFloat(index, val.getFloat(index));
+                };
             case DOUBLE:
                 return (val, index, statement) -> {
 //                    statement.setDouble(
@@ -235,9 +240,13 @@ public class JdbcColumnConverter
                     statement.setLong(index, val.getLong(index));
                 };
             case DECIMAL:
-                return (val, index, statement) ->
-                        statement.setBigDecimal(
-                                index, ((ColumnRowData) val).getField(index).asBigDecimal());
+                return (val, index, statement) -> {
+//                    statement.setBigDecimal(
+//                            index, ((ColumnRowData) val).getField(index).asBigDecimal());
+
+                    statement.setBigDecimal(
+                            index, val.getDecimal(index, -1, -1).toBigDecimal());
+                };
             case CHAR:
             case VARCHAR:
                 return (val, index, statement) -> {
@@ -252,8 +261,13 @@ public class JdbcColumnConverter
                     statement.setDate(index, Date.valueOf(LocalDate.ofEpochDay(val.getInt(index))));
                 };
             case TIME_WITHOUT_TIME_ZONE:
-                return (val, index, statement) ->
-                        statement.setTime(index, ((ColumnRowData) val).getField(index).asTime());
+                return (val, index, statement) -> {
+                    // statement.setTime(index, ((ColumnRowData) val).getField(index).asTime());
+                    // val.getTimestamp(index, -1).toLocalDateTime();
+                    // statement.setTime(index, ((ColumnRowData) val).getField(index).asTime());
+                    // val.get
+                    throw new UnsupportedOperationException("index:" + index + ",val:" + val.toString());
+                };
             case TIMESTAMP_WITH_TIME_ZONE:
             case TIMESTAMP_WITHOUT_TIME_ZONE:
                 return (val, index, statement) -> {
@@ -265,8 +279,11 @@ public class JdbcColumnConverter
 
             case BINARY:
             case VARBINARY:
-                return (val, index, statement) ->
-                        statement.setBytes(index, ((ColumnRowData) val).getField(index).asBytes());
+                return (val, index, statement) -> {
+                    //  statement.setBytes(index, ((ColumnRowData) val).getField(index).asBytes());
+                    statement.setBytes(index, val.getBinary(index));
+                };
+
             default:
                 throw new UnsupportedOperationException("Unsupported type:" + type);
         }
