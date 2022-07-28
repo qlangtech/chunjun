@@ -68,7 +68,7 @@ public class OracleDialect implements JdbcDialect {
 
     @Override
     public Optional<String> getReplaceStatement(
-            String schema, String tableName, String[] fieldNames) {
+            String schema, String tableName, List<String> fieldNames) {
         throw new RuntimeException("Oracle does not support replace sql");
     }
 

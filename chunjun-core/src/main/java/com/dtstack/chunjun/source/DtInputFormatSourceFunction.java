@@ -31,6 +31,7 @@ import org.apache.flink.api.common.state.OperatorStateStore;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.io.InputSplit;
 import org.apache.flink.metrics.Counter;
@@ -59,7 +60,7 @@ import java.util.NoSuchElementException;
  */
 @Internal
 public class DtInputFormatSourceFunction<OUT> extends InputFormatSourceFunction<OUT>
-        implements CheckpointedFunction {
+        implements CheckpointedFunction , ResultTypeQueryable<OUT> {
     private static final long serialVersionUID = 1L;
 
     private static final Logger LOG = LoggerFactory.getLogger(DtInputFormatSourceFunction.class);
@@ -79,6 +80,11 @@ public class DtInputFormatSourceFunction<OUT> extends InputFormatSourceFunction<
     private static final String LOCATION_STATE_NAME = "data-sync-location-states";
 
     private transient ListState<FormatState> unionOffsetStates;
+
+    @Override
+    public TypeInformation<OUT> getProducedType() {
+        return this.typeInfo;
+    }
 
     @SuppressWarnings("unchecked")
     public DtInputFormatSourceFunction(InputFormat<OUT, ?> format, TypeInformation<OUT> typeInfo) {
