@@ -868,11 +868,12 @@ public class JdbcInputFormat extends BaseRichInputFormat {
                 state = startLocation;
             }
         } else {
-            statement = dbConn.createStatement(resultSetType, resultSetConcurrency);
-            statement.setFetchSize(jdbcConf.getFetchSize());
-            statement.setQueryTimeout(jdbcConf.getQueryTimeOut());
-            resultSet = statement.executeQuery(jdbcConf.getQuerySql());
-            hasNext = resultSet.next();
+//            statement = dbConn.createStatement(resultSetType, resultSetConcurrency);
+//            statement.setFetchSize(jdbcConf.getFetchSize());
+//            statement.setQueryTimeout(jdbcConf.getQueryTimeOut());
+//            resultSet = statement.executeQuery(jdbcConf.getQuerySql());
+//            hasNext = resultSet.next();
+            throw new UnsupportedOperationException("must be polling");
         }
     }
 

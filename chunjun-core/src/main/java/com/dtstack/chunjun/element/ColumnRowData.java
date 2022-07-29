@@ -240,8 +240,13 @@ public final class ColumnRowData implements RowData, Serializable {
 
     @Override
     public DecimalData getDecimal(int pos, int precision, int scale) {
-        BigDecimal bigDecimal = this.columnList.get(pos).asBigDecimal();
-        return DecimalData.fromBigDecimal(bigDecimal, bigDecimal.precision(), bigDecimal.scale());
+
+        // baisui modify 2022/07/29
+        AbstractBaseColumn col = this.columnList.get(pos);
+        BigDecimal bigDecimal = (BigDecimal) col.getData();
+       //  =this.columnList.get(pos).asBigDecimal();
+       // return DecimalData.fromBigDecimal(bigDecimal, bigDecimal.precision(), bigDecimal.scale());
+        return DecimalData.fromBigDecimal(bigDecimal, precision, scale);
     }
 
     @Override

@@ -104,7 +104,13 @@ public class TimeColumn extends AbstractBaseColumn {
 
     @Override
     public Integer asInt() {
-        throw new CastException("java.sql.Time", "Integer", this.asString());
+        //  throw new CastException("java.sql.Time", "Integer", this.asString());
+
+        Time time = asTime();
+        if (time == null) {
+            return null;
+        }
+        return (int) time.getTime();
     }
 
     @Override
