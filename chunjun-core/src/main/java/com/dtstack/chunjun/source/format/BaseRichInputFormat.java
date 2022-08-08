@@ -70,7 +70,7 @@ public abstract class BaseRichInputFormat extends RichInputFormat<RowData, Input
 
    // protected final Logger LOG = LoggerFactory.getLogger(getClass());
 
-    protected static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     /** BaseRichInputFormat是否结束 */
     private final AtomicBoolean isClosed = new AtomicBoolean(false);

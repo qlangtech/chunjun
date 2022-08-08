@@ -35,6 +35,7 @@ import com.dtstack.chunjun.element.column.StringColumn;
 import com.dtstack.chunjun.element.column.TimeColumn;
 import com.dtstack.chunjun.element.column.TimestampColumn;
 
+import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.table.types.logical.RowType;
@@ -57,6 +58,7 @@ import java.util.List;
 public class JdbcColumnConverter
         extends AbstractRowConverter<
         ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType> {
+
 
     public JdbcColumnConverter(RowType rowType) {
         this(rowType, null);
@@ -133,7 +135,14 @@ public class JdbcColumnConverter
     public FieldNamedPreparedStatement toExternal(
             RowData rowData, FieldNamedPreparedStatement statement) throws Exception {
         for (int index = 0; index < rowData.getArity(); index++) {
-            toExternalConverters.get(index).serialize(rowData, index, statement);
+            try {
+                toExternalConverters.get(index).serialize(rowData, index, statement);
+            } catch (Throwable e) {
+                if (rowData instanceof GenericRowData) {
+                    throw new IllegalStateException("index:" + index + " val:" + ((GenericRowData) rowData).getField(index), e);
+                }
+                throw e;
+            }
         }
         return statement;
     }
@@ -208,7 +217,13 @@ public class JdbcColumnConverter
                 };
             case TINYINT:
                 return (val, index, statement) -> statement.setByte(index, val.getByte(index));
-            case SMALLINT:
+            case SMALLINT: {
+                return (val, index, statement) -> {
+                    short a = 0;
+                    a = val.getShort(index);
+                    statement.setShort(index, a);
+                };
+            }
             case INTEGER:
             case INTERVAL_YEAR_MONTH:
                 return (val, index, statement) -> {
@@ -222,8 +237,8 @@ public class JdbcColumnConverter
                     statement.setInt(index, a);
                 };
             case FLOAT:
-                return (val, index, statement) ->{
-                   // statement.setFloat(index, ((ColumnRowData) val).getField(index).asFloat());
+                return (val, index, statement) -> {
+                    // statement.setFloat(index, ((ColumnRowData) val).getField(index).asFloat());
 
                     statement.setFloat(index, val.getFloat(index));
                 };
@@ -266,7 +281,10 @@ public class JdbcColumnConverter
                     // val.getTimestamp(index, -1).toLocalDateTime();
                     // statement.setTime(index, ((ColumnRowData) val).getField(index).asTime());
                     // val.get
-                    throw new UnsupportedOperationException("index:" + index + ",val:" + val.toString());
+                    // throw new UnsupportedOperationException("index:" + index + ",val:" + val.toString());
+//                    java.sql.Time time =
+
+                    statement.setTime(index, new Time(val.getInt(index)));
                 };
             case TIMESTAMP_WITH_TIME_ZONE:
             case TIMESTAMP_WITHOUT_TIME_ZONE:

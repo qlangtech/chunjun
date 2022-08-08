@@ -44,8 +44,11 @@ import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.slice.SliceBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +60,7 @@ import java.util.Map;
  * @create: 2021/06/27 17:25
  */
 public class ElasticsearchInputFormat extends BaseRichInputFormat {
+    private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     protected long keepAlive = 1;
     /** Elasticsearch Configuration */
     private ElasticsearchConf elasticsearchConf;

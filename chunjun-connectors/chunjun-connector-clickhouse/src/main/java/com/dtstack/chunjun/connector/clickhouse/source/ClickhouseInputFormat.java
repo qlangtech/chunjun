@@ -30,10 +30,14 @@ import org.apache.flink.table.types.logical.RowType;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.lang.invoke.MethodHandles;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @program chunjun
@@ -41,7 +45,7 @@ import java.util.List;
  * @create: 2021/05/10
  */
 public class ClickhouseInputFormat extends JdbcInputFormat {
-
+    private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     @Override
     public void openInternal(InputSplit inputSplit) {
         JdbcInputSplit jdbcInputSplit = (JdbcInputSplit) inputSplit;

@@ -33,9 +33,13 @@ import org.apache.flink.table.types.logical.RowType;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.lang.invoke.MethodHandles;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Date: 2022/01/12 Company: www.dtstack.com
@@ -43,7 +47,7 @@ import java.util.List;
  * @author tudou
  */
 public class DistributedJdbcInputFormat extends JdbcInputFormat {
-
+    private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     protected List<DataSourceConf> sourceList;
     protected DistributedJdbcInputSplit inputSplit;
     protected int sourceIndex = 0;

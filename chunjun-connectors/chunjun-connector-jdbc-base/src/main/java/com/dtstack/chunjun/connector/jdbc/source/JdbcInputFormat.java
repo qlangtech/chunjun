@@ -44,6 +44,7 @@ import org.apache.flink.table.types.logical.RowType;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.lang.invoke.MethodHandles;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Connection;
@@ -64,6 +65,9 @@ import java.util.function.Function;
 
 import static com.dtstack.chunjun.enums.ColumnType.TIMESTAMPTZ;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * InputFormat for reading data from a database and generate Rows.
  *
@@ -72,7 +76,7 @@ import static com.dtstack.chunjun.enums.ColumnType.TIMESTAMPTZ;
  * @author huyifan.zju@163.com
  */
 public class JdbcInputFormat extends BaseRichInputFormat {
-
+    private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     public static final long serialVersionUID = 1L;
     protected static final int resultSetConcurrency = ResultSet.CONCUR_READ_ONLY;
     protected static int resultSetType = ResultSet.TYPE_FORWARD_ONLY;
@@ -454,7 +458,7 @@ public class JdbcInputFormat extends BaseRichInputFormat {
             LOG.info(String.format("Query max value sql is '%s'", queryMaxValueSql));
 
             conn = getConnection();
-            st = conn.createStatement(resultSetType, resultSetConcurrency);
+            st = conn.createStatement(getResultSetType(), resultSetConcurrency);
             st.setQueryTimeout(jdbcConf.getQueryTimeOut());
             rs = st.executeQuery(queryMaxValueSql);
             if (rs.next()) {
@@ -502,7 +506,7 @@ public class JdbcInputFormat extends BaseRichInputFormat {
             LOG.info(String.format("Query SplitRange sql is '%s'", querySplitRangeSql));
 
             conn = getConnection();
-            st = conn.createStatement(resultSetType, resultSetConcurrency);
+            st = conn.createStatement(getResultSetType(), resultSetConcurrency);
             st.setQueryTimeout(jdbcConf.getQueryTimeOut());
             rs = st.executeQuery(querySplitRangeSql);
             if (rs.next()) {
@@ -887,10 +891,19 @@ public class JdbcInputFormat extends BaseRichInputFormat {
     }
     /** init prepareStatement */
     public void initPrepareStatement(String querySql) throws SQLException {
-        ps = dbConn.prepareStatement(querySql, resultSetType, resultSetConcurrency);
+        ps = dbConn.prepareStatement(querySql, getResultSetType(), resultSetConcurrency);
         ps.setFetchSize(jdbcConf.getFetchSize());
         ps.setQueryTimeout(jdbcConf.getQueryTimeOut());
     }
+
+    /**
+     * The constant indicating the type for a <code>ResultSet</code> object
+     * @return
+     */
+    protected int getResultSetType() {
+        return resultSetType;
+    }
+
     /**
      * 间隔轮询查询起始位置
      *
