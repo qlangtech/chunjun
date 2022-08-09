@@ -83,7 +83,8 @@ public class DynamicPreparedStmt {
         dynamicPreparedStmt.getColumnMeta(schemaName, tableName, connection);
         dynamicPreparedStmt.buildRowConvert();
 
-        Optional<String> sql = dynamicPreparedStmt.prepareTemplates(rowKind, schemaName, tableName);
+        Optional<String> sql = prepareTemplatesSQL(schemaName, tableName, rowKind, dynamicPreparedStmt);
+
         if (!sql.isPresent()) {
             return Optional.empty();
         }
@@ -113,13 +114,22 @@ public class DynamicPreparedStmt {
             dynamicPreparedStmt.columnNameList.add(fieldConf.getName());
             dynamicPreparedStmt.columnTypeList.add(fieldConf.getType());
         }
-        Optional<String> sql = dynamicPreparedStmt.prepareTemplates(rowKind, schemaName, tableName);
+        Optional<String> sql = prepareTemplatesSQL(schemaName, tableName, rowKind, dynamicPreparedStmt);
+
         if (!sql.isPresent()) {
             return Optional.empty();
         }
         dynamicPreparedStmt.fieldNamedPreparedStatement =
                 FieldNamedPreparedStatementImpl.prepareStatement(connection, sql.get(), fieldNames);
         return Optional.of(dynamicPreparedStmt);
+    }
+
+    private static Optional<String> prepareTemplatesSQL(String schemaName, String tableName, RowKind rowKind, DynamicPreparedStmt dynamicPreparedStmt) {
+        Optional<String> sql = dynamicPreparedStmt.prepareTemplates(rowKind, schemaName, tableName);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("db:{},tab:{},sql:{}", schemaName, tableName, sql.isPresent() ? sql.get() : "none");
+        }
+        return sql;
     }
 
     public static DynamicPreparedStmt buildStmt(

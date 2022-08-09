@@ -1,16 +1,8 @@
 package com.dtstack.chunjun.connector.postgresql.source;
 
 import com.dtstack.chunjun.connector.jdbc.source.JdbcInputFormat;
-import com.dtstack.chunjun.connector.jdbc.util.SqlUtil;
-import com.dtstack.chunjun.util.ExceptionUtil;
 
-import java.lang.invoke.MethodHandles;
 import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class PostgresqlInputFormat extends JdbcInputFormat {
     //private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

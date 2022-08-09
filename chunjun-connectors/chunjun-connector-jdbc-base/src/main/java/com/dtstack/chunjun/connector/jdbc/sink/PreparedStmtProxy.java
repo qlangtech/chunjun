@@ -155,6 +155,7 @@ public class PreparedStmtProxy implements FieldNamedPreparedStatement {
             String tableName = row.getString(tableIndex).toString();
             String key = getPstmtCacheKey(database, tableName, row.getRowKind());
 
+
             Optional<DynamicPreparedStmt> fieldNamedPreparedStatement =
                     pstmtCache.get(
                             key,
@@ -174,6 +175,10 @@ public class PreparedStmtProxy implements FieldNamedPreparedStatement {
                                     return null;
                                 }
                             });
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("db:{},tab:{},statment key:{},event type:{}", database, tableName, key, row.getRowKind());
+            }
 
             if (fieldNamedPreparedStatement.isPresent()) {
                 statement = fieldNamedPreparedStatement.get();
