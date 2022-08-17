@@ -20,6 +20,7 @@ package com.dtstack.chunjun.connector.doris.sink;
 
 import com.dtstack.chunjun.connector.doris.options.DorisConf;
 import com.dtstack.chunjun.connector.jdbc.conf.JdbcConf;
+import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.sink.format.BaseRichOutputFormatBuilder;
 
 import java.util.List;
@@ -32,7 +33,7 @@ import java.util.List;
  */
 public class DorisHttpOutputFormatBuilder extends BaseRichOutputFormatBuilder {
 
-    private final DorisHttpOutputFormat format;
+    protected final DorisHttpOutputFormat format;
 
     public DorisHttpOutputFormatBuilder() {
         super.format = format = new DorisHttpOutputFormat();
@@ -46,6 +47,9 @@ public class DorisHttpOutputFormatBuilder extends BaseRichOutputFormatBuilder {
 
     public void setColumns(List<String> columns) {
         format.setColumns(columns);
+    }
+    public void setRowConverter(AbstractRowConverter rowConverter) {
+        this.format.setRowConverter( rowConverter);
     }
 
     @Override

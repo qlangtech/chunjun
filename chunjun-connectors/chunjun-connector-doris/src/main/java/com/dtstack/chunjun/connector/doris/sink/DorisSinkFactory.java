@@ -74,7 +74,7 @@ import static com.dtstack.chunjun.connector.doris.options.DorisKeys.WRITE_MODE_K
  */
 public class DorisSinkFactory extends SinkFactory {
 
-    private final DorisConf options;
+    protected final DorisConf options;
 
     public DorisSinkFactory(SyncConf syncConf) {
         super(syncConf);
@@ -156,9 +156,14 @@ public class DorisSinkFactory extends SinkFactory {
 
     @Override
     public DataStreamSink<RowData> createSink(DataStream<RowData> dataSet) {
-        DorisHttpOutputFormatBuilder builder = new DorisHttpOutputFormatBuilder();
+        DorisHttpOutputFormatBuilder builder = createDorisHttpOutputFormatBuilder();
+
         builder.setDorisOptions(options);
         return createOutput(dataSet, builder.finish());
+    }
+
+    protected DorisHttpOutputFormatBuilder createDorisHttpOutputFormatBuilder(){
+        return  new DorisHttpOutputFormatBuilder();
     }
 
     @Override
