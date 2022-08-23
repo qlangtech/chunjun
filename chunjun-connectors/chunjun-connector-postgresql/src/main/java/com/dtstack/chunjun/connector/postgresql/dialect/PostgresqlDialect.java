@@ -35,6 +35,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.sql.ResultSet;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -83,16 +84,16 @@ public class PostgresqlDialect implements JdbcDialect {
     public Optional<String> getUpsertStatement(
             String schema,
             String tableName,
-            String[] fieldNames,
-            String[] uniqueKeyFields,
+            List<String> fieldNames,
+            List<String> uniqueKeyFields,
             boolean allReplace) {
         String updateClause;
         String uniqueColumns =
-                Arrays.stream(uniqueKeyFields)
+                (uniqueKeyFields.stream())
                         .map(this::quoteIdentifier)
                         .collect(Collectors.joining(", "));
         updateClause =
-                Arrays.stream(fieldNames)
+                  (fieldNames.stream())
                         .filter(f -> !Arrays.asList(uniqueKeyFields).contains(f))
                         .map(f -> quoteIdentifier(f) + "=EXCLUDED." + quoteIdentifier(f))
                         .collect(Collectors.joining(", "));

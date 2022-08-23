@@ -20,6 +20,7 @@ package com.dtstack.chunjun.connector.doris.options;
 
 import com.dtstack.chunjun.connector.jdbc.conf.JdbcConf;
 import com.dtstack.chunjun.connector.jdbc.conf.SinkConnectionConf;
+import com.dtstack.chunjun.sink.WriteMode;
 import com.dtstack.chunjun.util.GsonUtil;
 import com.dtstack.chunjun.util.MapUtil;
 import com.dtstack.chunjun.util.StringUtil;
@@ -50,7 +51,7 @@ public class DorisConf extends JdbcConf {
 
     private String url;
 
-    /** * default value is 3 */
+    /** default value is 3 */
     private Integer maxRetries = 3;
     /** retry load sleep timeout* */
     private long waitRetryMills = 18000;
@@ -104,6 +105,10 @@ public class DorisConf extends JdbcConf {
 
     public String getWriteMode() {
         return writeMode;
+    }
+
+    public WriteMode getDorisWriteMode() {
+        return WriteMode.valOf(this.getWriteMode());
     }
 
     public void setWriteMode(String writeMode) {
@@ -180,6 +185,9 @@ public class DorisConf extends JdbcConf {
         jdbcConf.setJdbcUrl(url);
         jdbcConf.setPassword(password);
         jdbcConf.setUsername(username);
+        // baisui add
+        jdbcConf.setBatchSize(this.getBatchSize());
+        jdbcConf.setFlushIntervalMills(this.getFlushIntervalMills());
         return jdbcConf;
     }
 }

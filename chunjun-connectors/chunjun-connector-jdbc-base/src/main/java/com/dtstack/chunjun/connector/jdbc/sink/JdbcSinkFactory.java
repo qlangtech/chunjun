@@ -39,6 +39,7 @@ import org.apache.flink.table.types.logical.RowType;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -56,19 +57,31 @@ public abstract class JdbcSinkFactory extends SinkFactory {
 
     protected JdbcConf jdbcConf;
     protected JdbcDialect jdbcDialect;
+    public static final Gson gson;
+
+    static {
+        gson = new GsonBuilder()
+                .registerTypeAdapter(
+                        ConnectionConf.class, new ConnectionAdapter("SinkConnectionConf"))
+                .addDeserializationExclusionStrategy(
+                        new FieldNameExclusionStrategy("column"))
+                .create();
+        GsonUtil.setTypeAdapter(gson);
+    }
+
+    public static JdbcConf getJdbcConf(SyncConf syncConf) {
+        return getJdbcConf(syncConf, JdbcConf.class);
+    }
+
+    private static JdbcConf getJdbcConf(SyncConf syncConf, Class<? extends JdbcConf> targetClass) {
+        return gson.fromJson(gson.toJson(syncConf.getWriter().getParameter()), targetClass);
+    }
 
     public JdbcSinkFactory(SyncConf syncConf, JdbcDialect jdbcDialect) {
         super(syncConf);
         this.jdbcDialect = jdbcDialect;
-        Gson gson =
-                new GsonBuilder()
-                        .registerTypeAdapter(
-                                ConnectionConf.class, new ConnectionAdapter("SinkConnectionConf"))
-                        .addDeserializationExclusionStrategy(
-                                new FieldNameExclusionStrategy("column"))
-                        .create();
-        GsonUtil.setTypeAdapter(gson);
-        jdbcConf = gson.fromJson(gson.toJson(syncConf.getWriter().getParameter()), getConfClass());
+
+        jdbcConf = getJdbcConf(syncConf, getConfClass());// gson.fromJson(gson.toJson(syncConf.getWriter().getParameter()), getConfClass());
         int batchSize =
                 syncConf.getWriter()
                         .getIntVal(

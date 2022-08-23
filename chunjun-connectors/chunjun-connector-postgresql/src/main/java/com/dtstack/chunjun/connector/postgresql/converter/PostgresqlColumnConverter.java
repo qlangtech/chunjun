@@ -157,65 +157,65 @@ public class PostgresqlColumnConverter extends JdbcColumnConverter {
         }
     }
 
-    @Override
-    protected ISerializationConverter<FieldNamedPreparedStatement> createExternalConverter(
-            LogicalType type) {
-        switch (type.getTypeRoot()) {
-            case BOOLEAN:
-                return (val, index, statement) ->
-                        statement.setBoolean(
-                                index, ((ColumnRowData) val).getField(index).asBoolean());
-            case TINYINT:
-                return (val, index, statement) -> statement.setByte(index, val.getByte(index));
-            case SMALLINT:
-            case INTEGER:
-            case INTERVAL_YEAR_MONTH:
-                return (val, index, statement) ->
-                        statement.setInt(index, ((ColumnRowData) val).getField(index).asYearInt());
-            case FLOAT:
-                return (val, index, statement) ->
-                        statement.setFloat(index, ((ColumnRowData) val).getField(index).asFloat());
-            case DOUBLE:
-                return (val, index, statement) ->
-                        statement.setDouble(
-                                index, ((ColumnRowData) val).getField(index).asDouble());
-
-            case BIGINT:
-                return (val, index, statement) ->
-                        statement.setLong(index, ((ColumnRowData) val).getField(index).asLong());
-            case DECIMAL:
-                return (val, index, statement) ->
-                        statement.setBigDecimal(
-                                index, ((ColumnRowData) val).getField(index).asBigDecimal());
-            case CHAR:
-            case VARCHAR:
-                return (val, index, statement) ->
-                        statement.setString(
-                                index, ((ColumnRowData) val).getField(index).asString());
-            case DATE:
-                return (val, index, statement) ->
-                        statement.setDate(index, ((ColumnRowData) val).getField(index).asSqlDate());
-            case TIME_WITHOUT_TIME_ZONE:
-                return (val, index, statement) ->
-                        statement.setTime(index, ((ColumnRowData) val).getField(index).asTime());
-            case TIMESTAMP_WITH_TIME_ZONE:
-            case TIMESTAMP_WITHOUT_TIME_ZONE:
-                return (val, index, statement) ->
-                        statement.setTimestamp(
-                                index, ((ColumnRowData) val).getField(index).asTimestamp());
-
-            case BINARY:
-            case VARBINARY:
-                return (val, index, statement) ->
-                        statement.setBytes(index, ((ColumnRowData) val).getField(index).asBytes());
-            case ARRAY:
-                return (val, index, statement) ->
-                        statement.setArray(
-                                index, (Array) ((ColumnRowData) val).getField(index).getData());
-            default:
-                throw new UnsupportedOperationException("Unsupported type:" + type);
-        }
-    }
+//    @Override
+//    protected ISerializationConverter<FieldNamedPreparedStatement> createExternalConverter(
+//            LogicalType type) {
+//        switch (type.getTypeRoot()) {
+//            case BOOLEAN:
+//                return (val, index, statement) ->
+//                        statement.setBoolean(
+//                                index, ((ColumnRowData) val).getField(index).asBoolean());
+//            case TINYINT:
+//                return (val, index, statement) -> statement.setByte(index, val.getByte(index));
+//            case SMALLINT:
+//            case INTEGER:
+//            case INTERVAL_YEAR_MONTH:
+//                return (val, index, statement) ->
+//                        statement.setInt(index, ((ColumnRowData) val).getField(index).asYearInt());
+//            case FLOAT:
+//                return (val, index, statement) ->
+//                        statement.setFloat(index, ((ColumnRowData) val).getField(index).asFloat());
+//            case DOUBLE:
+//                return (val, index, statement) ->
+//                        statement.setDouble(
+//                                index, ((ColumnRowData) val).getField(index).asDouble());
+//
+//            case BIGINT:
+//                return (val, index, statement) ->
+//                        statement.setLong(index, ((ColumnRowData) val).getField(index).asLong());
+//            case DECIMAL:
+//                return (val, index, statement) ->
+//                        statement.setBigDecimal(
+//                                index, ((ColumnRowData) val).getField(index).asBigDecimal());
+//            case CHAR:
+//            case VARCHAR:
+//                return (val, index, statement) ->
+//                        statement.setString(
+//                                index, ((ColumnRowData) val).getField(index).asString());
+//            case DATE:
+//                return (val, index, statement) ->
+//                        statement.setDate(index, ((ColumnRowData) val).getField(index).asSqlDate());
+//            case TIME_WITHOUT_TIME_ZONE:
+//                return (val, index, statement) ->
+//                        statement.setTime(index, ((ColumnRowData) val).getField(index).asTime());
+//            case TIMESTAMP_WITH_TIME_ZONE:
+//            case TIMESTAMP_WITHOUT_TIME_ZONE:
+//                return (val, index, statement) ->
+//                        statement.setTimestamp(
+//                                index, ((ColumnRowData) val).getField(index).asTimestamp());
+//
+//            case BINARY:
+//            case VARBINARY:
+//                return (val, index, statement) ->
+//                        statement.setBytes(index, ((ColumnRowData) val).getField(index).asBytes());
+//            case ARRAY:
+//                return (val, index, statement) ->
+//                        statement.setArray(
+//                                index, (Array) ((ColumnRowData) val).getField(index).getData());
+//            default:
+//                throw new UnsupportedOperationException("Unsupported type:" + type);
+//        }
+//    }
 
     public void setFieldTypeList(List<String> fieldTypeList) {
         this.fieldTypeList = fieldTypeList;

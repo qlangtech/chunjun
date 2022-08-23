@@ -41,7 +41,7 @@ public class FieldConf implements Serializable {
     /** 字段名称 */
     private String name;
     /** 字段类型 */
-    private String type;
+    private Object type;
     /** 字段索引 */
     private Integer index;
     /** 字段常量值 */
@@ -61,9 +61,6 @@ public class FieldConf implements Serializable {
 
     /**
      * 获取fieldList
-     *
-     * @param fieldList
-     * @return
      */
     public static List<FieldConf> getFieldList(List fieldList) {
         List<FieldConf> list;
@@ -103,7 +100,6 @@ public class FieldConf implements Serializable {
      *
      * @param map 属性map
      * @param index 字段索引
-     * @return
      */
     public static FieldConf getField(Map map, int index) {
         FieldConf field = new FieldConf();
@@ -112,7 +108,7 @@ public class FieldConf implements Serializable {
         field.setName(name != null ? String.valueOf(name) : null);
 
         Object type = map.get("type");
-        field.setType(type != null ? String.valueOf(type) : null);
+        field.setType(type != null ? (type) : null);
 
         Object colIndex = map.get("index");
         if (Objects.nonNull(colIndex)) {
@@ -151,10 +147,6 @@ public class FieldConf implements Serializable {
 
     /**
      * 根据name查找对应FieldConf
-     *
-     * @param fieldList
-     * @param name
-     * @return
      */
     public static FieldConf getSameNameMetaColumn(List<FieldConf> fieldList, String name) {
         for (FieldConf field : fieldList) {
@@ -173,11 +165,11 @@ public class FieldConf implements Serializable {
         this.name = name;
     }
 
-    public String getType() {
-        return type;
+    public <T> T getType() {
+        return (T) type;
     }
 
-    public void setType(String type) {
+    public void setType(Object type) {
         this.type = type;
     }
 

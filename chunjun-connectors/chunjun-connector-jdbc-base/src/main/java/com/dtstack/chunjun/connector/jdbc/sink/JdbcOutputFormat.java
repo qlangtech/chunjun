@@ -313,7 +313,7 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
                     jdbcDialect.getInsertIntoStatement(
                             jdbcConf.getSchema(),
                             jdbcConf.getTable(),
-                            columnNameList.toArray(new String[0]));
+                            columnNameList);
         } else if (EWriteMode.REPLACE.name().equalsIgnoreCase(jdbcConf.getMode())) {
             singleSql =
                     jdbcDialect
@@ -328,8 +328,8 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
                             .getUpsertStatement(
                                     jdbcConf.getSchema(),
                                     jdbcConf.getTable(),
-                                    columnNameList.toArray(new String[0]),
-                                    jdbcConf.getUniqueKey().toArray(new String[0]),
+                                    columnNameList,
+                                    jdbcConf.getUniqueKey(),
                                     jdbcConf.isAllReplace())
                             .get();
         } else {

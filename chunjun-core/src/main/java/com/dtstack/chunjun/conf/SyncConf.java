@@ -169,6 +169,7 @@ public class SyncConf implements Serializable {
         return job.getWriter();
     }
 
+
     public TransformerConf getTransformer() {
         return job.getTransformer();
     }

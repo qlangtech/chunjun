@@ -20,7 +20,6 @@ package com.dtstack.chunjun.connector.jdbc.sink;
 import com.dtstack.chunjun.connector.jdbc.conf.JdbcConf;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
 import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
-import com.dtstack.chunjun.constants.CDCConstantValue;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.element.ColumnRowData;
 
@@ -31,7 +30,6 @@ import com.esotericsoftware.minlog.Log;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 
 import org.slf4j.Logger;
@@ -51,7 +49,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -143,49 +140,50 @@ public class PreparedStmtProxy implements FieldNamedPreparedStatement {
     public boolean getOrCreateFieldNamedPstmt(RowData row) throws ExecutionException {
         DynamicPreparedStmt statement = null;
         if (row instanceof ColumnRowData) {
-            ColumnRowData columnRowData = (ColumnRowData) row;
-            Map<String, Integer> head = columnRowData.getHeaderInfo();
-            if (MapUtils.isEmpty(head)) {
-                return false;
-            }
-            int dataBaseIndex = head.get(CDCConstantValue.SCHEMA);
-            int tableIndex = head.get(CDCConstantValue.TABLE);
-
-            String database = row.getString(dataBaseIndex).toString();
-            String tableName = row.getString(tableIndex).toString();
-            String key = getPstmtCacheKey(database, tableName, row.getRowKind());
-
-
-            Optional<DynamicPreparedStmt> fieldNamedPreparedStatement =
-                    pstmtCache.get(
-                            key,
-                            () -> {
-                                try {
-                                    return DynamicPreparedStmt.buildStmt(
-                                            columnRowData.getHeaderInfo(),
-                                            columnRowData.getExtHeader(),
-                                            database,
-                                            tableName,
-                                            columnRowData.getRowKind(),
-                                            connection,
-                                            jdbcDialect,
-                                            writeExtInfo);
-                                } catch (SQLException e) {
-                                    LOG.warn("", e);
-                                    return null;
-                                }
-                            });
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("db:{},tab:{},statment key:{},event type:{}", database, tableName, key, row.getRowKind());
-            }
-
-            if (fieldNamedPreparedStatement.isPresent()) {
-                statement = fieldNamedPreparedStatement.get();
-                currentFieldNamedPstmt = statement.getFieldNamedPreparedStatement();
-                currentRowConverter = statement.getRowConverter();
-                return true;
-            }
+            throw new UnsupportedOperationException("class type is not support:" + row.getClass());
+//            ColumnRowData columnRowData = (ColumnRowData) row;
+//            Map<String, Integer> head = columnRowData.getHeaderInfo();
+//            if (MapUtils.isEmpty(head)) {
+//                return false;
+//            }
+//            int dataBaseIndex = head.get(CDCConstantValue.SCHEMA);
+//            int tableIndex = head.get(CDCConstantValue.TABLE);
+//
+//            String database = row.getString(dataBaseIndex).toString();
+//            String tableName = row.getString(tableIndex).toString();
+//            String key = getPstmtCacheKey(database, tableName, row.getRowKind());
+//
+//
+//            Optional<DynamicPreparedStmt> fieldNamedPreparedStatement =
+//                    pstmtCache.get(
+//                            key,
+//                            () -> {
+//                                try {
+//                                    return DynamicPreparedStmt.buildStmt(
+//                                            columnRowData.getHeaderInfo(),
+//                                            columnRowData.getExtHeader(),
+//                                            database,
+//                                            tableName,
+//                                            columnRowData.getRowKind(),
+//                                            connection,
+//                                            jdbcDialect,
+//                                            writeExtInfo);
+//                                } catch (SQLException e) {
+//                                    LOG.warn("", e);
+//                                    return null;
+//                                }
+//                            });
+//
+//            if (LOG.isDebugEnabled()) {
+//                LOG.debug("db:{},tab:{},statment key:{},event type:{}", database, tableName, key, row.getRowKind());
+//            }
+//
+//            if (fieldNamedPreparedStatement.isPresent()) {
+//                statement = fieldNamedPreparedStatement.get();
+//                currentFieldNamedPstmt = statement.getFieldNamedPreparedStatement();
+//                currentRowConverter = statement.getRowConverter();
+//                return true;
+//            }
 
         } else {
             String key =

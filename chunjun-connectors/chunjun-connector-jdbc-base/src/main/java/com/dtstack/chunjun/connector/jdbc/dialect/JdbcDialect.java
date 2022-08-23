@@ -143,8 +143,8 @@ public interface JdbcDialect extends Serializable {
     default Optional<String> getUpsertStatement(
             String schema,
             String tableName,
-            String[] fieldNames,
-            String[] uniqueKeyFields,
+            List<String> fieldNames,
+            List<String> uniqueKeyFields,
             boolean allReplace) {
         return Optional.empty();
     }
@@ -189,13 +189,12 @@ public interface JdbcDialect extends Serializable {
     }
 
     /** Get insert into statement. */
-    default String getInsertIntoStatement(String schema, String tableName, String[] fieldNames) {
+    default String getInsertIntoStatement(String schema, String tableName, List<String> fieldNames) {
         String columns =
-                Arrays.stream(fieldNames)
+                (fieldNames.stream())
                         .map(this::quoteIdentifier)
                         .collect(Collectors.joining(", "));
-        String placeholders =
-                Arrays.stream(fieldNames).map(f -> ":" + f).collect(Collectors.joining(", "));
+        String placeholders = (fieldNames.stream()).map(f -> ":" + f).collect(Collectors.joining(", "));
         return "INSERT INTO "
                 + buildTableInfoWithSchema(schema, tableName)
                 + "("

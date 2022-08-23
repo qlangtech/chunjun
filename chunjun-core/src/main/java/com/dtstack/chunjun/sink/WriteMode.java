@@ -50,4 +50,15 @@ public enum WriteMode {
     public String getMode() {
         return mode;
     }
+
+    public static WriteMode valOf(String mode) {
+
+        for (WriteMode m : WriteMode.values()) {
+            if (m.mode.equals(mode)) {
+                return m;
+            }
+        }
+
+        throw new IllegalStateException("illegal mode:" + mode);
+    }
 }

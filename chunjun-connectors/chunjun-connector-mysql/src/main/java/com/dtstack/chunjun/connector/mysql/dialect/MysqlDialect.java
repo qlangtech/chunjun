@@ -70,18 +70,18 @@ public class MysqlDialect implements JdbcDialect {
     public Optional<String> getUpsertStatement(
             String schema,
             String tableName,
-            String[] fieldNames,
-            String[] uniqueKeyFields,
+           List< String> fieldNames,
+            List<String> uniqueKeyFields,
             boolean allReplace) {
         String updateClause;
         if (allReplace) {
             updateClause =
-                    Arrays.stream(fieldNames)
+                    fieldNames.stream()
                             .map(f -> quoteIdentifier(f) + "=VALUES(" + quoteIdentifier(f) + ")")
                             .collect(Collectors.joining(", "));
         } else {
             updateClause =
-                    Arrays.stream(fieldNames)
+                    (fieldNames.stream())
                             .map(
                                     f ->
                                             quoteIdentifier(f)

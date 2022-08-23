@@ -60,8 +60,8 @@ public class GreenplumDialect extends PostgresqlDialect {
     public Optional<String> getUpsertStatement(
             String schema,
             String tableName,
-            String[] fieldNames,
-            String[] uniqueKeyFields,
+            List<String> fieldNames,
+            List<String> uniqueKeyFields,
             boolean allReplace) {
         throw new RuntimeException("Greenplum does not support upsert sql");
     }

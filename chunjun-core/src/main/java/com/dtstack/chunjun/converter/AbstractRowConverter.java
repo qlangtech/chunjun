@@ -30,6 +30,7 @@ import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.table.types.logical.RowType;
 
 import org.apache.commons.lang3.StringUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +40,7 @@ import java.sql.ResultSet;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
@@ -53,7 +55,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * @create: 2021/04/10
  */
 public abstract class AbstractRowConverter<SourceT, LookupT, SinkT, T> implements Serializable {
-   // protected final Logger LOG = LoggerFactory.getLogger(getClass());
+    // protected final Logger LOG = LoggerFactory.getLogger(getClass());
 
     protected static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -64,7 +66,8 @@ public abstract class AbstractRowConverter<SourceT, LookupT, SinkT, T> implement
     protected LogicalType[] fieldTypes;
     protected ChunJunCommonConf commonConf;
 
-    public AbstractRowConverter() {}
+    public AbstractRowConverter() {
+    }
 
     public AbstractRowConverter(RowType rowType) {
         this(rowType.getFieldCount());
@@ -73,6 +76,20 @@ public abstract class AbstractRowConverter<SourceT, LookupT, SinkT, T> implement
                 rowType.getFields().stream()
                         .map(RowType.RowField::getType)
                         .toArray(LogicalType[]::new);
+    }
+
+    public List<ColVal> getValByColName(RowData value, List<String> col) {
+        throw new UnsupportedOperationException();
+    }
+
+    public static class ColVal {
+        public final String key;
+        public final Object val;
+
+        public ColVal(String key, Object val) {
+            this.key = key;
+            this.val = val;
+        }
     }
 
     public AbstractRowConverter(RowType rowType, ChunJunCommonConf commonConf) {
@@ -108,10 +125,6 @@ public abstract class AbstractRowConverter<SourceT, LookupT, SinkT, T> implement
 
     /**
      * 组装字段属性，常量、format、等等
-     *
-     * @param fieldConf
-     * @param baseColumn
-     * @return
      */
     protected AbstractBaseColumn assembleFieldProps(
             FieldConf fieldConf, AbstractBaseColumn baseColumn) {
@@ -184,17 +197,21 @@ public abstract class AbstractRowConverter<SourceT, LookupT, SinkT, T> implement
 
     /**
      * @param input input
+     *
      * @return RowData
+     *
      * @throws Exception Exception
      */
     public RowData toInternalLookup(LookupT input) throws Exception {
         throw new RuntimeException("Subclass need rewriting");
     }
+
     /**
      * BinaryRowData
      *
      * @param rowData rowData
      * @param output output
+     *
      * @return return
      */
     public abstract SinkT toExternal(RowData rowData, SinkT output) throws Exception;
@@ -203,6 +220,7 @@ public abstract class AbstractRowConverter<SourceT, LookupT, SinkT, T> implement
      * 将外部数据库类型转换为flink内部类型
      *
      * @param type type
+     *
      * @return return
      */
     protected IDeserializationConverter createInternalConverter(T type) {
@@ -213,6 +231,7 @@ public abstract class AbstractRowConverter<SourceT, LookupT, SinkT, T> implement
      * 将flink内部的数据类型转换为外部数据库系统类型
      *
      * @param type type
+     *
      * @return return
      */
     protected ISerializationConverter createExternalConverter(T type) {

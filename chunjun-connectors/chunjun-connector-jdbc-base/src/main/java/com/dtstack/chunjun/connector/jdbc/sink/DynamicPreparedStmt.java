@@ -151,7 +151,7 @@ public class DynamicPreparedStmt {
 
     private String createInsertIntoStatement(String schemaName, String tableName) {
         return jdbcDialect.getInsertIntoStatement(
-                schemaName, tableName, columnNameList.toArray(new String[0]));
+                schemaName, tableName, columnNameList);
     }
 
     protected Optional<String> prepareTemplates(RowKind rowKind, String schemaName, String tableName) {

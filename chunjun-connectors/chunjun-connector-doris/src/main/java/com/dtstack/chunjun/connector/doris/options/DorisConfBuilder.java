@@ -35,6 +35,17 @@ public class DorisConfBuilder {
 
     public DorisConfBuilder setDatabase(String database) {
         this.dorisConf.setDatabase(database);
+
+        return this;
+    }
+
+    public DorisConfBuilder setUniqueKey(List<String> uniqueKeys) {
+        this.dorisConf.setUniqueKey(uniqueKeys);
+        return this;
+    }
+
+    public DorisConfBuilder setFullCols(List<String> cols) {
+        this.dorisConf.setFullColumn(cols);
         return this;
     }
 

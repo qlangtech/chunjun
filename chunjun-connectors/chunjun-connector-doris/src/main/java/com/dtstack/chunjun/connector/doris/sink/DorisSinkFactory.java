@@ -81,7 +81,7 @@ public class DorisSinkFactory extends SinkFactory {
 
         final OperatorConf parameter = syncConf.getWriter();
 
-        DorisConfBuilder dorisConfBuilder = new DorisConfBuilder();
+
         LoadConfBuilder loadConfBuilder = new LoadConfBuilder();
 
         Properties properties = parameter.getProperties(LOAD_OPTIONS_KEY, new Properties());
@@ -129,29 +129,57 @@ public class DorisSinkFactory extends SinkFactory {
                                                 DESERIALIZE_ARROW_ASYNC_KEY,
                                                 DORIS_DESERIALIZE_ARROW_ASYNC_DEFAULT))
                         .build();
+        DorisConfBuilder dorisConfBuilder = createDorisConfBuilder(parameter, loadConf); // new DorisConfBuilder();
 
-        options =
-                dorisConfBuilder
-                        .setDatabase(parameter.getStringVal(DATABASE_KEY))
-                        .setTable(parameter.getStringVal(TABLE_KEY))
-                        .setFeNodes((List<String>) parameter.getVal(FE_NODES_KEY))
-                        .setLoadOptions(loadConf)
-                        .setLoadProperties(
-                                parameter.getProperties(LOAD_PROPERTIES_KEY, new Properties()))
-                        .setPassword(parameter.getStringVal(PASSWORD_KEY, ""))
-                        .setNameMapped(
-                                syncConf.getNameMappingConf() != null
-                                        && !syncConf.getNameMappingConf().isEmpty())
-                        .setWriteMode(
-                                parameter.getStringVal(WRITE_MODE_KEY, DORIS_WRITE_MODE_DEFAULT))
-                        .setUsername(parameter.getStringVal(USER_NAME_KEY))
-                        .setBatchSize(parameter.getIntVal(BATCH_SIZE_KEY, 1000))
-                        .setFlushIntervalMills(parameter.getLongVal(FLUSH_INTERNAL_MS_KEY, 10000L))
-                        .setMaxRetries(parameter.getIntVal(MAX_RETRIES_KEY, 1))
-                        .setWaitRetryMills(parameter.getLongVal(WAITRETRIES_MS_KEY, 18000L))
-                        .build();
+//        dorisConfBuilder
+//                .setDatabase(parameter.getStringVal(DATABASE_KEY))
+//                .setTable(parameter.getStringVal(TABLE_KEY))
+//                .setFeNodes((List<String>) parameter.getVal(FE_NODES_KEY))
+//                .setLoadOptions(loadConf)
+//                .setLoadProperties(
+//                        parameter.getProperties(LOAD_PROPERTIES_KEY, new Properties()))
+//                .setPassword(parameter.getStringVal(PASSWORD_KEY, ""))
+//                .setNameMapped(
+//                        syncConf.getNameMappingConf() != null
+//                                && !syncConf.getNameMappingConf().isEmpty())
+//                .setWriteMode(
+//                        parameter.getStringVal(WRITE_MODE_KEY, DORIS_WRITE_MODE_DEFAULT))
+//                .setUsername(parameter.getStringVal(USER_NAME_KEY))
+//                .setBatchSize(parameter.getIntVal(BATCH_SIZE_KEY, 1000))
+//                .setFlushIntervalMills(parameter.getLongVal(FLUSH_INTERNAL_MS_KEY, 10000L))
+//                .setMaxRetries(parameter.getIntVal(MAX_RETRIES_KEY, 1))
+//                .setWaitRetryMills(parameter.getLongVal(WAITRETRIES_MS_KEY, 18000L));
+
+        options = dorisConfBuilder.build();
         options.setColumn(syncConf.getWriter().getFieldList());
         super.initCommonConf(options);
+    }
+
+    protected DorisConfBuilder createDorisConfBuilder(final OperatorConf parameter, LoadConf loadConf) {
+
+        DorisConfBuilder dorisConfBuilder = new DorisConfBuilder();
+
+        dorisConfBuilder
+                .setDatabase(parameter.getStringVal(DATABASE_KEY))
+                .setTable(parameter.getStringVal(TABLE_KEY))
+                .setFeNodes((List<String>) parameter.getVal(FE_NODES_KEY))
+                .setLoadOptions(loadConf)
+                .setLoadProperties(
+                        parameter.getProperties(LOAD_PROPERTIES_KEY, new Properties()))
+                .setPassword(parameter.getStringVal(PASSWORD_KEY, ""))
+                .setNameMapped(
+                        syncConf.getNameMappingConf() != null
+                                && !syncConf.getNameMappingConf().isEmpty())
+                .setWriteMode(
+                        parameter.getStringVal(WRITE_MODE_KEY, DORIS_WRITE_MODE_DEFAULT))
+                .setUsername(parameter.getStringVal(USER_NAME_KEY))
+                .setBatchSize(parameter.getIntVal(BATCH_SIZE_KEY, 1000))
+                .setFlushIntervalMills(parameter.getLongVal(FLUSH_INTERNAL_MS_KEY, 10000L))
+                .setMaxRetries(parameter.getIntVal(MAX_RETRIES_KEY, 1))
+                .setWaitRetryMills(parameter.getLongVal(WAITRETRIES_MS_KEY, 18000L));
+
+        return dorisConfBuilder;
+
     }
 
     @Override
@@ -162,8 +190,8 @@ public class DorisSinkFactory extends SinkFactory {
         return createOutput(dataSet, builder.finish());
     }
 
-    protected DorisHttpOutputFormatBuilder createDorisHttpOutputFormatBuilder(){
-        return  new DorisHttpOutputFormatBuilder();
+    protected DorisHttpOutputFormatBuilder createDorisHttpOutputFormatBuilder() {
+        return new DorisHttpOutputFormatBuilder();
     }
 
     @Override

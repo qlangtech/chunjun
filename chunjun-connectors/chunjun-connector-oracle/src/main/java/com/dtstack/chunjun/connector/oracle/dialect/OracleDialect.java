@@ -76,8 +76,8 @@ public class OracleDialect implements JdbcDialect {
     public Optional<String> getUpsertStatement(
             String schema,
             String tableName,
-            String[] fieldNames,
-            String[] uniqueKeyFields,
+            List<String> fieldNames,
+            List<String> uniqueKeyFields,
             boolean allReplace) {
         tableName = buildTableInfoWithSchema(schema, tableName);
         StringBuilder mergeIntoSql = new StringBuilder(64);
@@ -101,12 +101,12 @@ public class OracleDialect implements JdbcDialect {
                 .append(" WHEN NOT MATCHED THEN ")
                 .append("INSERT (")
                 .append(
-                        Arrays.stream(fieldNames)
+                        (fieldNames.stream())
                                 .map(this::quoteIdentifier)
                                 .collect(Collectors.joining(", ")))
                 .append(") VALUES (")
                 .append(
-                        Arrays.stream(fieldNames)
+                        (fieldNames.stream())
                                 .map(col -> "T2." + quoteIdentifier(col))
                                 .collect(Collectors.joining(", ")))
                 .append(")");
@@ -127,10 +127,10 @@ public class OracleDialect implements JdbcDialect {
     }
 
     /** build select sql , such as (SELECT ? "A",? "B" FROM DUAL) */
-    public String buildDualQueryStatement(String[] column) {
+    public String buildDualQueryStatement( List<String> column) {
         StringBuilder sb = new StringBuilder("SELECT ");
         String collect =
-                Arrays.stream(column)
+                column.stream()
                         .map(col -> ":" + col + " " + quoteIdentifier(col))
                         .collect(Collectors.joining(", "));
         sb.append(collect).append(" FROM DUAL");
@@ -138,18 +138,18 @@ public class OracleDialect implements JdbcDialect {
     }
 
     /** build sql part e.g: T1.`A` = T2.`A`, T1.`B` = T2.`B` */
-    private String buildEqualConditions(String[] uniqueKeyFields) {
-        return Arrays.stream(uniqueKeyFields)
+    private String buildEqualConditions(List<String> uniqueKeyFields) {
+        return (uniqueKeyFields.stream())
                 .map(col -> "T1." + quoteIdentifier(col) + " = T2." + quoteIdentifier(col))
                 .collect(Collectors.joining(" and "));
     }
 
     /** build T1."A"=T2."A" or T1."A"=nvl(T2."A",T1."A") */
     private String buildUpdateConnection(
-            String[] fieldNames, String[] uniqueKeyFields, boolean allReplace) {
-        List<String> uniqueKeyList = Arrays.asList(uniqueKeyFields);
-        return Arrays.stream(fieldNames)
-                .filter(col -> !uniqueKeyList.contains(col))
+            List<String> fieldNames, List<String> uniqueKeyFields, boolean allReplace) {
+        //List<String> uniqueKeyList = Arrays.asList(uniqueKeyFields);
+        return (fieldNames.stream())
+                .filter(col -> !uniqueKeyFields.contains(col))
                 .map(col -> buildConnectString(allReplace, col))
                 .collect(Collectors.joining(","));
     }

@@ -22,6 +22,8 @@ import com.dtstack.chunjun.connector.doris.options.DorisConf;
 import com.dtstack.chunjun.connector.doris.rest.module.RespContent;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.http.HttpEntity;
@@ -33,6 +35,7 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -87,6 +91,8 @@ public class DorisStreamLoad implements Serializable {
         this.options = options;
     }
 
+    public static Consumer<HttpPut> httpPutConsumer;
+
     /**
      * Generate Http Put request.
      *
@@ -94,6 +100,7 @@ public class DorisStreamLoad implements Serializable {
      * @param urlStr doris put url.
      * @param label the label of doris stream load.
      * @param mergeConditions the merge conditions of doris stream load.
+     *
      * @return http put request of doris stream load.
      */
     private HttpPut generatePut(
@@ -124,6 +131,9 @@ public class DorisStreamLoad implements Serializable {
         // }
         for (Map.Entry<Object, Object> entry : streamLoadProp.entrySet()) {
             httpPut.setHeader(String.valueOf(entry.getKey()), String.valueOf(entry.getValue()));
+        }
+        if (httpPutConsumer != null) {
+            httpPutConsumer.accept(httpPut);
         }
         return httpPut;
     }
@@ -170,6 +180,7 @@ public class DorisStreamLoad implements Serializable {
      * Doris load data via stream.
      *
      * @param carrier data carrier.
+     *
      * @throws IOException io exception.
      */
     public void load(Carrier carrier) throws IOException {
@@ -177,7 +188,11 @@ public class DorisStreamLoad implements Serializable {
         String loadUrlStr =
                 String.format(
                         LOAD_URL_PATTERN, hostPort, carrier.getDatabase(), carrier.getTable());
-        String json = OM.writeValueAsString(carrier.getInsertContent());
+        String json = null;
+        if (CollectionUtils.isNotEmpty(carrier.getInsertContent())) {
+            json = OM.writeValueAsString(carrier.getInsertContent());
+        }
+
         String mergeConditions = carrier.getDeleteContent();
         LoadResponse loadResponse = loadBatch(columnNames, json, mergeConditions, loadUrlStr);
         LOG.debug("StreamLoad Response:{}", loadResponse);
@@ -198,10 +213,12 @@ public class DorisStreamLoad implements Serializable {
         final ConnectionConfig connectionConfig =
                 ConnectionConfig.custom().setCharset(Charset.defaultCharset()).build();
         try (CloseableHttpClient httpclient =
-                HttpClientBuilder.create().setDefaultConnectionConfig(connectionConfig).build()) {
+                     HttpClientBuilder.create().setDefaultConnectionConfig(connectionConfig).build()) {
             // build request and send to new be location
             HttpPut httpPut = generatePut(columnNames, loadUrlStr, label, mergeConditions);
-            httpPut.setEntity(new ByteArrayEntity(value.getBytes()));
+            if (value != null) {
+                httpPut.setEntity(new ByteArrayEntity(value.getBytes()));
+            }
 
             HttpResponse response = httpclient.execute(httpPut);
             int status = response.getStatusLine().getStatusCode();
@@ -236,6 +253,7 @@ public class DorisStreamLoad implements Serializable {
      * Get the detailed error log of the current operation.
      *
      * @param respContent response content from current operation.
+     *
      * @return the detailed error log
      */
     public String getDetailErrorLog(RespContent respContent) {

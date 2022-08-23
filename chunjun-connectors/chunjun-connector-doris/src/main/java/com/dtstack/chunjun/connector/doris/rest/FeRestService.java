@@ -33,6 +33,7 @@ import org.apache.flink.shaded.guava18.com.google.common.annotations.VisibleForT
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
@@ -41,6 +42,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.StringEntity;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,6 +63,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import static com.dtstack.chunjun.connector.doris.options.DorisKeys.CONNECT_FAILED_MESSAGE;
@@ -94,7 +97,9 @@ public class FeRestService implements Serializable {
      *
      * @param options configuration of request
      * @param request {@link HttpRequestBase} real request
+     *
      * @return Doris FE response in json string
+     *
      * @throws DorisConnectFailedException throw when cannot connect to Doris FE
      */
     private static String send(DorisConf options, HttpRequestBase request)
@@ -239,7 +244,9 @@ public class FeRestService implements Serializable {
      * parse table identifier to array.
      *
      * @param tableIdentifier table identifier string
+     *
      * @return first element is db name, second element is table name
+     *
      * @throws IllegalArgumentException table identifier is illegal
      */
     @VisibleForTesting
@@ -261,7 +268,9 @@ public class FeRestService implements Serializable {
      * choice a Doris FE node to request.
      *
      * @param feNodes Doris FE node list, separate be comma
+     *
      * @return the chosen one Doris FE node
+     *
      * @throws IllegalArgumentException fe nodes is illegal
      */
     @VisibleForTesting
@@ -279,7 +288,9 @@ public class FeRestService implements Serializable {
      * choice a Doris BE node to request.
      *
      * @param options configuration of request
+     *
      * @return the chosen one Doris BE node
+     *
      * @throws IllegalArgumentException BE nodes is illegal
      */
     @VisibleForTesting
@@ -295,15 +306,29 @@ public class FeRestService implements Serializable {
         return backend.getIP() + ":" + backend.getHttpPort();
     }
 
+    public static Callable<BackendRow> backendRequestStub;
+
     /**
      * get Doris BE nodes to request.
      *
      * @param options configuration of request
+     *
      * @return the chosen one Doris BE node
+     *
      * @throws IllegalArgumentException BE nodes is illegal
      */
     @VisibleForTesting
     static List<BackendRow> getBackends(DorisConf options) throws IOException {
+
+        try {
+            // baisui add for test
+            if (backendRequestStub != null) {
+                return Collections.singletonList(backendRequestStub.call());
+            }
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
+
         List<String> feNodes = options.getFeNodes();
         String feNode = randomEndpoint(feNodes);
         String beUrl = "http://" + feNode + BACKENDS;
@@ -348,7 +373,9 @@ public class FeRestService implements Serializable {
      * get a valid URI to connect Doris FE.
      *
      * @param options configuration of request
+     *
      * @return uri string
+     *
      * @throws IllegalArgumentException throw when configuration is illegal
      */
     @VisibleForTesting
@@ -367,7 +394,9 @@ public class FeRestService implements Serializable {
      * discover Doris table schema from Doris FE.
      *
      * @param options configuration of request
+     *
      * @return Doris table schema
+     *
      * @throws RuntimeException throw when discover failed
      */
     public static Schema getSchema(DorisConf options) throws RuntimeException {
@@ -382,7 +411,9 @@ public class FeRestService implements Serializable {
      * translate Doris FE response to inner {@link Schema} struct.
      *
      * @param response Doris FE response
+     *
      * @return inner {@link Schema} struct
+     *
      * @throws RuntimeException throw when translate failed
      */
     @VisibleForTesting
@@ -424,7 +455,9 @@ public class FeRestService implements Serializable {
      * find Doris RDD partitions from Doris FE.
      *
      * @param options configuration of request
+     *
      * @return an list of Doris RDD partitions
+     *
      * @throws RuntimeException throw when find partition failed
      */
     public static List<PartitionDefinition> findPartitions(DorisConf options)
@@ -469,7 +502,9 @@ public class FeRestService implements Serializable {
      * translate Doris FE response string to inner {@link QueryPlan} struct.
      *
      * @param response Doris FE response string
+     *
      * @return inner {@link QueryPlan} struct
+     *
      * @throws RuntimeException throw when translate failed.
      */
     @VisibleForTesting
@@ -510,7 +545,9 @@ public class FeRestService implements Serializable {
      * select which Doris BE to get tablet data.
      *
      * @param queryPlan {@link QueryPlan} translated from Doris FE response
+     *
      * @return BE to tablets {@link Map}
+     *
      * @throws RuntimeException throw when select failed.
      */
     @VisibleForTesting
@@ -564,6 +601,7 @@ public class FeRestService implements Serializable {
      * tablet count limit for one Doris RDD partition
      *
      * @param loadConf configuration of request
+     *
      * @return tablet count limit
      */
     @VisibleForTesting
@@ -592,7 +630,9 @@ public class FeRestService implements Serializable {
      * @param opaquedQueryPlan Doris BE execute plan getting from Doris FE
      * @param database database name of Doris table
      * @param table table name of Doris table
+     *
      * @return Doris RDD partition {@link List}
+     *
      * @throws IllegalArgumentException throw when translate failed
      */
     @VisibleForTesting

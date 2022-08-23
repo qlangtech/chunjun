@@ -92,6 +92,8 @@ public class DorisColumnConverter
     @Override
     protected ISerializationConverter<StringJoiner> createExternalConverter(String type) {
         return (rowData, index, joiner) -> {
+
+
             AbstractBaseColumn value = ((ColumnRowData) rowData).getField(index);
             joiner.add(
                     "".equals(value.toString())

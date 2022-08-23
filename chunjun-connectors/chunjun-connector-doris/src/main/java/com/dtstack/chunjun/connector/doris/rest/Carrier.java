@@ -1,6 +1,10 @@
 package com.dtstack.chunjun.connector.doris.rest;
 
+import com.dtstack.chunjun.converter.AbstractRowConverter.ColVal;
+
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -73,8 +77,32 @@ public class Carrier implements Serializable {
         rowDataIndexes.add(index);
     }
 
-    public void addInsertContent(List<String> insertV) {
-        if (!insertV.isEmpty()) {
+
+    public void addUpdateData(Pair<List<String>, List<ColVal>> update) {
+        List<ColVal> pkVals = null;
+        List<String> insertV = null;
+        // Pair<List<String>, List<ColVal>> p = processGenericRowData(value, converter);
+        if (update.getLeft() != null) {
+            insertV = update.getLeft();
+        }
+        if (update.getRight() != null) {
+            pkVals = update.getRight();
+        }
+
+//        List<String> joiner = Lists.newArrayList();
+//        if (RowKind.INSERT.equals(value.getRowKind())) {
+//            converter.toExternal(value, joiner);
+//            //String[] split = String.valueOf(toExternal).split(",");
+//            insertV.addAll(joiner);
+//        }
+
+        this.addInsertContent(insertV);
+        this.addDeleteContent(pkVals);
+    }
+
+
+    private void addInsertContent(List<String> insertV) {
+        if (CollectionUtils.isNotEmpty(insertV)) {
             if (insertV.size() > columns.size()) {
                 // It is certain that in this case, the size
                 // of insertV is twice the size of column
@@ -97,11 +125,21 @@ public class Carrier implements Serializable {
         }
     }
 
-    public void addDeleteContent(List<String> deleteV) {
-        if (!deleteV.isEmpty()) {
-            String s = buildMergeOnConditions(columns, deleteV);
-            deleteContent.add(s);
+    private void addDeleteContent(List<ColVal> deletePks) {
+
+//        if (!deleteV.isEmpty()) {
+//            String s = buildMergeOnConditions(columns, deleteV);
+//            deleteContent.add(s);
+//        }
+
+        if (CollectionUtils.isEmpty(deletePks)) {
+            return;
         }
+
+
+        //  String s =;
+        deleteContent.add(buildMergeOnConditions(deletePks));
+
     }
 
     public void updateBatch() {
@@ -113,20 +151,33 @@ public class Carrier implements Serializable {
      *
      * @return delete on condition
      */
-    private String buildMergeOnConditions(List<String> columns, List<String> values) {
+    private String buildMergeOnConditions(
+            List<ColVal> deletePks
+            //        List<String> columns, List<String> values
+    ) {
         List<String> deleteOnStr = new ArrayList<>();
-        for (int i = 0, size = columns.size(); i < size; i++) {
-            String s =
-                    "`"
-                            + columns.get(i)
-                            + "`"
-                            + "<=>"
-                            + "'"
-                            + ((values.get(i)) == null ? "" : values.get(i))
-                            + "'";
-            deleteOnStr.add(s);
+//        for (int i = 0, size = columns.size(); i < size; i++) {
+//            String s =
+//                    "`"
+//                            + columns.get(i)
+//                            + "`"
+//                            + "<=>"
+//                            + "'"
+//                            + ((values.get(i)) == null ? "" : values.get(i))
+//                            + "'";
+//            deleteOnStr.add(s);
+//        }
+
+        for (ColVal cv : deletePks) {
+            deleteOnStr.add("`"
+                    + cv.key
+                    + "`"
+                    + "<=>"
+                    + "'"
+                    + String.valueOf(cv.val)
+                    + "'");
         }
-        return StringUtils.join(deleteOnStr, " AND ");
+        return "(" + StringUtils.join(deleteOnStr, " AND ") + ")";
     }
 
     @Override

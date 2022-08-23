@@ -139,12 +139,15 @@ public class JdbcUtil {
             }
 
             ResultSet tableRs = dbConn.getMetaData().getTables(cataLog, schema, tableName, null);
+            // cataLog和schema需要为空，不然pg不能反射到表的存在
+           // ResultSet tableRs = dbConn.getMetaData().getTables(null, null, tableName, null);
             if (!tableRs.next()) {
                 String tableInfo = schema == null ? tableName : schema + "." + tableName;
                 throw new ChunJunRuntimeException(String.format("table %s not found.", tableInfo));
             }
 
             ResultSet rs = dbConn.getMetaData().getColumns(cataLog, schema, tableName, null);
+          //  ResultSet rs = dbConn.getMetaData().getColumns(null, null, tableName, null);
             List<String> fullColumnList = new LinkedList<>();
             List<String> fullColumnTypeList = new LinkedList<>();
             while (rs.next()) {
