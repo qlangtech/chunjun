@@ -19,6 +19,8 @@
 package com.dtstack.chunjun.connector.clickhouse.source;
 
 import com.dtstack.chunjun.connector.clickhouse.util.ClickhouseUtil;
+import com.dtstack.chunjun.connector.jdbc.TableCols;
+import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
 import com.dtstack.chunjun.connector.jdbc.source.JdbcInputFormat;
 import com.dtstack.chunjun.connector.jdbc.source.JdbcInputSplit;
 import com.dtstack.chunjun.util.ColumnBuildUtil;
@@ -63,19 +65,19 @@ public class ClickhouseInputFormat extends JdbcInputFormat {
         try {
             dbConn = getConnection();
 
-            Pair<List<String>, List<String>> pair = null;
-            List<String> fullColumnList = new LinkedList<>();
-            List<String> fullColumnTypeList = new LinkedList<>();
-            if (StringUtils.isBlank(jdbcConf.getCustomSql())) {
-                pair = getTableMetaData();
-                fullColumnList = pair.getLeft();
-                fullColumnTypeList = pair.getRight();
-            }
-            Pair<List<String>, List<String>> columnPair =
-                    ColumnBuildUtil.handleColumnList(
-                            jdbcConf.getColumn(), fullColumnList, fullColumnTypeList);
-            columnNameList = columnPair.getLeft();
-            columnTypeList = columnPair.getRight();
+           // TableCols pair = null;
+//            List<String> fullColumnList = new LinkedList<>();
+//            List<String> fullColumnTypeList = new LinkedList<>();
+           // if (StringUtils.isBlank(jdbcConf.getCustomSql())) {
+              //  pair = getTableMetaData();
+//                fullColumnList = pair.getLeft();
+//                fullColumnTypeList = pair.getRight();
+            //}
+//            List<ColMeta> columnPair =
+//                    ColumnBuildUtil.handleColumnList(
+//                            jdbcConf.getColumn(), pair);
+//            columnNameList = columnPair.getLeft();
+//            columnTypeList = columnPair.getRight();
 
             querySQL = buildQuerySql(jdbcInputSplit);
             jdbcConf.setQuerySql(querySQL);
@@ -88,7 +90,7 @@ public class ClickhouseInputFormat extends JdbcInputFormat {
                     jdbcConf.isIncrement() && !jdbcConf.isPolling() && !jdbcConf.isUseMaxFunc();
             RowType rowType =
                     TableUtil.createRowType(
-                            columnNameList, columnTypeList, jdbcDialect.getRawTypeConverter());
+                            jdbcConf.getColumn(), jdbcDialect.getRawTypeConverter());
             setRowConverter(
                     rowConverter == null
                             ? jdbcDialect.getColumnConverter(rowType, jdbcConf)

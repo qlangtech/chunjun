@@ -21,6 +21,7 @@ package com.dtstack.chunjun.connector.mysql.sink;
 import com.dtstack.chunjun.conf.SyncConf;
 import com.dtstack.chunjun.connector.jdbc.sink.JdbcOutputFormatBuilder;
 import com.dtstack.chunjun.connector.jdbc.sink.JdbcSinkFactory;
+
 import com.dtstack.chunjun.connector.jdbc.util.JdbcUtil;
 import com.dtstack.chunjun.connector.mysql.dialect.MysqlDialect;
 
@@ -43,6 +44,7 @@ public class MysqlSinkFactory extends JdbcSinkFactory {
      */
     @Override
     protected JdbcOutputFormatBuilder getBuilder() {
-        return new JdbcOutputFormatBuilder(new MysqlOutputFormat());
+       // return new JdbcOutputFormatBuilder(new MysqlOutputFormat());
+        throw new UnsupportedOperationException();
     }
 }

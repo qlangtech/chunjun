@@ -32,7 +32,7 @@ public class MysqlInputFormat extends JdbcInputFormat {
      *
      * @return
      */
-    protected Pair<List<String>, List<String>> getTableMetaData() {
-        return JdbcUtil.getTableMetaData(jdbcConf.getSchema(), null, jdbcConf.getTable(), dbConn);
-    }
+//    protected Pair<List<String>, List<String>> getTableMetaData() {
+//        return JdbcUtil.getTableMetaData(jdbcConf.getSchema(), null, jdbcConf.getTable(), dbConn);
+//    }
 }

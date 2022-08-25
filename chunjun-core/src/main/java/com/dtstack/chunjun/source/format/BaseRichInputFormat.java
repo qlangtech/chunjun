@@ -19,6 +19,7 @@
 package com.dtstack.chunjun.source.format;
 
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
+import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
 import com.dtstack.chunjun.constants.Metrics;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.dirty.DirtyConf;
@@ -51,7 +52,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -68,7 +68,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class BaseRichInputFormat extends RichInputFormat<RowData, InputSplit> {
     protected static final long serialVersionUID = 1L;
 
-   // protected final Logger LOG = LoggerFactory.getLogger(getClass());
+    // protected final Logger LOG = LoggerFactory.getLogger(getClass());
 
     private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -104,9 +104,10 @@ public abstract class BaseRichInputFormat extends RichInputFormat<RowData, Input
     protected LongCounter durationCounter;
     protected ByteRateLimiter byteRateLimiter;
     /** A collection of field names filled in user scripts with constants removed */
-    protected List<String> columnNameList = new ArrayList<>();
-    /** A collection of field types filled in user scripts with constants removed */
-    protected List<String> columnTypeList = new ArrayList<>();
+//    protected List<String> columnNameList = new ArrayList<>();
+//    /** A collection of field types filled in user scripts with constants removed */
+//    protected List<String> columnTypeList = new ArrayList<>();
+    protected List<ColMeta> colsMeta;
     /** dirty manager which collects the dirty data. */
     protected DirtyManager dirtyManager;
     /** BaseRichInputFormat是否已经初始化 */
@@ -130,7 +131,7 @@ public abstract class BaseRichInputFormat extends RichInputFormat<RowData, Input
             return createInputSplitsInternal(minNumSplits);
         } catch (Exception e) {
             LOG.warn("error to create InputSplits", e);
-            return new ErrorInputSplit[] {new ErrorInputSplit(ExceptionUtil.getErrorMessage(e))};
+            return new ErrorInputSplit[]{new ErrorInputSplit(ExceptionUtil.getErrorMessage(e))};
         }
     }
 
@@ -330,8 +331,6 @@ public abstract class BaseRichInputFormat extends RichInputFormat<RowData, Input
 
     /**
      * 更新checkpoint状态缓存map
-     *
-     * @return
      */
     public FormatState getFormatState() {
         if (formatState != null && numReadCounter != null && inputMetric != null) {
@@ -354,7 +353,9 @@ public abstract class BaseRichInputFormat extends RichInputFormat<RowData, Input
      * 由子类实现，创建数据分片
      *
      * @param minNumSplits 分片数量
+     *
      * @return 分片数组
+     *
      * @throws Exception 可能会出现连接数据源异常
      */
     protected abstract InputSplit[] createInputSplitsInternal(int minNumSplits) throws Exception;
@@ -363,6 +364,7 @@ public abstract class BaseRichInputFormat extends RichInputFormat<RowData, Input
      * 由子类实现，打开数据连接
      *
      * @param inputSplit 分片
+     *
      * @throws IOException 连接异常
      */
     protected abstract void openInternal(InputSplit inputSplit) throws IOException;
@@ -371,7 +373,9 @@ public abstract class BaseRichInputFormat extends RichInputFormat<RowData, Input
      * 由子类实现，读取一条数据
      *
      * @param rowData 需要创建和填充的数据
+     *
      * @return 读取的数据
+     *
      * @throws ReadRecordException 读取异常
      */
     protected abstract RowData nextRecordInternal(RowData rowData) throws ReadRecordException;

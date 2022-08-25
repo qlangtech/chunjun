@@ -19,8 +19,6 @@
 package com.dtstack.chunjun.connector.clickhouse.table;
 
 import com.dtstack.chunjun.connector.clickhouse.dialect.ClickhouseDialect;
-import com.dtstack.chunjun.connector.clickhouse.sink.ClickhouseOutputFormat;
-import com.dtstack.chunjun.connector.clickhouse.sink.ClickhouseOutputFormatBuilder;
 import com.dtstack.chunjun.connector.clickhouse.source.ClickhouseInputFormat;
 import com.dtstack.chunjun.connector.clickhouse.source.ClickhouseInputFormatBuilder;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
@@ -55,6 +53,7 @@ public class ClickhouseDynamicTableFactory extends JdbcDynamicTableFactory {
 
     @Override
     protected JdbcOutputFormatBuilder getOutputFormatBuilder() {
-        return new ClickhouseOutputFormatBuilder(new ClickhouseOutputFormat());
+        //  return new ClickhouseOutputFormatBuilder(new ClickhouseOutputFormat());
+        throw new UnsupportedOperationException();
     }
 }

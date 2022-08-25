@@ -36,6 +36,8 @@ public class ClickhouseSinkFactory extends JdbcSinkFactory {
 
     @Override
     protected JdbcOutputFormatBuilder getBuilder() {
-        return new ClickhouseOutputFormatBuilder(new ClickhouseOutputFormat());
+       // return new ClickhouseOutputFormatBuilder(new ClickhouseOutputFormat());
+ throw new UnsupportedOperationException();
     }
+
 }

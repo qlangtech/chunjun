@@ -19,14 +19,13 @@ package com.dtstack.chunjun.connector.jdbc.util;
 
 import com.dtstack.chunjun.conf.FieldConf;
 import com.dtstack.chunjun.connector.jdbc.JdbcDialectWrapper;
+import com.dtstack.chunjun.connector.jdbc.TableCols;
 import com.dtstack.chunjun.connector.jdbc.conf.JdbcConf;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
+import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
 import com.dtstack.chunjun.converter.RawTypeConverter;
-import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
-import com.dtstack.chunjun.util.ClassUtil;
 import com.dtstack.chunjun.util.ExceptionUtil;
 import com.dtstack.chunjun.util.GsonUtil;
-import com.dtstack.chunjun.util.RetryUtil;
 import com.dtstack.chunjun.util.TableUtil;
 import com.dtstack.chunjun.util.TelnetUtil;
 
@@ -40,7 +39,6 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.sql.Clob;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -124,44 +122,46 @@ public class JdbcUtil {
     /**
      * get full column name and type from database
      *
+     * @see List< ColMeta >
      * @param cataLog cataLog
      * @param schema schema
      * @param tableName tableName
      * @param dbConn jdbc Connection
      * @return fullColumnList and fullColumnTypeList
      */
-    public static Pair<List<String>, List<String>> getTableMetaData(
+    public static TableCols getTableMetaData(
             String cataLog, String schema, String tableName, Connection dbConn) {
-        try {
-            // check table exists
-            if (ALL_TABLE.equalsIgnoreCase(tableName.trim())) {
-                return Pair.of(new LinkedList<>(), new LinkedList<>());
-            }
-
-            ResultSet tableRs = dbConn.getMetaData().getTables(cataLog, schema, tableName, null);
-            // cataLog和schema需要为空，不然pg不能反射到表的存在
-           // ResultSet tableRs = dbConn.getMetaData().getTables(null, null, tableName, null);
-            if (!tableRs.next()) {
-                String tableInfo = schema == null ? tableName : schema + "." + tableName;
-                throw new ChunJunRuntimeException(String.format("table %s not found.", tableInfo));
-            }
-
-            ResultSet rs = dbConn.getMetaData().getColumns(cataLog, schema, tableName, null);
-          //  ResultSet rs = dbConn.getMetaData().getColumns(null, null, tableName, null);
-            List<String> fullColumnList = new LinkedList<>();
-            List<String> fullColumnTypeList = new LinkedList<>();
-            while (rs.next()) {
-                // COLUMN_NAME
-                fullColumnList.add(rs.getString(4));
-                // TYPE_NAME
-                fullColumnTypeList.add(rs.getString(6));
-            }
-            rs.close();
-            return Pair.of(fullColumnList, fullColumnTypeList);
-        } catch (SQLException e) {
-            throw new ChunJunRuntimeException(
-                    String.format("error to get meta from [%s.%s]", schema, tableName), e);
-        }
+        throw new UnsupportedOperationException();
+//        try {
+//            // check table exists
+//            if (ALL_TABLE.equalsIgnoreCase(tableName.trim())) {
+//                return Pair.of(new LinkedList<>(), new LinkedList<>());
+//            }
+//
+//            ResultSet tableRs = dbConn.getMetaData().getTables(cataLog, schema, tableName, null);
+//            // cataLog和schema需要为空，不然pg不能反射到表的存在
+//           // ResultSet tableRs = dbConn.getMetaData().getTables(null, null, tableName, null);
+//            if (!tableRs.next()) {
+//                String tableInfo = schema == null ? tableName : schema + "." + tableName;
+//                throw new ChunJunRuntimeException(String.format("table %s not found.", tableInfo));
+//            }
+//
+//            ResultSet rs = dbConn.getMetaData().getColumns(cataLog, schema, tableName, null);
+//          //  ResultSet rs = dbConn.getMetaData().getColumns(null, null, tableName, null);
+//            List<String> fullColumnList = new LinkedList<>();
+//            List<String> fullColumnTypeList = new LinkedList<>();
+//            while (rs.next()) {
+//                // COLUMN_NAME
+//                fullColumnList.add(rs.getString(4));
+//                // TYPE_NAME
+//                fullColumnTypeList.add(rs.getString(6));
+//            }
+//            rs.close();
+//            return Pair.of(fullColumnList, fullColumnTypeList);
+//        } catch (SQLException e) {
+//            throw new ChunJunRuntimeException(
+//                    String.format("error to get meta from [%s.%s]", schema, tableName), e);
+//        }
     }
 
     /**
@@ -418,16 +418,17 @@ public class JdbcUtil {
      */
     public static LogicalType getLogicalTypeFromJdbcMetaData(
             JdbcConf jdbcConf, JdbcDialect jdbcDialect, RawTypeConverter converter) {
-        try (Connection conn = JdbcUtil.getConnection(jdbcConf, jdbcDialect)) {
-            Pair<List<String>, List<String>> pair =
-                    JdbcUtil.getTableMetaData(
-                            null, jdbcConf.getSchema(), jdbcConf.getTable(), conn);
-            List<String> rawFieldNames = pair.getLeft();
-            List<String> rawFieldTypes = pair.getRight();
-            return TableUtil.createRowType(rawFieldNames, rawFieldTypes, converter);
-        } catch (SQLException throwables) {
-            throw new RuntimeException(throwables);
-        }
+//        try (Connection conn = JdbcUtil.getConnection(jdbcConf, jdbcDialect)) {
+//            Pair<List<String>, List<String>> pair =
+//                    JdbcUtil.getTableMetaData(
+//                            null, jdbcConf.getSchema(), jdbcConf.getTable(), conn);
+//            List<String> rawFieldNames = pair.getLeft();
+//            List<String> rawFieldTypes = pair.getRight();
+//            return TableUtil.createRowTypeByColsMeta(rawFieldNames, rawFieldTypes, converter);
+//        } catch (SQLException throwables) {
+//            throw new RuntimeException(throwables);
+//        }
+        throw new UnsupportedOperationException();
     }
 
     /** 解析schema.table 或者 "schema"."table"等格式的表名 获取对应的schema以及table * */

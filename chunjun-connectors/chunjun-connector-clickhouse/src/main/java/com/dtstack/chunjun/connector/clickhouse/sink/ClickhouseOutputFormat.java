@@ -29,11 +29,12 @@ import java.sql.SQLException;
  * @author: xiuzhu
  * @create: 2021/05/10
  */
-public class ClickhouseOutputFormat extends JdbcOutputFormat {
+public abstract class ClickhouseOutputFormat extends JdbcOutputFormat {
 
     @Override
     protected Connection getConnection() throws SQLException {
         return ClickhouseUtil.getConnection(
                 jdbcConf.getJdbcUrl(), jdbcConf.getUsername(), jdbcConf.getPassword());
     }
+
 }

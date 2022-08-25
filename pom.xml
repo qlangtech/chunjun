@@ -38,6 +38,8 @@
 		<log4j2.version>2.17.0</log4j2.version>
 		<dist.dir>chunjun-dist</dist.dir>
 		<powermock.version>2.0.4</powermock.version>
+		<tis.datax.version>3.6.0</tis.datax.version>
+
 	</properties>
 
 	<dependencies>
@@ -230,6 +232,11 @@
 	</dependencies>
 	<dependencyManagement>
 		<dependencies>
+			<dependency>
+				<artifactId>datax-config</artifactId>
+				<groupId>com.alibaba.datax</groupId>
+				<version>${tis.datax.version}</version>
+			</dependency>
 			<dependency>
 				<groupId>com.google.guava</groupId>
 				<artifactId>guava</artifactId>

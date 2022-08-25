@@ -20,6 +20,7 @@ package com.dtstack.chunjun.connector.jdbc.source;
 
 import com.dtstack.chunjun.conf.FieldConf;
 import com.dtstack.chunjun.conf.SyncConf;
+import com.dtstack.chunjun.connector.jdbc.TableCols;
 import com.dtstack.chunjun.connector.jdbc.adapter.ConnectionAdapter;
 import com.dtstack.chunjun.connector.jdbc.conf.ConnectionConf;
 import com.dtstack.chunjun.connector.jdbc.conf.JdbcConf;
@@ -40,6 +41,7 @@ import org.apache.flink.table.types.logical.RowType;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
@@ -124,7 +126,7 @@ public abstract class JdbcSourceFactory extends SourceFactory {
         if (!useAbstractBaseColumn) {
             checkConstant(jdbcConf);
             final RowType rowType =
-                    TableUtil.createRowType(jdbcConf.getColumn(), getRawTypeConverter());
+                    TableUtil.createRowTypeByColsMeta(TableCols.create(jdbcConf.getColumn()).getCols(), getRawTypeConverter());
             rowConverter = jdbcDialect.getRowConverter(rowType);
         }
         builder.setRowConverter(rowConverter, useAbstractBaseColumn);

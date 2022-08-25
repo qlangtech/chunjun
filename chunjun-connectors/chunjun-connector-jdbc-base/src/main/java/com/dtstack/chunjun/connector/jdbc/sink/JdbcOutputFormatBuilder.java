@@ -19,7 +19,6 @@ package com.dtstack.chunjun.connector.jdbc.sink;
 
 import com.dtstack.chunjun.connector.jdbc.conf.JdbcConf;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
-import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.sink.format.BaseRichOutputFormatBuilder;
 
 import org.apache.commons.lang.StringUtils;

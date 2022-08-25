@@ -23,7 +23,6 @@ import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
 import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
 import com.dtstack.chunjun.connector.jdbc.util.JdbcUtil;
 import com.dtstack.chunjun.connector.postgresql.converter.PostgresqlColumnConverter;
-import com.dtstack.chunjun.connector.postgresql.converter.PostgresqlRawTypeConverter;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.converter.RawTypeConverter;
 
@@ -31,6 +30,7 @@ import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.table.types.logical.RowType;
 
 import io.vertx.core.json.JsonArray;
+
 import org.apache.commons.lang3.StringUtils;
 
 import java.sql.ResultSet;
@@ -65,12 +65,13 @@ public class PostgresqlDialect implements JdbcDialect {
 
     @Override
     public RawTypeConverter getRawTypeConverter() {
-        return PostgresqlRawTypeConverter::apply;
+        //  return PostgresqlRawTypeConverter::apply;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public AbstractRowConverter<ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType>
-            getColumnConverter(RowType rowType, ChunJunCommonConf commonConf) {
+    getColumnConverter(RowType rowType, ChunJunCommonConf commonConf) {
         return new PostgresqlColumnConverter(rowType, commonConf);
     }
 
@@ -93,7 +94,7 @@ public class PostgresqlDialect implements JdbcDialect {
                         .map(this::quoteIdentifier)
                         .collect(Collectors.joining(", "));
         updateClause =
-                  (fieldNames.stream())
+                (fieldNames.stream())
                         .filter(f -> !Arrays.asList(uniqueKeyFields).contains(f))
                         .map(f -> quoteIdentifier(f) + "=EXCLUDED." + quoteIdentifier(f))
                         .collect(Collectors.joining(", "));
@@ -141,9 +142,9 @@ public class PostgresqlDialect implements JdbcDialect {
     }
 
     public String getCopyStatement(
-            String tableName, String[] fields, String fieldDelimiter, String nullVal) {
+            String tableName, List<String> fields, String fieldDelimiter, String nullVal) {
         String fieldsExpression =
-                Arrays.stream(fields).map(this::quoteIdentifier).collect(Collectors.joining(", "));
+                (fields.stream()).map(this::quoteIdentifier).collect(Collectors.joining(", "));
 
         return String.format(
                 COPY_SQL_TEMPL,

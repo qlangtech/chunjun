@@ -23,6 +23,8 @@ import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.element.ColumnRowData;
 
+import org.apache.commons.lang3.StringUtils;
+
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.types.RowKind;
 
@@ -30,7 +32,7 @@ import com.esotericsoftware.minlog.Log;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
-import org.apache.commons.lang.StringUtils;
+//import org.apache.commons.lang.StringUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -248,10 +250,10 @@ public class PreparedStmtProxy implements FieldNamedPreparedStatement {
     }
 
     public String getPstmtCacheKey(String schema, String table, RowKind rowKind) {
-        if (StringUtils.isEmpty(schema)) {
-            throw new IllegalArgumentException("param schema can not be empty");
-        }
-        return String.format("%s_%s_%s", schema, table, rowKind);
+//        if (StringUtils.isEmpty(schema)) {
+//            throw new IllegalArgumentException("param schema can not be empty");
+//        }
+        return String.format("%s_%s_%s", StringUtils.defaultIfBlank(schema, "blankSchema"), table, rowKind);
     }
 
     @Override

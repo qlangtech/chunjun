@@ -20,6 +20,7 @@ package com.dtstack.chunjun.connector.jdbc.sink;
 import com.dtstack.chunjun.cdc.DdlRowData;
 import com.dtstack.chunjun.cdc.DdlRowDataConvented;
 import com.dtstack.chunjun.conf.FieldConf;
+import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
 import com.dtstack.chunjun.connector.jdbc.conf.JdbcConf;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
 import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
@@ -40,7 +41,6 @@ import org.apache.flink.table.types.logical.RowType;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,9 +48,9 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * OutputFormat for writing data to relational database.
@@ -59,7 +59,7 @@ import java.util.Objects;
  *
  * @author huyifan.zju@163.com
  */
-public class JdbcOutputFormat extends BaseRichOutputFormat {
+public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
 
     protected static final Logger LOG = LoggerFactory.getLogger(JdbcOutputFormat.class);
 
@@ -119,12 +119,13 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
         if ("*".equalsIgnoreCase(tableInfo)) {
             stmtProxy = new PreparedStmtProxy(dbConn, jdbcDialect, false);
         } else {
+
             FieldNamedPreparedStatement fieldNamedPreparedStatement =
                     FieldNamedPreparedStatement.prepareStatement(
-                            dbConn, prepareTemplates(), this.columnNameList.toArray(new String[0]));
+                            dbConn, prepareTemplates(), this.colsMeta);
             RowType rowType =
-                    TableUtil.createRowType(
-                            columnNameList, columnTypeList, jdbcDialect.getRawTypeConverter());
+                    TableUtil.createRowTypeByColsMeta(
+                            this.colsMeta, jdbcDialect.getRawTypeConverter());
             setRowConverter(
                     rowConverter == null
                             ? jdbcDialect.getColumnConverter(rowType, jdbcConf)
@@ -141,45 +142,48 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
 
     /** init columnNameList、 columnTypeList and hasConstantField */
     public void initColumnList() {
-        Pair<List<String>, List<String>> pair = getTableMetaData();
+        List<ColMeta> colsMeta = getTableMetaData();
 
         List<FieldConf> fieldList = jdbcConf.getColumn();
-        List<String> fullColumnList = pair.getLeft();
-        List<String> fullColumnTypeList = pair.getRight();
-        handleColumnList(fieldList, fullColumnList, fullColumnTypeList);
+//        List<String> fullColumnList = pair.getLeft();
+//        List<String> fullColumnTypeList = pair.getRight();
+        handleColumnList(fieldList, colsMeta);
     }
 
     /**
      * for override. because some databases have case-sensitive metadata。
      */
-    protected Pair<List<String>, List<String>> getTableMetaData() {
-        return JdbcUtil.getTableMetaData(null, jdbcConf.getSchema(), jdbcConf.getTable(), dbConn);
-    }
+    protected abstract List<ColMeta> getTableMetaData(); //{
+    // return JdbcUtil.getTableMetaData(null, jdbcConf.getSchema(), jdbcConf.getTable(), dbConn);
+    // throw new UnsupportedOperationException();
+    //}
 
     /**
      * detailed logic for handling column
      */
     protected void handleColumnList(
             List<FieldConf> fieldList,
-            List<String> fullColumnList,
-            List<String> fullColumnTypeList) {
-        if (fieldList.size() == 1 && Objects.equals(fieldList.get(0).getName(), "*")) {
-            columnNameList = fullColumnList;
-            columnTypeList = fullColumnTypeList;
-            return;
-        }
+            List<ColMeta> colsMeta) {
+        Set<String> fields = fieldList.stream().map((field) -> field.getName()).collect(Collectors.toSet());
+//        if (fieldList.size() == 1 && Objects.equals(fieldList.get(0).getName(), "*")) {
+//        columnNameList = fullColumnList;
+//        columnTypeList = fullColumnTypeList;
+//            return;
+//        }
 
-        columnNameList = new ArrayList<>(fieldList.size());
-        columnTypeList = new ArrayList<>(fieldList.size());
-        for (FieldConf fieldConf : fieldList) {
-            columnNameList.add(fieldConf.getName());
-            for (int i = 0; i < fullColumnList.size(); i++) {
-                if (fieldConf.getName().equalsIgnoreCase(fullColumnList.get(i))) {
-                    columnTypeList.add(fullColumnTypeList.get(i));
-                    break;
-                }
-            }
-        }
+        this.colsMeta = colsMeta.stream().filter((meta) -> fields.contains(meta.name)).collect(Collectors.toList());
+
+//        columnNameList = new ArrayList<>(fieldList.size());
+//        columnTypeList = new ArrayList<>(fieldList.size());
+//        for (FieldConf fieldConf : fieldList) {
+//            columnNameList.add(fieldConf.getName());
+//            for (int i = 0; i < fullColumnList.size(); i++) {
+//                if (fieldConf.getName().equalsIgnoreCase(fullColumnList.get(i))) {
+//                    columnTypeList.add(fullColumnTypeList.get(i));
+//                    break;
+//                }
+//            }
+//        }
     }
 
     @Override
@@ -307,6 +311,7 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
     }
 
     protected String prepareTemplates() {
+        List<String> columnNameList = this.getColsName();
         String singleSql;
         if (EWriteMode.INSERT.name().equalsIgnoreCase(jdbcConf.getMode())) {
             singleSql =

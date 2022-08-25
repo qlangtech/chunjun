@@ -18,6 +18,8 @@
 
 package com.dtstack.chunjun.connector.jdbc.source;
 
+import com.dtstack.chunjun.connector.jdbc.TableCols;
+import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
 import com.dtstack.chunjun.connector.jdbc.conf.JdbcConf;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
 import com.dtstack.chunjun.connector.jdbc.util.JdbcUtil;
@@ -44,6 +46,9 @@ import org.apache.flink.table.types.logical.RowType;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.invoke.MethodHandles;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -57,16 +62,13 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.dtstack.chunjun.enums.ColumnType.TIMESTAMPTZ;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * InputFormat for reading data from a database and generate Rows.
@@ -121,19 +123,19 @@ public class JdbcInputFormat extends BaseRichInputFormat {
             dbConn = getConnection();
             dbConn.setAutoCommit(false);
 
-            Pair<List<String>, List<String>> pair = null;
-            List<String> fullColumnList = new LinkedList<>();
-            List<String> fullColumnTypeList = new LinkedList<>();
+            TableCols colsMeta = null;
+//            List<String> fullColumnList = new LinkedList<>();
+//            List<String> fullColumnTypeList = new LinkedList<>();
             if (StringUtils.isBlank(jdbcConf.getCustomSql())) {
-                pair = getTableMetaData();
-                fullColumnList = pair.getLeft();
-                fullColumnTypeList = pair.getRight();
+                colsMeta = getTableMetaData();
+//                fullColumnList = colsMeta.getLeft();
+//                fullColumnTypeList = colsMeta.getRight();
             }
-            Pair<List<String>, List<String>> columnPair =
-                    ColumnBuildUtil.handleColumnList(
-                            jdbcConf.getColumn(), fullColumnList, fullColumnTypeList);
-            columnNameList = columnPair.getLeft();
-            columnTypeList = columnPair.getRight();
+            List<ColMeta> columnPair =
+                    ColumnBuildUtil.handleColumnList(jdbcConf.getColumn(), colsMeta);
+//            columnNameList = columnPair.getLeft();
+//            columnTypeList = columnPair.getRight();
+            this.colsMeta = columnPair;
 
             querySQL = buildQuerySql(currentJdbcInputSplit);
             jdbcConf.setQuerySql(querySQL);
@@ -145,8 +147,7 @@ public class JdbcInputFormat extends BaseRichInputFormat {
             needUpdateEndLocation =
                     jdbcConf.isIncrement() && !jdbcConf.isPolling() && !jdbcConf.isUseMaxFunc();
             RowType rowType =
-                    TableUtil.createRowType(
-                            columnNameList, columnTypeList, jdbcDialect.getRawTypeConverter());
+                    TableUtil.createRowTypeByColsMeta(this.colsMeta, jdbcDialect.getRawTypeConverter());
             setRowConverter(
                     rowConverter == null
                             ? jdbcDialect.getColumnConverter(rowType, jdbcConf)
@@ -416,8 +417,6 @@ public class JdbcInputFormat extends BaseRichInputFormat {
 
     /**
      * 从数据库中查询增量字段的最大值
-     *
-     * @return
      */
     private String getMaxValueFromDb() {
         String maxValue = null;
@@ -491,8 +490,6 @@ public class JdbcInputFormat extends BaseRichInputFormat {
 
     /**
      * 从数据库中查询切割键的最大 最小值
-     *
-     * @return
      */
     private Pair<String, String> getSplitRangeFromDb() {
         Pair<String, String> splitPkRange = null;
@@ -534,7 +531,6 @@ public class JdbcInputFormat extends BaseRichInputFormat {
      * 判断增量任务是否还能继续读取数据 增量任务，startLocation = endLocation且两者都不为null，返回false，其余情况返回true
      *
      * @param jdbcInputSplit 数据分片
-     * @return
      */
     protected boolean canReadData(JdbcInputSplit jdbcInputSplit) {
         // 只排除增量同步
@@ -554,6 +550,7 @@ public class JdbcInputFormat extends BaseRichInputFormat {
      * 构造查询sql
      *
      * @param inputSplit 数据切片
+     *
      * @return 构建的sql字符串
      */
     protected String buildQuerySql(InputSplit inputSplit) {
@@ -583,7 +580,6 @@ public class JdbcInputFormat extends BaseRichInputFormat {
      * @param incrementCol 增量字段名称
      * @param startLocation 开始位置
      * @param useMaxFunc 是否保存结束位置数据
-     * @return
      */
     public String buildStartLocationSql(
             String incrementColType,
@@ -613,7 +609,6 @@ public class JdbcInputFormat extends BaseRichInputFormat {
      * @param incrementCol 增量字段名称
      * @param location 边界位置(起始/结束)
      * @param operator 判断符( >, >=, <)
-     * @return
      */
     protected String getLocationSql(
             String incrementColType, String incrementCol, String location, String operator) {
@@ -640,7 +635,6 @@ public class JdbcInputFormat extends BaseRichInputFormat {
      * 构建时间边界字符串
      *
      * @param location 边界位置(起始/结束)
-     * @return
      */
     protected String getTimeStr(Long location) {
         String timeStr;
@@ -655,9 +649,6 @@ public class JdbcInputFormat extends BaseRichInputFormat {
 
     /**
      * 增量轮询查询
-     *
-     * @param startLocation
-     * @throws SQLException
      */
     protected void queryForPolling(String startLocation) throws SQLException {
         // 每隔五分钟打印一次，(当前时间 - 任务开始时间) % 300秒 <= 一个间隔轮询周期
@@ -746,6 +737,7 @@ public class JdbcInputFormat extends BaseRichInputFormat {
 
     /** create querySql for inputSplit * */
     protected String buildQuerySqlBySplit(JdbcInputSplit jdbcInputSplit, List<String> whereList) {
+        List<String> columnNameList = this.colsMeta.stream().map((col) -> col.name).collect(Collectors.toList());
         return SqlUtil.buildQuerySqlBySplit(
                 jdbcConf, jdbcDialect, whereList, columnNameList, jdbcInputSplit);
     }
@@ -838,9 +830,6 @@ public class JdbcInputFormat extends BaseRichInputFormat {
 
     /**
      * 执行查询
-     *
-     * @param startLocation
-     * @throws SQLException
      */
     protected void executeQuery(String startLocation) throws SQLException {
         if (currentJdbcInputSplit.isPolling()) {
@@ -883,12 +872,11 @@ public class JdbcInputFormat extends BaseRichInputFormat {
 
     /**
      * for override. because some databases have case-sensitive metadata。
-     *
-     * @return
      */
-    protected Pair<List<String>, List<String>> getTableMetaData() {
+    protected TableCols getTableMetaData() {
         return JdbcUtil.getTableMetaData(null, jdbcConf.getSchema(), jdbcConf.getTable(), dbConn);
     }
+
     /** init prepareStatement */
     public void initPrepareStatement(String querySql) throws SQLException {
         ps = dbConn.prepareStatement(querySql, getResultSetType(), resultSetConcurrency);
@@ -898,7 +886,6 @@ public class JdbcInputFormat extends BaseRichInputFormat {
 
     /**
      * The constant indicating the type for a <code>ResultSet</code> object
-     * @return
      */
     protected int getResultSetType() {
         return resultSetType;
@@ -906,8 +893,6 @@ public class JdbcInputFormat extends BaseRichInputFormat {
 
     /**
      * 间隔轮询查询起始位置
-     *
-     * @throws SQLException
      */
     protected void queryPollingWithOutStartLocation() throws SQLException {
         // add order by to query SQL avoid duplicate data
@@ -949,7 +934,6 @@ public class JdbcInputFormat extends BaseRichInputFormat {
      * @param columnName 字段名称
      * @param columnType 字段类型
      * @param isPolling 是否是轮询任务
-     * @return
      */
     public String buildFilterSql(
             String customSql,
@@ -976,10 +960,6 @@ public class JdbcInputFormat extends BaseRichInputFormat {
 
     /**
      * buildLocation
-     *
-     * @param columnType
-     * @param location
-     * @return
      */
     public String buildLocation(
             String columnType, String location, Function<Long, String> function) {

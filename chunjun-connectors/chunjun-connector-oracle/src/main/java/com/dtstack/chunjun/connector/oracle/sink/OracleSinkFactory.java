@@ -19,6 +19,7 @@ package com.dtstack.chunjun.connector.oracle.sink;
 
 import com.dtstack.chunjun.conf.SyncConf;
 import com.dtstack.chunjun.connector.jdbc.conf.JdbcConf;
+import com.dtstack.chunjun.connector.jdbc.sink.JdbcOutputFormatBuilder;
 import com.dtstack.chunjun.connector.jdbc.sink.JdbcSinkFactory;
 import com.dtstack.chunjun.connector.jdbc.util.JdbcUtil;
 import com.dtstack.chunjun.connector.oracle.dialect.OracleDialect;
@@ -49,5 +50,10 @@ public class OracleSinkFactory extends JdbcSinkFactory {
                     String.valueOf((jdbcConf.getConnectTimeOut()) * 1000));
         }
         JdbcUtil.putExtParam(jdbcConf, properties);
+    }
+
+    @Override
+    protected JdbcOutputFormatBuilder getBuilder() {
+        throw new UnsupportedOperationException();
     }
 }

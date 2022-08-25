@@ -12,8 +12,17 @@
     <artifactId>chunjun-core</artifactId>
 	<name>ChunJun : Core</name>
 
+	<properties>
+
+	</properties>
+
 
 	<dependencies>
+
+		<dependency>
+			<artifactId>datax-config</artifactId>
+			<groupId>com.alibaba.datax</groupId>
+		</dependency>
 
         <!-- 日志实现 -->
         <!-- fix CVE-2021-45105 -->

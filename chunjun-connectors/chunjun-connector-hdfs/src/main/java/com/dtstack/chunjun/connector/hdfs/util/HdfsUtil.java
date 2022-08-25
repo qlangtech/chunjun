@@ -345,7 +345,7 @@ public class HdfsUtil {
                     rowConverter = new HdfsTextColumnConverter(fieldConfList);
             }
         } else {
-            RowType rowType = TableUtil.createRowType(fieldConfList, converter);
+            RowType rowType = TableUtil.createRowTypeByColsMeta(fieldConfList, converter);
             switch (FileType.getByName(fileType)) {
                 case ORC:
                     rowConverter = new HdfsOrcRowConverter(rowType);

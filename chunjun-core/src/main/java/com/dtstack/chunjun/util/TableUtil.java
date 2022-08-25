@@ -18,10 +18,10 @@
 package com.dtstack.chunjun.util;
 
 import com.dtstack.chunjun.conf.FieldConf;
+import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
 import com.dtstack.chunjun.converter.RawTypeConverter;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.java.typeutils.GenericTypeInfo;
 import org.apache.flink.table.api.TableColumn;
 import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.data.RowData;
@@ -32,7 +32,6 @@ import org.apache.flink.table.types.logical.RowType;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Date: 2021/04/07 Company: www.dtstack.com
@@ -49,23 +48,24 @@ public class TableUtil {
      */
     public static TypeInformation<RowData> getTypeInformation(
             List<FieldConf> fieldList, RawTypeConverter converter) {
-        List<String> fieldName =
-                fieldList.stream().map(FieldConf::getName).collect(Collectors.toList());
-        if (fieldName.size() == 0) {
-            return new GenericTypeInfo<>(RowData.class);
-        }
-
-        String[] fieldNames = fieldList.stream().map(FieldConf::getName).toArray(String[]::new);
-        String[] fieldTypes = fieldList.stream().map(FieldConf::getType).toArray(String[]::new);
-        TableSchema.Builder builder = TableSchema.builder();
-        for (int i = 0; i < fieldTypes.length; i++) {
-            DataType dataType = converter.apply(fieldTypes[i]);
-            builder.add(TableColumn.physical(fieldNames[i], dataType));
-        }
-        DataType[] dataTypes =
-                builder.build().toRowDataType().getChildren().toArray(new DataType[] {});
-
-        return getTypeInformation(dataTypes, fieldNames);
+        throw new UnsupportedOperationException();
+//        List<String> fieldName =
+//                fieldList.stream().map(FieldConf::getName).collect(Collectors.toList());
+//        if (fieldName.size() == 0) {
+//            return new GenericTypeInfo<>(RowData.class);
+//        }
+//
+//        String[] fieldNames = fieldList.stream().map(FieldConf::getName).toArray(String[]::new);
+//        String[] fieldTypes = fieldList.stream().map(FieldConf::getType).toArray(String[]::new);
+//        TableSchema.Builder builder = TableSchema.builder();
+//        for (int i = 0; i < fieldTypes.length; i++) {
+//            DataType dataType = converter.apply(fieldTypes[i]);
+//            builder.add(TableColumn.physical(fieldNames[i], dataType));
+//        }
+//        DataType[] dataTypes =
+//                builder.build().toRowDataType().getChildren().toArray(new DataType[] {});
+//
+//        return getTypeInformation(dataTypes, fieldNames);
     }
 
     /**
@@ -93,20 +93,35 @@ public class TableUtil {
                 fieldNames);
     }
 
+
+//    public static RowType createRowTypeByColsMeta(
+//            List<String> fieldNames, List<String> types, RawTypeConverter converter) {
+//        TableSchema.Builder builder = TableSchema.builder();
+//        for (int i = 0; i < types.size(); i++) {
+//            DataType dataType = converter.apply(types.get(i));
+//            builder.add(TableColumn.physical(fieldNames.get(i), dataType));
+//        }
+//        return (RowType) builder.build().toRowDataType().getLogicalType();
+//    }
+
     /**
      * only using in data sync/integration
-     *
-     * @param fieldNames field Names
-     * @param types field types
+     * @param colsMeta
+     * @param converter
      * @return
      */
-    public static RowType createRowType(
-            List<String> fieldNames, List<String> types, RawTypeConverter converter) {
+    public static RowType createRowTypeByColsMeta(
+            List<ColMeta> colsMeta, RawTypeConverter converter) {
         TableSchema.Builder builder = TableSchema.builder();
-        for (int i = 0; i < types.size(); i++) {
-            DataType dataType = converter.apply(types.get(i));
-            builder.add(TableColumn.physical(fieldNames.get(i), dataType));
+
+        for(ColMeta cm: colsMeta){
+            DataType dataType = converter.apply(cm);
+            builder.add(TableColumn.physical(cm.name, dataType));
         }
+//        for (int i = 0; i < colsMeta.size(); i++) {
+//            DataType dataType = converter.apply(types.get(i));
+//            builder.add(TableColumn.physical(fieldNames.get(i), dataType));
+//        }
         return (RowType) builder.build().toRowDataType().getLogicalType();
     }
 
@@ -128,13 +143,14 @@ public class TableUtil {
      */
     public static TableSchema createTableSchema(
             List<FieldConf> fields, RawTypeConverter converter) {
-        String[] fieldNames = fields.stream().map(FieldConf::getName).toArray(String[]::new);
-        String[] fieldTypes = fields.stream().map(FieldConf::getType).toArray(String[]::new);
-        TableSchema.Builder builder = TableSchema.builder();
-        for (int i = 0; i < fieldTypes.length; i++) {
-            DataType dataType = converter.apply(fieldTypes[i]);
-            builder.add(TableColumn.physical(fieldNames[i], dataType));
-        }
-        return builder.build();
+//        String[] fieldNames = fields.stream().map(FieldConf::getName).toArray(String[]::new);
+//        String[] fieldTypes = fields.stream().map(FieldConf::getType).toArray(String[]::new);
+//        TableSchema.Builder builder = TableSchema.builder();
+//        for (int i = 0; i < fieldTypes.length; i++) {
+//            DataType dataType = converter.apply(fieldTypes[i]);
+//            builder.add(TableColumn.physical(fieldNames[i], dataType));
+//        }
+//        return builder.build();
+        throw new UnsupportedOperationException();
     }
 }

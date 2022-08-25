@@ -19,6 +19,7 @@
 package com.dtstack.chunjun.connector.jdbc.sink;
 
 import com.dtstack.chunjun.conf.SyncConf;
+import com.dtstack.chunjun.connector.jdbc.TableCols;
 import com.dtstack.chunjun.connector.jdbc.adapter.ConnectionAdapter;
 import com.dtstack.chunjun.connector.jdbc.conf.ConnectionConf;
 import com.dtstack.chunjun.connector.jdbc.conf.JdbcConf;
@@ -115,7 +116,7 @@ public abstract class JdbcSinkFactory extends SinkFactory {
         // 同步任务使用transform
         if (!useAbstractBaseColumn) {
             final RowType rowType =
-                    TableUtil.createRowType(jdbcConf.getColumn(), getRawTypeConverter());
+                    TableUtil.createRowTypeByColsMeta(TableCols.create(jdbcConf.getColumn()).getCols(), getRawTypeConverter());
             rowConverter = jdbcDialect.getRowConverter(rowType);
         }
         builder.setRowConverter(rowConverter, useAbstractBaseColumn);
@@ -137,9 +138,10 @@ public abstract class JdbcSinkFactory extends SinkFactory {
      *
      * @return JdbcOutputFormatBuilder
      */
-    protected JdbcOutputFormatBuilder getBuilder() {
-        return new JdbcOutputFormatBuilder(new JdbcOutputFormat());
-    }
+    protected abstract JdbcOutputFormatBuilder getBuilder();
+//    {
+//        return new JdbcOutputFormatBuilder(new JdbcOutputFormat());
+//    }
 
     /** table字段有可能是schema.table格式 需要转换为对应的schema 和 table 字段* */
     protected void resetTableInfo() {

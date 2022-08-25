@@ -90,6 +90,7 @@ public class MysqlDynamicTableFactory extends JdbcDynamicTableFactory {
      */
     @Override
     protected JdbcOutputFormatBuilder getOutputFormatBuilder() {
-        return new JdbcOutputFormatBuilder(new MysqlOutputFormat());
+        //return new JdbcOutputFormatBuilder(new MysqlOutputFormat());
+        throw new UnsupportedOperationException();
     }
 }

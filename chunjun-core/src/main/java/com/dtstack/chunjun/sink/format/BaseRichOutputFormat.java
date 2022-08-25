@@ -24,6 +24,7 @@ import com.dtstack.chunjun.cdc.monitor.MonitorConf;
 import com.dtstack.chunjun.cdc.monitor.fetch.DdlObserver;
 import com.dtstack.chunjun.cdc.monitor.fetch.Event;
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
+import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
 import com.dtstack.chunjun.constants.Metrics;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.dirty.DirtyConf;
@@ -69,6 +70,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 /**
  * Abstract Specification for all the OutputFormat defined in chunjun plugins
@@ -93,7 +95,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
         implements CleanupWhenUnsuccessful, InitializeOnMaster, FinalizeOnMaster {
 
-   // protected final Logger LOG = LoggerFactory.getLogger(getClass());
+    // protected final Logger LOG = LoggerFactory.getLogger(getClass());
     protected static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     public static final int LOG_PRINT_INTERNAL = 2000;
@@ -150,10 +152,17 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
     /** 当前事务的条数 */
     protected long rowsOfCurrentTransaction;
 
-    /** A collection of field names filled in user scripts with constants removed */
-    public List<String> columnNameList = new ArrayList<>();
-    /** A collection of field types filled in user scripts with constants removed */
-    public List<String> columnTypeList = new ArrayList<>();
+//    /** A collection of field names filled in user scripts with constants removed */
+//    public List<String> columnNameList = new ArrayList<>();
+//    /** A collection of field types filled in user scripts with constants removed */
+//    public List<String> columnTypeList = new ArrayList<>();
+
+    public List<ColMeta> colsMeta;
+
+    public List<String> getColsName() {
+        return Objects.requireNonNull(colsMeta,"colsMeta can not be null")
+                .stream().map((cm) -> cm.name).collect(Collectors.toList());
+    }
 
     /** 累加器收集器 */
     protected AccumulatorCollector accumulatorCollector;

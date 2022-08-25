@@ -17,6 +17,14 @@
 
 package com.dtstack.chunjun.connector.doris.sink;
 
+import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
 import com.dtstack.chunjun.connector.mysql.sink.MysqlOutputFormat;
 
-public class DorisJdbcOutputFormat extends MysqlOutputFormat {}
+import java.util.List;
+
+public class DorisJdbcOutputFormat extends MysqlOutputFormat {
+    @Override
+    protected List<ColMeta> getTableMetaData() {
+        throw new UnsupportedOperationException();
+    }
+}

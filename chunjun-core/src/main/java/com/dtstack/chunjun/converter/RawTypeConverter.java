@@ -20,6 +20,8 @@ package com.dtstack.chunjun.converter;
 
 import org.apache.flink.table.types.DataType;
 
+import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
+
 /**
  * Each connector implements. It is used to convert raw type to flink type.
  *
@@ -32,5 +34,5 @@ public interface RawTypeConverter {
      * @param type raw type string. e.g.: "SHORT", "INT", "TIMESTAMP"
      * @return e.g.: DataTypes.INT(), DataTypes.TIMESTAMP().
      */
-    DataType apply(String type);
+    DataType apply(ColMeta type);
 }

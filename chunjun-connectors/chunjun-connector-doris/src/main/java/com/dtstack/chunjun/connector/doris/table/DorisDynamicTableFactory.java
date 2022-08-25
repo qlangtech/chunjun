@@ -28,6 +28,7 @@ import com.dtstack.chunjun.connector.doris.source.DorisInputFormat;
 import com.dtstack.chunjun.connector.doris.source.DorisInputFormatBuilder;
 import com.dtstack.chunjun.connector.jdbc.conf.JdbcConf;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
+import com.dtstack.chunjun.connector.jdbc.sink.JdbcOutputFormatBuilder;
 import com.dtstack.chunjun.connector.jdbc.source.JdbcDynamicTableSource;
 import com.dtstack.chunjun.connector.jdbc.source.JdbcInputFormatBuilder;
 import com.dtstack.chunjun.connector.jdbc.table.JdbcDynamicTableFactory;
@@ -68,6 +69,11 @@ public class DorisDynamicTableFactory extends JdbcDynamicTableFactory
         implements DynamicTableSinkFactory {
 
     private static final String IDENTIFIER = "doris-x";
+
+    @Override
+    protected JdbcOutputFormatBuilder getOutputFormatBuilder() {
+       throw new UnsupportedOperationException();
+    }
 
     @Override
     public DynamicTableSink createDynamicTableSink(Context context) {

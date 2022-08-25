@@ -38,6 +38,7 @@ public class PostgresqlSinkFactory extends JdbcSinkFactory {
 
     @Override
     protected JdbcOutputFormatBuilder getBuilder() {
-        return new JdbcOutputFormatBuilder(new PostgresOutputFormat());
+//        return new JdbcOutputFormatBuilder(new PostgresOutputFormat());
+        throw new UnsupportedOperationException();
     }
 }

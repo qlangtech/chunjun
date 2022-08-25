@@ -20,6 +20,7 @@ package com.dtstack.chunjun.connector.greenplum.table;
 
 import com.dtstack.chunjun.connector.greenplum.dialect.GreenplumDialect;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
+import com.dtstack.chunjun.connector.jdbc.sink.JdbcOutputFormatBuilder;
 import com.dtstack.chunjun.connector.jdbc.table.JdbcDynamicTableFactory;
 
 /**
@@ -35,6 +36,11 @@ public class GreenplumDynamicTableFactory extends JdbcDynamicTableFactory {
     @Override
     protected JdbcDialect getDialect() {
         return new GreenplumDialect();
+    }
+
+    @Override
+    protected JdbcOutputFormatBuilder getOutputFormatBuilder() {
+        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -16,9 +16,16 @@
 		<!-- TODO 升级4.0？-->
 		<vertx.version>3.9.7</vertx.version>
 		<druid.version>1.2.6</druid.version>
+
 	</properties>
 
 	<dependencies>
+
+		<dependency>
+			<artifactId>datax-config</artifactId>
+			<groupId>com.alibaba.datax</groupId>
+		</dependency>
+
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-connector-jdbc_${scala.binary.version}</artifactId>
@@ -44,5 +51,10 @@
 			<artifactId>druid</artifactId>
 			<version>${druid.version}</version>
 		</dependency>
+
+
+
+
+
 	</dependencies>
 </project>

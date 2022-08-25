@@ -17,6 +17,8 @@
  */
 package com.dtstack.chunjun.connector.jdbc.statement;
 
+import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
+
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -28,6 +30,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.List;
 
 /**
  * This is a wrapper around {@link PreparedStatement} and allows the users to set parameters by name
@@ -63,11 +66,15 @@ public interface FieldNamedPreparedStatement extends AutoCloseable {
      *
      * @param connection the connection used to connect to database.
      * @param sql an SQL statement that may contain one or more ':fieldName' as parameter
-     *     placeholders
-     * @param fieldNames the field names in schema order used as the parameter names
+     *         placeholders
+     * @param colsMeta the field names in schema order used as the parameter names
      */
     static FieldNamedPreparedStatement prepareStatement(
-            Connection connection, String sql, String[] fieldNames) throws SQLException {
+            Connection connection, String sql, List<ColMeta> colsMeta) throws SQLException {
+        String[] fieldNames = new String[colsMeta.size()];
+        for (int i = 0; i < colsMeta.size(); i++) {
+            fieldNames[i] = colsMeta.get(i).name;
+        }
         return FieldNamedPreparedStatementImpl.prepareStatement(connection, sql, fieldNames);
     }
 

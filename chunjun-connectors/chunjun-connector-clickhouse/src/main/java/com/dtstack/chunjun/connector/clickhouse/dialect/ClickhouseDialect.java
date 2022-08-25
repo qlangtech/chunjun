@@ -46,7 +46,8 @@ public class ClickhouseDialect implements JdbcDialect {
 
     @Override
     public RawTypeConverter getRawTypeConverter() {
-        return ClickhouseRawTypeConverter::apply;
+       // return ClickhouseRawTypeConverter::apply;
+        throw new UnsupportedOperationException();
     }
 
     @Override

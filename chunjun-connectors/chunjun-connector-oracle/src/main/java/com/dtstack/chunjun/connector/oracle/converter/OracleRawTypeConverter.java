@@ -75,6 +75,7 @@ public class OracleRawTypeConverter {
                 //            case "XMLTYPE":
             case "INT":
             case "INTEGER":
+                return DataTypes.BIGINT();
             case "NUMBER":
             case "FLOAT":
                 return DataTypes.DECIMAL(38, 18);

@@ -196,6 +196,7 @@ public class DorisSinkFactory extends SinkFactory {
 
     @Override
     public RawTypeConverter getRawTypeConverter() {
-        return DorisRowTypeConverter::apply;
+        //return DorisRowTypeConverter::apply;
+        throw new UnsupportedOperationException();
     }
 }

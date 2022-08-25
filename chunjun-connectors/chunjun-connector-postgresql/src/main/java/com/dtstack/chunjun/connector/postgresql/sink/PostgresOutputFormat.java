@@ -18,6 +18,7 @@
 
 package com.dtstack.chunjun.connector.postgresql.sink;
 
+import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
 import com.dtstack.chunjun.connector.jdbc.converter.JdbcColumnConverter;
 import com.dtstack.chunjun.connector.jdbc.sink.JdbcOutputFormat;
 import com.dtstack.chunjun.connector.postgresql.converter.PostgresqlColumnConverter;
@@ -41,13 +42,14 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * @program: ChunJun
  * @author: wuren
  * @create: 2021/08/12
  */
-public class PostgresOutputFormat extends JdbcOutputFormat {
+public abstract class PostgresOutputFormat extends JdbcOutputFormat {
 
     // pg 字符串里含有\u0000 会报错 ERROR: invalid byte sequence for encoding "UTF8": 0x00
     public static final String SPACE = "\u0000";
@@ -77,7 +79,7 @@ public class PostgresOutputFormat extends JdbcOutputFormat {
                 copySql =
                         pgDialect.getCopyStatement(
                                 jdbcConf.getTable(),
-                                columnNameList.toArray(new String[0]),
+                                this.getColsName(),
                                 StringUtils.isNullOrWhitespaceOnly(jdbcConf.getFieldDelim().trim())
                                         ? DEFAULT_FIELD_DELIMITER
                                         : jdbcConf.getFieldDelim(),
@@ -90,12 +92,17 @@ public class PostgresOutputFormat extends JdbcOutputFormat {
             checkUpsert();
             if (rowConverter instanceof PostgresqlColumnConverter) {
                 ((PostgresqlColumnConverter) rowConverter).setConnection((BaseConnection) dbConn);
-                ((PostgresqlColumnConverter) rowConverter).setFieldTypeList(columnTypeList);
+                ((PostgresqlColumnConverter) rowConverter).setFieldTypeList(colsMeta);
             }
         } catch (SQLException sqe) {
             throw new IllegalArgumentException("checkUpsert() failed.", sqe);
         }
     }
+
+//    @Override
+//    protected List<ColMeta> getTableMetaData() {
+//        return null;
+//    }
 
     @Override
     protected void writeSingleRecordInternal(RowData row) throws WriteRecordException {

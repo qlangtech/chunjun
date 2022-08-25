@@ -18,6 +18,7 @@
 package com.dtstack.chunjun.connector.jdbc.source.distribute;
 
 import com.dtstack.chunjun.conf.FieldConf;
+import com.dtstack.chunjun.connector.jdbc.TableCols;
 import com.dtstack.chunjun.connector.jdbc.conf.DataSourceConf;
 import com.dtstack.chunjun.connector.jdbc.source.JdbcInputFormat;
 import com.dtstack.chunjun.connector.jdbc.util.JdbcUtil;
@@ -61,18 +62,21 @@ public class DistributedJdbcInputFormat extends JdbcInputFormat {
             noDataSource = true;
             return;
         }
-        for (FieldConf fieldConf : jdbcConf.getColumn()) {
-            this.columnNameList.add(fieldConf.getName());
-            this.columnTypeList.add(fieldConf.getType());
-        }
-        Pair<List<String>, List<String>> columnPair =
-                ColumnBuildUtil.handleColumnList(
-                        jdbcConf.getColumn(), this.columnNameList, this.columnTypeList);
-        this.columnNameList = columnPair.getLeft();
-        this.columnTypeList = columnPair.getRight();
+
+        TableCols tableCols = TableCols.create(jdbcConf.getColumn());
+
+//        for (FieldConf fieldConf : jdbcConf.getColumn()) {
+//            this.columnNameList.add(fieldConf.getName());
+//            this.columnTypeList.add(fieldConf.getType());
+//        }
+//        Pair<List<String>, List<String>> columnPair =
+//                ColumnBuildUtil.handleColumnList(
+//                        jdbcConf.getColumn(), this.columnNameList, this.columnTypeList);
+//        this.columnNameList = columnPair.getLeft();
+//        this.columnTypeList = columnPair.getRight();
         RowType rowType =
-                TableUtil.createRowType(
-                        columnNameList, columnTypeList, jdbcDialect.getRawTypeConverter());
+                TableUtil.createRowTypeByColsMeta(
+                        tableCols.getCols(), jdbcDialect.getRawTypeConverter());
         setRowConverter(
                 this.rowConverter == null
                         ? jdbcDialect.getColumnConverter(rowType, jdbcConf)

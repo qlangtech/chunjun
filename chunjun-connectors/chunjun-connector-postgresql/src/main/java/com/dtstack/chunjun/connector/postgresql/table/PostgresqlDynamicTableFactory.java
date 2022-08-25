@@ -19,6 +19,7 @@
 package com.dtstack.chunjun.connector.postgresql.table;
 
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
+import com.dtstack.chunjun.connector.jdbc.sink.JdbcOutputFormatBuilder;
 import com.dtstack.chunjun.connector.jdbc.source.JdbcInputFormatBuilder;
 import com.dtstack.chunjun.connector.jdbc.table.JdbcDynamicTableFactory;
 import com.dtstack.chunjun.connector.postgresql.dialect.PostgresqlDialect;
@@ -46,5 +47,10 @@ public class PostgresqlDynamicTableFactory extends JdbcDynamicTableFactory {
     @Override
     protected JdbcInputFormatBuilder getInputFormatBuilder() {
         return new JdbcInputFormatBuilder(new PostgresqlInputFormat());
+    }
+
+    @Override
+    protected JdbcOutputFormatBuilder getOutputFormatBuilder() {
+        throw new UnsupportedOperationException();
     }
 }

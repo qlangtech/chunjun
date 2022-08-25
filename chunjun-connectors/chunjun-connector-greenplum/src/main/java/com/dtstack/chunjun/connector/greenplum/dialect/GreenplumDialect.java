@@ -18,7 +18,6 @@
 
 package com.dtstack.chunjun.connector.greenplum.dialect;
 
-import com.dtstack.chunjun.connector.greenplum.converter.GreenplumRawTypeConverter;
 import com.dtstack.chunjun.connector.postgresql.dialect.PostgresqlDialect;
 import com.dtstack.chunjun.converter.RawTypeConverter;
 
@@ -48,7 +47,8 @@ public class GreenplumDialect extends PostgresqlDialect {
 
     @Override
     public RawTypeConverter getRawTypeConverter() {
-        return GreenplumRawTypeConverter::apply;
+        // return GreenplumRawTypeConverter::apply;
+        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -19,6 +19,7 @@
 package com.dtstack.chunjun.connector.oracle.table;
 
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
+import com.dtstack.chunjun.connector.jdbc.sink.JdbcOutputFormatBuilder;
 import com.dtstack.chunjun.connector.jdbc.source.JdbcInputFormatBuilder;
 import com.dtstack.chunjun.connector.jdbc.table.JdbcDynamicTableFactory;
 import com.dtstack.chunjun.connector.oracle.dialect.OracleDialect;
@@ -42,6 +43,11 @@ public class OracleDynamicTableFactory extends JdbcDynamicTableFactory {
     @Override
     protected JdbcInputFormatBuilder getInputFormatBuilder() {
         return new JdbcInputFormatBuilder(new OracleInputFormat());
+    }
+
+    @Override
+    protected JdbcOutputFormatBuilder getOutputFormatBuilder() {
+        throw new UnsupportedOperationException();
     }
 
     @Override

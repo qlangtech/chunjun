@@ -23,7 +23,6 @@ import com.dtstack.chunjun.connector.jdbc.converter.JdbcColumnConverter;
 import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
 import com.dtstack.chunjun.converter.ISerializationConverter;
-import com.dtstack.chunjun.element.ColumnRowData;
 import com.dtstack.chunjun.element.column.BigDecimalColumn;
 import com.dtstack.chunjun.element.column.BooleanColumn;
 import com.dtstack.chunjun.element.column.BytesColumn;
@@ -37,9 +36,6 @@ import org.apache.flink.table.types.utils.TypeConversions;
 
 import oracle.sql.TIMESTAMP;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.io.StringReader;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 
@@ -107,7 +103,8 @@ public class OracleColumnConverter extends JdbcColumnConverter {
             wrapIntoNullableExternalConverter(
                     ISerializationConverter serializationConverter, LogicalType type) {
         return (val, index, statement) -> {
-            if (((ColumnRowData) val).getField(index) == null) {
+            if(val.isNullAt(index)){
+            //if (((ColumnRowData) val).getField(index) == null) {
                 try {
                     final int sqlType =
                             JdbcTypeUtil.typeInformationToSqlType(
@@ -123,69 +120,69 @@ public class OracleColumnConverter extends JdbcColumnConverter {
         };
     }
 
-    @Override
-    protected ISerializationConverter<FieldNamedPreparedStatement> createExternalConverter(
-            LogicalType type) {
-        switch (type.getTypeRoot()) {
-            case BOOLEAN:
-                return (val, index, statement) ->
-                        statement.setBoolean(
-                                index, ((ColumnRowData) val).getField(index).asBoolean());
-            case TINYINT:
-                return (val, index, statement) -> statement.setByte(index, val.getByte(index));
-            case SMALLINT:
-            case INTEGER:
-                return (val, index, statement) ->
-                        statement.setInt(index, ((ColumnRowData) val).getField(index).asInt());
-            case FLOAT:
-                return (val, index, statement) ->
-                        statement.setFloat(index, ((ColumnRowData) val).getField(index).asFloat());
-            case DOUBLE:
-                return (val, index, statement) ->
-                        statement.setDouble(
-                                index, ((ColumnRowData) val).getField(index).asDouble());
-
-            case BIGINT:
-                return (val, index, statement) ->
-                        statement.setLong(index, ((ColumnRowData) val).getField(index).asLong());
-            case DECIMAL:
-                return (val, index, statement) ->
-                        statement.setBigDecimal(
-                                index, ((ColumnRowData) val).getField(index).asBigDecimal());
-            case CHAR:
-            case VARCHAR:
-                return (val, index, statement) -> {
-                    if (type instanceof ClobType) {
-                        try (StringReader reader =
-                                new StringReader(
-                                        ((ColumnRowData) val).getField(index).asString())) {
-                            statement.setClob(index, reader);
-                        }
-                    } else {
-                        statement.setString(
-                                index, ((ColumnRowData) val).getField(index).asString());
-                    }
-                };
-            case DATE:
-            case TIMESTAMP_WITH_TIME_ZONE:
-            case TIMESTAMP_WITHOUT_TIME_ZONE:
-                return (val, index, statement) ->
-                        statement.setTimestamp(
-                                index, ((ColumnRowData) val).getField(index).asTimestamp());
-
-            case BINARY:
-            case VARBINARY:
-                return (val, index, statement) -> {
-                    if (type instanceof BlobType) {
-                        try (InputStream is = new ByteArrayInputStream(val.getBinary(index))) {
-                            statement.setBlob(index, is);
-                        }
-                    } else {
-                        statement.setBytes(index, val.getBinary(index));
-                    }
-                };
-            default:
-                throw new UnsupportedOperationException("Unsupported type:" + type);
-        }
-    }
+//    @Override
+//    protected ISerializationConverter<FieldNamedPreparedStatement> createExternalConverter(
+//            LogicalType type) {
+//        switch (type.getTypeRoot()) {
+//            case BOOLEAN:
+//                return (val, index, statement) ->
+//                        statement.setBoolean(
+//                                index, ((ColumnRowData) val).getField(index).asBoolean());
+//            case TINYINT:
+//                return (val, index, statement) -> statement.setByte(index, val.getByte(index));
+//            case SMALLINT:
+//            case INTEGER:
+//                return (val, index, statement) ->
+//                        statement.setInt(index, ((ColumnRowData) val).getField(index).asInt());
+//            case FLOAT:
+//                return (val, index, statement) ->
+//                        statement.setFloat(index, ((ColumnRowData) val).getField(index).asFloat());
+//            case DOUBLE:
+//                return (val, index, statement) ->
+//                        statement.setDouble(
+//                                index, ((ColumnRowData) val).getField(index).asDouble());
+//
+//            case BIGINT:
+//                return (val, index, statement) ->
+//                        statement.setLong(index, ((ColumnRowData) val).getField(index).asLong());
+//            case DECIMAL:
+//                return (val, index, statement) ->
+//                        statement.setBigDecimal(
+//                                index, ((ColumnRowData) val).getField(index).asBigDecimal());
+//            case CHAR:
+//            case VARCHAR:
+//                return (val, index, statement) -> {
+//                    if (type instanceof ClobType) {
+//                        try (StringReader reader =
+//                                new StringReader(
+//                                        ((ColumnRowData) val).getField(index).asString())) {
+//                            statement.setClob(index, reader);
+//                        }
+//                    } else {
+//                        statement.setString(
+//                                index, ((ColumnRowData) val).getField(index).asString());
+//                    }
+//                };
+//            case DATE:
+//            case TIMESTAMP_WITH_TIME_ZONE:
+//            case TIMESTAMP_WITHOUT_TIME_ZONE:
+//                return (val, index, statement) ->
+//                        statement.setTimestamp(
+//                                index, ((ColumnRowData) val).getField(index).asTimestamp());
+//
+//            case BINARY:
+//            case VARBINARY:
+//                return (val, index, statement) -> {
+//                    if (type instanceof BlobType) {
+//                        try (InputStream is = new ByteArrayInputStream(val.getBinary(index))) {
+//                            statement.setBlob(index, is);
+//                        }
+//                    } else {
+//                        statement.setBytes(index, val.getBinary(index));
+//                    }
+//                };
+//            default:
+//                throw new UnsupportedOperationException("Unsupported type:" + type);
+//        }
+//    }
 }

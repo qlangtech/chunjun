@@ -23,6 +23,7 @@
 package com.dtstack.chunjun.connector.postgresql.converter;
 
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
+import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
 import com.dtstack.chunjun.connector.jdbc.converter.JdbcColumnConverter;
 import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
@@ -65,7 +66,7 @@ import java.util.Map;
  */
 public class PostgresqlColumnConverter extends JdbcColumnConverter {
 
-    private List<String> fieldTypeList;
+    private List<ColMeta> fieldTypeList;
     private transient BaseConnection connection;
     private static final Map<String, Integer> arrayType = new HashMap<>();
 
@@ -84,14 +85,14 @@ public class PostgresqlColumnConverter extends JdbcColumnConverter {
     public FieldNamedPreparedStatement toExternal(
             RowData rowData, FieldNamedPreparedStatement statement) throws Exception {
         for (int index = 0; index < rowData.getArity(); index++) {
-            if (arrayType.containsKey(fieldTypeList.get(index))) {
-                // eg: {1000,1000,10001}、{{1000,1000,10001},{1,2,3}}
-                String field = ((ColumnRowData) rowData).getField(index).asString();
-                Array array =
-                        new PgArray(connection, arrayType.get(fieldTypeList.get(index)), field);
-                AbstractBaseColumn arrayColumn = new ArrayColumn(array);
-                ((ColumnRowData) rowData).setField(index, arrayColumn);
-            }
+//            if (arrayType.containsKey(fieldTypeList.get(index))) {
+//                // eg: {1000,1000,10001}、{{1000,1000,10001},{1,2,3}}
+//                String field = ((ColumnRowData) rowData).getField(index).asString();
+//                Array array =
+//                        new PgArray(connection, arrayType.get(fieldTypeList.get(index)), field);
+//                AbstractBaseColumn arrayColumn = new ArrayColumn(array);
+//                ((ColumnRowData) rowData).setField(index, arrayColumn);
+//            }
             toExternalConverters.get(index).serialize(rowData, index, statement);
         }
         return statement;
@@ -217,7 +218,7 @@ public class PostgresqlColumnConverter extends JdbcColumnConverter {
 //        }
 //    }
 
-    public void setFieldTypeList(List<String> fieldTypeList) {
+    public void setFieldTypeList(List<ColMeta> fieldTypeList) {
         this.fieldTypeList = fieldTypeList;
     }
 

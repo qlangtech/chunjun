@@ -18,14 +18,13 @@
 
 package com.dtstack.chunjun.connector.jdbc.table;
 
+import com.dtstack.chunjun.connector.jdbc.sink.JdbcDynamicTableSink;
+import com.dtstack.chunjun.connector.jdbc.sink.JdbcOutputFormatBuilder;
 import com.dtstack.chunjun.connector.jdbc.conf.JdbcConf;
 import com.dtstack.chunjun.connector.jdbc.conf.JdbcLookupConf;
 import com.dtstack.chunjun.connector.jdbc.conf.SinkConnectionConf;
 import com.dtstack.chunjun.connector.jdbc.conf.SourceConnectionConf;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
-import com.dtstack.chunjun.connector.jdbc.sink.JdbcDynamicTableSink;
-import com.dtstack.chunjun.connector.jdbc.sink.JdbcOutputFormat;
-import com.dtstack.chunjun.connector.jdbc.sink.JdbcOutputFormatBuilder;
 import com.dtstack.chunjun.connector.jdbc.source.JdbcDynamicTableSource;
 import com.dtstack.chunjun.connector.jdbc.source.JdbcInputFormat;
 import com.dtstack.chunjun.connector.jdbc.source.JdbcInputFormatBuilder;
@@ -92,6 +91,7 @@ import static com.dtstack.chunjun.source.options.SourceOptions.SCAN_START_LOCATI
 import static com.dtstack.chunjun.table.options.SinkOptions.SINK_BUFFER_FLUSH_INTERVAL;
 import static com.dtstack.chunjun.table.options.SinkOptions.SINK_BUFFER_FLUSH_MAX_ROWS;
 import static com.dtstack.chunjun.table.options.SinkOptions.SINK_MAX_RETRIES;
+
 import static org.apache.flink.util.Preconditions.checkState;
 
 /**
@@ -299,7 +299,7 @@ public abstract class JdbcDynamicTableFactory
         final Optional<JdbcDialect> dialect = Optional.of(getDialect());
         checkState(dialect.get().canHandle(jdbcUrl), "Cannot handle such jdbc url: " + jdbcUrl);
 
-        checkAllOrNone(config, new ConfigOption[] {USERNAME});
+        checkAllOrNone(config, new ConfigOption[]{USERNAME});
 
         if (config.getOptional(SCAN_POLLING_INTERVAL).isPresent()
                 && config.getOptional(SCAN_POLLING_INTERVAL).get() > 0) {
@@ -308,7 +308,7 @@ public abstract class JdbcDynamicTableFactory
                     "scan.increment.column can not null or empty in polling-interval mode.");
         }
 
-        checkAllOrNone(config, new ConfigOption[] {LOOKUP_CACHE_MAX_ROWS, LOOKUP_CACHE_TTL});
+        checkAllOrNone(config, new ConfigOption[]{LOOKUP_CACHE_MAX_ROWS, LOOKUP_CACHE_TTL});
 
         if (config.get(LOOKUP_MAX_RETRIES) < 0) {
             throw new IllegalArgumentException(
@@ -365,23 +365,17 @@ public abstract class JdbcDynamicTableFactory
 
     /**
      * 子类根据不同数据库定义不同标记
-     *
-     * @return
      */
     @Override
     public abstract String factoryIdentifier();
 
     /**
      * 不同数据库不同方言
-     *
-     * @return
      */
     protected abstract JdbcDialect getDialect();
 
     /**
      * 从数据库中每次读取的条数，离线读取的时候每个插件需要测试，防止大数据量下生成大量临时文件
-     *
-     * @return
      */
     protected int getDefaultFetchSize() {
         return SCAN_DEFAULT_FETCH_SIZE.defaultValue();
@@ -401,9 +395,9 @@ public abstract class JdbcDynamicTableFactory
      *
      * @return JdbcOutputFormatBuilder
      */
-    protected JdbcOutputFormatBuilder getOutputFormatBuilder() {
-        return new JdbcOutputFormatBuilder(new JdbcOutputFormat());
-    }
+    protected abstract JdbcOutputFormatBuilder getOutputFormatBuilder();// {
+    //  return new JdbcOutputFormatBuilder(new JdbcOutputFormat());
+    //}
 
     /** table字段有可能是schema.table格式 需要转换为对应的schema 和 table 字段* */
     protected void resetTableInfo(JdbcConf jdbcConf) {
