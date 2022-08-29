@@ -18,13 +18,9 @@
 
 package com.dtstack.chunjun.enums;
 
-import com.dtstack.chunjun.constants.ConstantValue;
-
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
+import com.qlangtech.tis.plugin.ds.DataType;
+import com.qlangtech.tis.plugin.ds.DataType.TypeVisitor;
+import com.qlangtech.tis.plugin.ds.DataXReaderColType;
 
 /**
  * Define standard column type for all the readers or writers that do not have special types of
@@ -34,185 +30,202 @@ import java.util.Locale;
  *
  * @author huyifan.zju@163.com
  */
-public enum ColumnType {
+public class ColumnType {
+    public final DataType t;
 
-    /** string type */
-    STRING,
-    VARCHAR,
-    VARCHAR2,
-    CHAR,
-    NVARCHAR,
-    TEXT,
-    KEYWORD,
-    BINARY,
+    public ColumnType(DataType t) {
+        this.t = t;
+    }
 
-    /** number type */
-    INT,
-    // for pg INT2,INT4,INT8
-    INT2,
-    INT4,
-    INT8,
-    INT16,
-    INT24,
-    INT32,
-    INT64,
-    UINT16,
-    UINT32,
-    UINT64,
-    SERIAL,
-    SERIAL8,
-    SMALLSERIAL,
-    BIGSERIAL,
-    DEC,
-    REAL,
-    MEDIUMINT,
-    TINYINT,
-    DATETIME,
-    SMALLINT,
-    BIGINT,
-    LONG,
-    SHORT,
-    INTEGER,
-    NUMBER,
-    NUMERIC,
-    MONEY,
-    OID,
-    DECIMAL,
-    BIGDECIMAL,
+    /**
+     * @see java.sql.Types
+     */
+    public <T> T visit(TypeVisitor<T> visitor) {
+        return t.accept(visitor);
+    }
 
-    /** double type */
-    DOUBLE,
-    FLOAT,
-    FLOAT4,
-    FLOAT8,
-    FLOAT32,
-    FLOAT64,
-    SMALLFLOAT,
-    DECFLOAT,
-    BOOLEAN,
-    PRECISION,
-    DOUBLEPRECISION,
-
-    /** date type */
-    DATE,
-    TIMESTAMP,
-    TIME,
-    YEAR,
-    BIT,
-    OBJECT,
-    TIMESTAMPTZ;
-
-    public static List<ColumnType> TIME_TYPE = Arrays.asList(DATE, DATETIME, TIME, TIMESTAMP);
-
-    public static List<ColumnType> NUMBER_TYPE =
-            Arrays.asList(
-                    INT,
-                    INT16,
-                    INT24,
-                    INT32,
-                    INT64,
-                    UINT16,
-                    UINT32,
-                    UINT64,
-                    SERIAL,
-                    SERIAL8,
-                    SMALLSERIAL,
-                    BIGSERIAL,
-                    DEC,
-                    REAL,
-                    MONEY,
-                    OID,
-                    DECIMAL,
-                    BIGDECIMAL,
-                    INTEGER,
-                    MEDIUMINT,
-                    TINYINT,
-                    SMALLINT,
-                    BIGINT,
-                    LONG,
-                    SHORT,
-                    DOUBLE,
-                    FLOAT,
-                    FLOAT4,
-                    FLOAT8,
-                    FLOAT32,
-                    FLOAT64,
-                    SMALLFLOAT,
-                    DECFLOAT,
-                    DECIMAL,
-                    NUMBER,
-                    PRECISION,
-                    DOUBLEPRECISION);
-
-    public static List<ColumnType> STRING_TYPE =
-            Arrays.asList(STRING, VARCHAR, VARCHAR2, CHAR, NVARCHAR, TEXT, KEYWORD, BINARY);
+    //    /** string type */
+//    STRING,
+//    VARCHAR,
+//    VARCHAR2,
+//    CHAR,
+//    NVARCHAR,
+//    TEXT,
+//    KEYWORD,
+//    BINARY,
+//
+//    /** number type */
+//    INT,
+//    // for pg INT2,INT4,INT8
+//    INT2,
+//    INT4,
+//    INT8,
+//    INT16,
+//    INT24,
+//    INT32,
+//    INT64,
+//    UINT16,
+//    UINT32,
+//    UINT64,
+//    SERIAL,
+//    SERIAL8,
+//    SMALLSERIAL,
+//    BIGSERIAL,
+//    DEC,
+//    REAL,
+//    MEDIUMINT,
+//    TINYINT,
+//    DATETIME,
+//    SMALLINT,
+//    BIGINT,
+//    LONG,
+//    SHORT,
+//    INTEGER,
+//    NUMBER,
+//    NUMERIC,
+//    MONEY,
+//    OID,
+//    DECIMAL,
+//    BIGDECIMAL,
+//
+//    /** double type */
+//    DOUBLE,
+//    FLOAT,
+//    FLOAT4,
+//    FLOAT8,
+//    FLOAT32,
+//    FLOAT64,
+//    SMALLFLOAT,
+//    DECFLOAT,
+//    BOOLEAN,
+//    PRECISION,
+//    DOUBLEPRECISION,
+//
+//    /** date type */
+//    DATE,
+//    TIMESTAMP,
+//    TIME,
+//    YEAR,
+//    BIT,
+//    OBJECT,
+//    TIMESTAMPTZ;
+//
+//    public static List<ColumnType> TIME_TYPE = Arrays.asList(DATE, DATETIME, TIME, TIMESTAMP);
+//
+//    public static List<ColumnType> NUMBER_TYPE =
+//            Arrays.asList(
+//                    INT,
+//                    INT16,
+//                    INT24,
+//                    INT32,
+//                    INT64,
+//                    UINT16,
+//                    UINT32,
+//                    UINT64,
+//                    SERIAL,
+//                    SERIAL8,
+//                    SMALLSERIAL,
+//                    BIGSERIAL,
+//                    DEC,
+//                    REAL,
+//                    MONEY,
+//                    OID,
+//                    DECIMAL,
+//                    BIGDECIMAL,
+//                    INTEGER,
+//                    MEDIUMINT,
+//                    TINYINT,
+//                    SMALLINT,
+//                    BIGINT,
+//                    LONG,
+//                    SHORT,
+//                    DOUBLE,
+//                    FLOAT,
+//                    FLOAT4,
+//                    FLOAT8,
+//                    FLOAT32,
+//                    FLOAT64,
+//                    SMALLFLOAT,
+//                    DECFLOAT,
+//                    DECIMAL,
+//                    NUMBER,
+//                    PRECISION,
+//                    DOUBLEPRECISION);
+//
+//    public static List<ColumnType> STRING_TYPE =
+//            Arrays.asList(STRING, VARCHAR, VARCHAR2, CHAR, NVARCHAR, TEXT, KEYWORD, BINARY);
 
     /**
      * 根据字段类型的字符串找出对应的枚举 找不到直接报错 IllegalArgumentException
-     *
-     * @param type
-     * @return
      */
     public static ColumnType fromString(String type) {
         if (type == null) {
             throw new RuntimeException("null ColumnType!");
         }
 
-        if (type.contains(ConstantValue.LEFT_PARENTHESIS_SYMBOL)) {
-            type = type.substring(0, type.indexOf(ConstantValue.LEFT_PARENTHESIS_SYMBOL));
-        }
+        DataType t = DataType.ds(type);
+        return new ColumnType(t);
 
-        type = type.toUpperCase(Locale.ENGLISH);
-        // 为了支持无符号类型  如 int unsigned
-        if (StringUtils.contains(type, ConstantValue.DATA_TYPE_UNSIGNED)) {
-            type = type.replace(ConstantValue.DATA_TYPE_UNSIGNED, "").trim();
-        }
-        return valueOf(type);
+//        if (type.contains(ConstantValue.LEFT_PARENTHESIS_SYMBOL)) {
+//            type = type.substring(0, type.indexOf(ConstantValue.LEFT_PARENTHESIS_SYMBOL));
+//        }
+//
+//        type = type.toUpperCase(Locale.ENGLISH);
+//        // 为了支持无符号类型  如 int unsigned
+//        if (StringUtils.contains(type, ConstantValue.DATA_TYPE_UNSIGNED)) {
+//            type = type.replace(ConstantValue.DATA_TYPE_UNSIGNED, "").trim();
+//        }
+//        return valueOf(type);
     }
 
     /**
      * 根据字段类型的字符串找到对应的枚举 找不到就直接返回ColumnType.STRING;
-     *
-     * @param type
-     * @return
      */
     public static ColumnType getType(String type) {
-        type = type.toUpperCase(Locale.ENGLISH);
-        if (type.contains(ConstantValue.LEFT_PARENTHESIS_SYMBOL)) {
-            type = type.substring(0, type.indexOf(ConstantValue.LEFT_PARENTHESIS_SYMBOL));
-        }
-
-        // 为了支持无符号类型  如 int unsigned
-        if (StringUtils.contains(type, ConstantValue.DATA_TYPE_UNSIGNED)) {
-            type = type.replaceAll(ConstantValue.DATA_TYPE_UNSIGNED, "").trim();
-        }
-
-        if (type.contains(ColumnType.TIMESTAMP.name())) {
-            return TIMESTAMP;
-        }
-
-        for (ColumnType value : ColumnType.values()) {
-            if (type.equalsIgnoreCase(value.name())) {
-                return value;
-            }
-        }
-
-        return ColumnType.STRING;
+        return fromString(type);
+//        type = type.toUpperCase(Locale.ENGLISH);
+//        if (type.contains(ConstantValue.LEFT_PARENTHESIS_SYMBOL)) {
+//            type = type.substring(0, type.indexOf(ConstantValue.LEFT_PARENTHESIS_SYMBOL));
+//        }
+//
+//        // 为了支持无符号类型  如 int unsigned
+//        if (StringUtils.contains(type, ConstantValue.DATA_TYPE_UNSIGNED)) {
+//            type = type.replaceAll(ConstantValue.DATA_TYPE_UNSIGNED, "").trim();
+//        }
+//
+//        if (type.contains(ColumnType.TIMESTAMP.name())) {
+//            return TIMESTAMP;
+//        }
+//
+//        for (ColumnType value : ColumnType.values()) {
+//            if (type.equalsIgnoreCase(value.name())) {
+//                return value;
+//            }
+//        }
+//
+//        return ColumnType.STRING;
     }
 
     public static boolean isTimeType(String type) {
-        return TIME_TYPE.contains(getType(type));
+        //  return TIME_TYPE.contains(getType(type));
+        ColumnType t = getType(type);
+        return DataXReaderColType.Date == t.t.getCollapse();
     }
 
     public static boolean isNumberType(String type) {
-        return NUMBER_TYPE.contains(getType(type.replaceAll(" ", "")));
+        ColumnType t = getType(type);
+        DataXReaderColType ctype = t.t.getCollapse();
+        return DataXReaderColType.Long == ctype || DataXReaderColType.Double == ctype;
+        // return NUMBER_TYPE.contains(getType(type.replaceAll(" ", "")));
     }
 
     public static boolean isStringType(String type) {
-        return STRING_TYPE.contains(getType(type));
+        ColumnType t = getType(type);
+        return isStringType(t);
     }
 
     public static boolean isStringType(ColumnType type) {
-        return STRING_TYPE.contains(type);
+        DataXReaderColType ctype = type.t.getCollapse();
+        return DataXReaderColType.STRING == ctype;
     }
 }

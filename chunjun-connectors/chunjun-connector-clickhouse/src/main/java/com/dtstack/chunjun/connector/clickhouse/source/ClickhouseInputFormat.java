@@ -20,26 +20,19 @@ package com.dtstack.chunjun.connector.clickhouse.source;
 
 import com.dtstack.chunjun.connector.clickhouse.util.ClickhouseUtil;
 import com.dtstack.chunjun.connector.jdbc.TableCols;
-import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
 import com.dtstack.chunjun.connector.jdbc.source.JdbcInputFormat;
 import com.dtstack.chunjun.connector.jdbc.source.JdbcInputSplit;
-import com.dtstack.chunjun.util.ColumnBuildUtil;
 import com.dtstack.chunjun.util.TableUtil;
 
 import org.apache.flink.core.io.InputSplit;
 import org.apache.flink.table.types.logical.RowType;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.LinkedList;
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @program chunjun
@@ -48,6 +41,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ClickhouseInputFormat extends JdbcInputFormat {
     private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
     @Override
     public void openInternal(InputSplit inputSplit) {
         JdbcInputSplit jdbcInputSplit = (JdbcInputSplit) inputSplit;
@@ -65,11 +59,11 @@ public class ClickhouseInputFormat extends JdbcInputFormat {
         try {
             dbConn = getConnection();
 
-           // TableCols pair = null;
+            // TableCols pair = null;
 //            List<String> fullColumnList = new LinkedList<>();
 //            List<String> fullColumnTypeList = new LinkedList<>();
-           // if (StringUtils.isBlank(jdbcConf.getCustomSql())) {
-              //  pair = getTableMetaData();
+            // if (StringUtils.isBlank(jdbcConf.getCustomSql())) {
+            //  pair = getTableMetaData();
 //                fullColumnList = pair.getLeft();
 //                fullColumnTypeList = pair.getRight();
             //}
@@ -88,9 +82,11 @@ public class ClickhouseInputFormat extends JdbcInputFormat {
             // 增量任务
             needUpdateEndLocation =
                     jdbcConf.isIncrement() && !jdbcConf.isPolling() && !jdbcConf.isUseMaxFunc();
+
+            TableCols tableCols = new TableCols(this.colsMeta);
             RowType rowType =
                     TableUtil.createRowType(
-                            jdbcConf.getColumn(), jdbcDialect.getRawTypeConverter());
+                            tableCols.filterBy(jdbcConf.getColumn()), jdbcDialect.getRawTypeConverter());
             setRowConverter(
                     rowConverter == null
                             ? jdbcDialect.getColumnConverter(rowType, jdbcConf)

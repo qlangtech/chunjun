@@ -19,6 +19,7 @@
 package com.dtstack.chunjun.connector.oracle.source;
 
 import com.dtstack.chunjun.conf.SyncConf;
+import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
 import com.dtstack.chunjun.connector.jdbc.source.JdbcInputFormatBuilder;
 import com.dtstack.chunjun.connector.jdbc.source.JdbcSourceFactory;
 import com.dtstack.chunjun.connector.jdbc.util.JdbcUtil;
@@ -37,6 +38,10 @@ public class OracleSourceFactory extends JdbcSourceFactory {
 
     public OracleSourceFactory(SyncConf syncConf, StreamExecutionEnvironment env) {
         super(syncConf, env, new OracleDialect());
+    }
+
+    public OracleSourceFactory(SyncConf syncConf, StreamExecutionEnvironment env, JdbcDialect jdbcDialect) {
+        super(syncConf, env, jdbcDialect);
     }
 
     @Override

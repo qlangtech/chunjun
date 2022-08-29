@@ -59,24 +59,45 @@ public class OracleColumnConverter extends JdbcColumnConverter {
                 return val -> new BigDecimalColumn(((Integer) val).byteValue());
             case SMALLINT:
             case INTEGER:
-                return val -> new BigDecimalColumn((Integer) val);
-            case FLOAT:
-                return val -> new BigDecimalColumn((Float) val);
+                return val -> {
+                    if (val instanceof BigDecimal) {
+                        return new BigDecimalColumn((BigDecimal) val);
+                    }
+                    return new BigDecimalColumn((Integer) val);
+                };
+            case FLOAT: {
+                return val -> {
+                    if (val instanceof BigDecimal) {
+                        return new BigDecimalColumn((BigDecimal) val);
+                    }
+                    return new BigDecimalColumn((Float) val);
+                };
+            }
             case DOUBLE:
                 return val -> new BigDecimalColumn((Double) val);
-            case BIGINT:
-                return val -> new BigDecimalColumn((Long) val);
+            case BIGINT: {
+                return val -> {
+                    if (val instanceof BigDecimal) {
+                        return new BigDecimalColumn((BigDecimal) val);
+                    }
+                    return new BigDecimalColumn((Long) val);
+                };
+            }
             case DECIMAL:
                 return val -> new BigDecimalColumn((BigDecimal) val);
             case CHAR:
             case VARCHAR:
-                if (type instanceof ClobType) {
-                    return val -> {
+                // if (type instanceof ClobType) {
+                return val -> {
+                    if (val instanceof oracle.sql.CLOB) {
                         oracle.sql.CLOB clob = (oracle.sql.CLOB) val;
                         return new StringColumn(ConvertUtil.convertClob(clob));
-                    };
-                }
-                return val -> new StringColumn((String) val);
+                    } else {
+                        return new StringColumn((String) val);
+                    }
+                };
+            //}
+            // return val -> new StringColumn((String) val);
             case DATE:
                 return val -> new TimestampColumn((Timestamp) val, 0);
             case TIMESTAMP_WITH_TIME_ZONE:
@@ -85,7 +106,8 @@ public class OracleColumnConverter extends JdbcColumnConverter {
             case BINARY:
             case VARBINARY:
                 return val -> {
-                    if (type instanceof BlobType) {
+                    //if (type instanceof BlobType) {
+                    if (val instanceof oracle.sql.BLOB) {
                         oracle.sql.BLOB blob = (oracle.sql.BLOB) val;
                         byte[] bytes = ConvertUtil.toByteArray(blob);
                         return new BytesColumn(bytes);
@@ -100,11 +122,11 @@ public class OracleColumnConverter extends JdbcColumnConverter {
 
     @Override
     protected ISerializationConverter<FieldNamedPreparedStatement>
-            wrapIntoNullableExternalConverter(
-                    ISerializationConverter serializationConverter, LogicalType type) {
+    wrapIntoNullableExternalConverter(
+            ISerializationConverter serializationConverter, LogicalType type) {
         return (val, index, statement) -> {
-            if(val.isNullAt(index)){
-            //if (((ColumnRowData) val).getField(index) == null) {
+            if (val.isNullAt(index)) {
+                //if (((ColumnRowData) val).getField(index) == null) {
                 try {
                     final int sqlType =
                             JdbcTypeUtil.typeInformationToSqlType(

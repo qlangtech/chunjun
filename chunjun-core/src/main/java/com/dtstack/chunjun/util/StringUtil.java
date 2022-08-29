@@ -26,20 +26,23 @@ import com.dtstack.chunjun.throwable.WriteRecordException;
 import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
 
+import com.qlangtech.tis.plugin.ds.DataType;
+import com.qlangtech.tis.plugin.ds.DataType.TypeVisitor;
+import com.qlangtech.tis.plugin.ds.DataXReaderColType;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
-import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -56,7 +59,7 @@ public class StringUtil {
     public static final int STEP_SIZE = 2;
 
     public static final char[] hexChars = {
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
     };
 
     /**
@@ -65,6 +68,7 @@ public class StringUtil {
      * <p>e.g. Turnning \\t into \t, etc.
      *
      * @param str The String to convert
+     *
      * @return the converted String
      */
     public static String convertRegularExpr(String str) {
@@ -98,124 +102,252 @@ public class StringUtil {
         }
 
         ColumnType columnType = ColumnType.getType(type.toUpperCase());
-        Object ret;
-        switch (columnType) {
-            case TINYINT:
-                ret = Byte.valueOf(str.trim());
-                break;
-            case SMALLINT:
-                ret = Short.valueOf(str.trim());
-                break;
-            case INT:
-                ret = Integer.valueOf(str.trim());
-                break;
-            case MEDIUMINT:
-            case BIGINT:
-            case LONG:
-                ret = Long.valueOf(str.trim());
-                break;
-            case FLOAT:
-                ret = Float.valueOf(str.trim());
-                break;
-            case DOUBLE:
-                ret = Double.valueOf(str.trim());
-                break;
-            case STRING:
-            case VARCHAR:
-            case CHAR:
+        return columnType.visit(new TypeVisitor<Object>() {
+
+            @Override
+            public Object bigInt(DataType type) {
+                return Long.valueOf(str.trim());
+            }
+
+            @Override
+            public Object doubleType(DataType type) {
+                return Double.valueOf(str.trim());
+            }
+
+            @Override
+            public Object dateType(DataType type) {
+                return DateUtil.columnToDate(str, customTimeFormat);
+            }
+
+            @Override
+            public Object timestampType(DataType type) {
+                return DateUtil.columnToTimestamp(str, customTimeFormat);
+            }
+
+            @Override
+            public Object bitType(DataType type) {
+                return Boolean.valueOf(str.trim().toLowerCase());
+            }
+
+            @Override
+            public Object blobType(DataType type) {
+                return null;
+            }
+
+            @Override
+            public Object varcharType(DataType type) {
+                Object tmp = null;
                 if (customTimeFormat != null) {
-                    ret = DateUtil.columnToDate(str, customTimeFormat);
-                    ret = DateUtil.timestampToString((Date) ret);
+                    tmp = DateUtil.columnToDate(str, customTimeFormat);
+                    tmp = DateUtil.timestampToString((Date) tmp);
                 } else {
-                    ret = str;
+                    tmp = str;
                 }
-                break;
-            case BOOLEAN:
-                ret = Boolean.valueOf(str.trim().toLowerCase());
-                break;
-            case DATE:
-                ret = DateUtil.columnToDate(str, customTimeFormat);
-                break;
-            case TIMESTAMP:
-            case DATETIME:
-                ret = DateUtil.columnToTimestamp(str, customTimeFormat);
-                break;
-            case OBJECT:
-                ret = GsonUtil.GSON.fromJson(str, Map.class);
-                break;
+                return tmp;
+            }
 
-            default:
-                ret = str;
-        }
+            @Override
+            public Object intType(DataType type) {
+                return Integer.valueOf(str.trim());
+            }
 
-        return ret;
+            @Override
+            public Object floatType(DataType type) {
+                return Float.valueOf(str.trim());
+            }
+
+            @Override
+            public Object decimalType(DataType type) {
+                return null;
+            }
+
+            @Override
+            public Object timeType(DataType type) {
+                return null;
+            }
+
+            @Override
+            public Object tinyIntType(DataType dataType) {
+                return Byte.valueOf(str.trim());
+            }
+
+            @Override
+            public Object smallIntType(DataType dataType) {
+                return Short.valueOf(str.trim());
+            }
+        });
+
+//        switch (columnType.getType()) {
+//            //case TINYINT:
+//            case Types.TINYINT:
+//
+//                break;
+//            case Types.SMALLINT:
+//
+//                break;
+//            case Types.INTEGER:
+//
+//                break;
+//            case MEDIUMINT:
+//            case BIGINT:
+//            case LONG:
+////                ret = Long.valueOf(str.trim());
+//                break;
+//            case FLOAT:
+//                //  ret = Float.valueOf(str.trim());
+//                break;
+//            case DOUBLE:
+//                ret = Double.valueOf(str.trim());
+//                break;
+//            case STRING:
+//            case VARCHAR:
+//            case CHAR:
+////                if (customTimeFormat != null) {
+////                    ret = DateUtil.columnToDate(str, customTimeFormat);
+////                    ret = DateUtil.timestampToString((Date) ret);
+////                } else {
+////                    ret = str;
+////                }
+//                break;
+//            case BOOLEAN:
+//                //  ret = Boolean.valueOf(str.trim().toLowerCase());
+//                break;
+//            case DATE:
+//                //  ret = DateUtil.columnToDate(str, customTimeFormat);
+//                break;
+//            case TIMESTAMP:
+//            case DATETIME:
+//                ret = DateUtil.columnToTimestamp(str, customTimeFormat);
+//                break;
+//            case OBJECT:
+//                ret = GsonUtil.GSON.fromJson(str, Map.class);
+//                break;
+//
+//            default:
+//                ret = str;
+//        }
+
+//        switch (columnType.getType()) {
+//            //case TINYINT:
+//            case Types.TINYINT:
+//
+//                break;
+//            case Types.SMALLINT:
+//                ret = Short.valueOf(str.trim());
+//                break;
+//            case Types.INTEGER:
+//                ret = Integer.valueOf(str.trim());
+//                break;
+//            case MEDIUMINT:
+//            case BIGINT:
+//            case LONG:
+//                ret = Long.valueOf(str.trim());
+//                break;
+//            case FLOAT:
+//                ret = Float.valueOf(str.trim());
+//                break;
+//            case DOUBLE:
+//                ret = Double.valueOf(str.trim());
+//                break;
+//            case STRING:
+//            case VARCHAR:
+//            case CHAR:
+//                if (customTimeFormat != null) {
+//                    ret = DateUtil.columnToDate(str, customTimeFormat);
+//                    ret = DateUtil.timestampToString((Date) ret);
+//                } else {
+//                    ret = str;
+//                }
+//                break;
+//            case BOOLEAN:
+//                ret = Boolean.valueOf(str.trim().toLowerCase());
+//                break;
+//            case DATE:
+//                ret = DateUtil.columnToDate(str, customTimeFormat);
+//                break;
+//            case TIMESTAMP:
+//            case DATETIME:
+//                ret = DateUtil.columnToTimestamp(str, customTimeFormat);
+//                break;
+//            case OBJECT:
+//                ret = GsonUtil.GSON.fromJson(str, Map.class);
+//                break;
+//
+//            default:
+//                ret = str;
+//        }
+
+        //  return ret;
     }
 
     public static String col2string(Object column, String type) {
-        if (column == null) {
-            return "";
-        }
 
-        if (type == null) {
-            return column.toString();
-        }
+        throw new UnsupportedOperationException();
 
-        String rowData = column.toString();
-        ColumnType columnType = ColumnType.getType(type.toUpperCase());
-        Object result;
-        switch (columnType) {
-            case TINYINT:
-                result = Byte.valueOf(rowData.trim());
-                break;
-            case SMALLINT:
-            case SHORT:
-                result = Short.valueOf(rowData.trim());
-                break;
-            case INT:
-            case INTEGER:
-                result = Integer.valueOf(rowData.trim());
-                break;
-            case BIGINT:
-            case LONG:
-                if (column instanceof Timestamp) {
-                    result = ((Timestamp) column).getTime();
-                } else {
-                    result = Long.valueOf(rowData.trim());
-                }
-                break;
-            case FLOAT:
-                result = Float.valueOf(rowData.trim());
-                break;
-            case DOUBLE:
-                result = Double.valueOf(rowData.trim());
-                break;
-            case DECIMAL:
-                result = new BigDecimal(rowData.trim());
-                break;
-            case STRING:
-            case VARCHAR:
-            case CHAR:
-            case TEXT:
-                if (column instanceof Timestamp) {
-                    result = DateUtil.timestampToString((java.util.Date) column);
-                } else {
-                    result = rowData;
-                }
-                break;
-            case BOOLEAN:
-                result = Boolean.valueOf(rowData.trim());
-                break;
-            case DATE:
-                result = DateUtil.dateToString(DateUtil.columnToDate(column, null));
-                break;
-            case DATETIME:
-            case TIMESTAMP:
-                result = DateUtil.timestampToString(DateUtil.columnToTimestamp(column, null));
-                break;
-            default:
-                result = rowData;
-        }
-        return result.toString();
+//        if (column == null) {
+//            return "";
+//        }
+//
+//        if (type == null) {
+//            return column.toString();
+//        }
+//
+//        String rowData = column.toString();
+//        ColumnType columnType = ColumnType.getType(type.toUpperCase());
+//        Object result;
+//        switch (columnType) {
+//            case TINYINT:
+//                result = Byte.valueOf(rowData.trim());
+//                break;
+//            case SMALLINT:
+//            case SHORT:
+//                result = Short.valueOf(rowData.trim());
+//                break;
+//            case INT:
+//            case INTEGER:
+//                result = Integer.valueOf(rowData.trim());
+//                break;
+//            case BIGINT:
+//            case LONG:
+//                if (column instanceof Timestamp) {
+//                    result = ((Timestamp) column).getTime();
+//                } else {
+//                    result = Long.valueOf(rowData.trim());
+//                }
+//                break;
+//            case FLOAT:
+//                result = Float.valueOf(rowData.trim());
+//                break;
+//            case DOUBLE:
+//                result = Double.valueOf(rowData.trim());
+//                break;
+//            case DECIMAL:
+//                result = new BigDecimal(rowData.trim());
+//                break;
+//            case STRING:
+//            case VARCHAR:
+//            case CHAR:
+//            case TEXT:
+//                if (column instanceof Timestamp) {
+//                    result = DateUtil.timestampToString((java.util.Date) column);
+//                } else {
+//                    result = rowData;
+//                }
+//                break;
+//            case BOOLEAN:
+//                result = Boolean.valueOf(rowData.trim());
+//                break;
+//            case DATE:
+//                result = DateUtil.dateToString(DateUtil.columnToDate(column, null));
+//                break;
+//            case DATETIME:
+//            case TIMESTAMP:
+//                result = DateUtil.timestampToString(DateUtil.columnToTimestamp(column, null));
+//                break;
+//            default:
+//                result = rowData;
+//        }
+//        return result.toString();
     }
 
     public static String row2string(RowData rowData, List<String> columnTypes, String delimiter)
@@ -254,9 +386,6 @@ public class StringUtil {
 
     /**
      * 16进制数组 转为hex字符串
-     *
-     * @param b
-     * @return
      */
     public static String bytesToHexString(byte[] b) {
         StringBuilder sb = new StringBuilder(b.length * 2);
@@ -291,10 +420,11 @@ public class StringUtil {
      *
      * @param str 待解析字符串,不考虑分割结果需要带'[',']','\"','\''的情况
      * @param delimiter 分隔符
+     *
      * @return 分割后的字符串数组 Example: "[dbo_test].[table]" => "[dbo_test, table]" Example:
-     *     "[dbo.test].[table.test]" => "[dbo.test, table.test]" Example: "[dbo.test].[[[tab[l]e]]"
-     *     => "[dbo.test, table]" Example："[\"dbo_test\"].[table]" => "[dbo_test, table]"
-     *     Example:"['dbo_test'].[table]" => "[dbo_test, table]"
+     *         "[dbo.test].[table.test]" => "[dbo.test, table.test]" Example: "[dbo.test].[[[tab[l]e]]"
+     *         => "[dbo.test, table]" Example："[\"dbo_test\"].[table]" => "[dbo_test, table]"
+     *         Example:"['dbo_test'].[table]" => "[dbo_test, table]"
      */
     public static List<String> splitIgnoreQuota(String str, char delimiter) {
         List<String> tokensList = new ArrayList<>();
@@ -345,9 +475,6 @@ public class StringUtil {
 
     /**
      * 字符串转换成对应时间戳字符串
-     *
-     * @param location
-     * @return
      */
     public static String stringToTimestampStr(String location, ColumnType type) {
         // 若为空字符串或本身就是时间戳则不需要转换
@@ -355,18 +482,32 @@ public class StringUtil {
             return location;
         }
         try {
-            switch (type) {
-                case TIMESTAMP:
-                case DATETIME:
-                case TIMESTAMPTZ:
-                    return String.valueOf(Timestamp.valueOf(location).getTime());
-                case DATE:
+            DataXReaderColType collapse = type.t.getCollapse();
+            if (collapse == DataXReaderColType.Date) {
+                if (type.t.type == Types.DATE) {
                     return String.valueOf(
                             DateUtils.parseDate(location, DateUtil.getDateFormat(location))
                                     .getTime());
-                default:
-                    return location;
+                } else {
+                    return String.valueOf(Timestamp.valueOf(location).getTime());
+                }
+            } else {
+                return location;
             }
+
+
+//            switch (type) {
+//                case TIMESTAMP:
+//                case DATETIME:
+//                case TIMESTAMPTZ:
+//                    return String.valueOf(Timestamp.valueOf(location).getTime());
+//                case DATE:
+//                    return String.valueOf(
+//                            DateUtils.parseDate(location, DateUtil.getDateFormat(location))
+//                                    .getTime());
+//                default:
+//                    return location;
+//            }
         } catch (ParseException e) {
             String message = String.format("cannot transform 【%s】to 【%s】", location, type);
             throw new ChunJunRuntimeException(message, e);
@@ -377,6 +518,7 @@ public class StringUtil {
      * 调用{@linkplain com.dtstack.chunjun.util.StringUtil}的splitIgnoreQuota处理 并对返回结果按照.拼接
      *
      * @param table [dbo.schema1].[table]
+     *
      * @return dbo.schema1.table
      */
     public static String splitIgnoreQuotaAndJoinByPoint(String table) {
@@ -396,7 +538,9 @@ public class StringUtil {
      * get String from inputStream
      *
      * @param input inputStream
+     *
      * @return String value
+     *
      * @throws IOException convert exception
      */
     public static String inputStream2String(InputStream input) throws IOException {
@@ -412,12 +556,13 @@ public class StringUtil {
      * 转义正则特殊字符 （$()*+.[]?\^{},|）
      *
      * @param keyword 需要转义特殊字符串的文本
+     *
      * @return 特殊字符串转义后的文本
      */
     public static String escapeExprSpecialWord(String keyword) {
         if (StringUtils.isNotBlank(keyword)) {
             String[] fbsArr = {
-                "\\", "$", "(", ")", "*", "+", ".", "[", "]", "?", "^", "{", "}", "|"
+                    "\\", "$", "(", ")", "*", "+", ".", "[", "]", "?", "^", "{", "}", "|"
             };
             for (String key : fbsArr) {
                 if (keyword.contains(key)) {
@@ -432,7 +577,9 @@ public class StringUtil {
      * Serialize properties to string.
      *
      * @param props properties
+     *
      * @return Serialized properties
+     *
      * @throws IllegalArgumentException error
      */
     public static String propsToString(Properties props) throws IllegalArgumentException {

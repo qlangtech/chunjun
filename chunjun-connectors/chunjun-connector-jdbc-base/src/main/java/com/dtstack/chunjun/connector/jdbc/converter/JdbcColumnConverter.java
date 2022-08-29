@@ -117,16 +117,20 @@ public class JdbcColumnConverter
         int converterIndex = 0;
         result = new ColumnRowData(fieldConfList.size());
         for (FieldConf fieldConf : fieldConfList) {
-            AbstractBaseColumn baseColumn = null;
-            if (StringUtils.isBlank(fieldConf.getValue())) {
-                Object field = resultSet.getObject(converterIndex + 1);
+            try {
+                AbstractBaseColumn baseColumn = null;
+                if (StringUtils.isBlank(fieldConf.getValue())) {
+                    Object field = resultSet.getObject(converterIndex + 1);
 
-                baseColumn =
-                        (AbstractBaseColumn)
-                                toInternalConverters.get(converterIndex).deserialize(field);
-                converterIndex++;
+                    baseColumn =
+                            (AbstractBaseColumn)
+                                    toInternalConverters.get(converterIndex).deserialize(field);
+                    converterIndex++;
+                }
+                result.addField(assembleFieldProps(fieldConf, baseColumn));
+            } catch (Exception e) {
+                throw new RuntimeException("fieldName:" + fieldConf.getName(), e);
             }
-            result.addField(assembleFieldProps(fieldConf, baseColumn));
         }
         return result;
     }

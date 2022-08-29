@@ -131,7 +131,7 @@ public class JdbcUtil {
      */
     public static TableCols getTableMetaData(
             String cataLog, String schema, String tableName, Connection dbConn) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("shall implement in relevant InputFormat/OutputFormat");
 //        try {
 //            // check table exists
 //            if (ALL_TABLE.equalsIgnoreCase(tableName.trim())) {

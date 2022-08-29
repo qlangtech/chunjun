@@ -43,6 +43,9 @@ import org.apache.flink.core.io.InputSplit;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.logical.RowType;
 
+import com.qlangtech.tis.plugin.ds.DataType;
+import com.qlangtech.tis.plugin.ds.DataXReaderColType;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -59,6 +62,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -67,8 +71,6 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.dtstack.chunjun.enums.ColumnType.TIMESTAMPTZ;
 
 /**
  * InputFormat for reading data from a database and generate Rows.
@@ -292,16 +294,24 @@ public class JdbcInputFormat extends BaseRichInputFormat {
             RowData finalRowData = rowConverter.toInternal(resultSet);
             if (needUpdateEndLocation) {
                 Object obj;
-                switch (type) {
-                    case DATETIME:
-                    case TIMESTAMP:
-                    case TIMESTAMPTZ:
-                    case DATE:
-                        obj = resultSet.getTimestamp(jdbcConf.getIncreColumn()).getTime();
-                        break;
-                    default:
-                        obj = resultSet.getObject(jdbcConf.getIncreColumn());
+
+                DataXReaderColType ctype = type.t.getCollapse();
+                if (ctype == DataXReaderColType.Date) {
+                    obj = resultSet.getTimestamp(jdbcConf.getIncreColumn()).getTime();
+                } else {
+                    obj = resultSet.getObject(jdbcConf.getIncreColumn());
                 }
+
+//                switch (type) {
+//                    case DATETIME:
+//                    case TIMESTAMP:
+//                    case TIMESTAMPTZ:
+//                    case DATE:
+//                        obj = resultSet.getTimestamp(jdbcConf.getIncreColumn()).getTime();
+//                        break;
+//                    default:
+//                        obj = resultSet.getObject(jdbcConf.getIncreColumn());
+//                }
                 String location = String.valueOf(obj);
                 endLocationAccumulator.add(new BigInteger(location));
                 LOG.debug("update endLocationAccumulator, current Location = {}", location);
@@ -461,18 +471,31 @@ public class JdbcInputFormat extends BaseRichInputFormat {
             st.setQueryTimeout(jdbcConf.getQueryTimeOut());
             rs = st.executeQuery(queryMaxValueSql);
             if (rs.next()) {
-                switch (type) {
-                    case TIMESTAMP:
-                        maxValue = String.valueOf(rs.getTimestamp("max_value").getTime());
-                        break;
-                    case DATE:
+                DataType t = type.t;
+                if (t.getCollapse() == DataXReaderColType.Date) {
+                    if (t.type == Types.DATE) {
                         maxValue = String.valueOf(rs.getDate("max_value").getTime());
-                        break;
-                    default:
-                        maxValue =
-                                StringUtil.stringToTimestampStr(
-                                        String.valueOf(rs.getObject("max_value")), type);
+                    } else {
+                        maxValue = String.valueOf(rs.getTimestamp("max_value").getTime());
+                    }
+                } else {
+                    maxValue =
+                            StringUtil.stringToTimestampStr(
+                                    String.valueOf(rs.getObject("max_value")), type);
                 }
+
+//                switch (type) {
+//                    case TIMESTAMP:
+//                        maxValue = String.valueOf(rs.getTimestamp("max_value").getTime());
+//                        break;
+//                    case DATE:
+//                        maxValue = String.valueOf(rs.getDate("max_value").getTime());
+//                        break;
+//                    default:
+//                        maxValue =
+//                                StringUtil.stringToTimestampStr(
+//                                        String.valueOf(rs.getObject("max_value")), type);
+//                }
             }
 
             LOG.info(
@@ -615,7 +638,8 @@ public class JdbcInputFormat extends BaseRichInputFormat {
         String endTimeStr;
         String endLocationSql;
         ColumnType type = ColumnType.fromString(incrementColType);
-        if (type == TIMESTAMPTZ) {
+        // if (type.t.type == TIMESTAMPTZ) {
+        if (type.t.type == Types.TIMESTAMP) {
             return String.valueOf(Timestamp.valueOf(location).getTime());
         }
         if (ColumnType.isTimeType(incrementColType)) {
@@ -659,30 +683,53 @@ public class JdbcInputFormat extends BaseRichInputFormat {
         }
 
         boolean isNumber = StringUtils.isNumeric(startLocation);
-        switch (type) {
-            case TIMESTAMP:
-            case TIMESTAMPTZ:
-            case DATETIME:
-                Timestamp ts =
-                        isNumber
-                                ? new Timestamp(Long.parseLong(startLocation))
-                                : Timestamp.valueOf(startLocation);
-                ps.setTimestamp(1, ts);
-                break;
-            case DATE:
+        DataXReaderColType ctype = type.t.getCollapse();
+        if (ctype == DataXReaderColType.Date) {
+            if (type.t.type == Types.DATE) {
                 Date date =
                         isNumber
                                 ? new Date(Long.parseLong(startLocation))
                                 : Date.valueOf(startLocation);
                 ps.setDate(1, date);
-                break;
-            default:
-                if (isNumber) {
-                    ps.setLong(1, Long.parseLong(startLocation));
-                } else {
-                    ps.setString(1, startLocation);
-                }
+            } else {
+                Timestamp ts =
+                        isNumber
+                                ? new Timestamp(Long.parseLong(startLocation))
+                                : Timestamp.valueOf(startLocation);
+                ps.setTimestamp(1, ts);
+            }
+        } else {
+            if (isNumber) {
+                ps.setLong(1, Long.parseLong(startLocation));
+            } else {
+                ps.setString(1, startLocation);
+            }
         }
+
+//        switch (type) {
+//            case TIMESTAMP:
+//            case TIMESTAMPTZ:
+//            case DATETIME:
+//                Timestamp ts =
+//                        isNumber
+//                                ? new Timestamp(Long.parseLong(startLocation))
+//                                : Timestamp.valueOf(startLocation);
+//                ps.setTimestamp(1, ts);
+//                break;
+//            case DATE:
+//                Date date =
+//                        isNumber
+//                                ? new Date(Long.parseLong(startLocation))
+//                                : Date.valueOf(startLocation);
+//                ps.setDate(1, date);
+//                break;
+//            default:
+//                if (isNumber) {
+//                    ps.setLong(1, Long.parseLong(startLocation));
+//                } else {
+//                    ps.setString(1, startLocation);
+//                }
+//        }
         resultSet = ps.executeQuery();
         hasNext = resultSet.next();
     }
