@@ -20,11 +20,17 @@ package com.dtstack.chunjun.connector.doris.sink;
 import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
 import com.dtstack.chunjun.connector.mysql.sink.MysqlOutputFormat;
 
-import java.util.List;
+import java.util.Map;
 
 public class DorisJdbcOutputFormat extends MysqlOutputFormat {
+//    @Override
+//    protected List<ColMeta> getTableMetaData() {
+//        throw new UnsupportedOperationException();
+//    }
+
+
     @Override
-    protected List<ColMeta> getTableMetaData() {
+    protected Map<String, ColMeta> getTableMetaData() {
         throw new UnsupportedOperationException();
     }
 }

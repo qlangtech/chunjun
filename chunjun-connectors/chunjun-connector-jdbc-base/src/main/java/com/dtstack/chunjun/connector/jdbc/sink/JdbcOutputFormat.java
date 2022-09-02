@@ -39,6 +39,8 @@ import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.logical.RowType;
 
+import com.google.common.collect.Lists;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -49,8 +51,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * OutputFormat for writing data to relational database.
@@ -142,7 +144,7 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
 
     /** init columnNameList、 columnTypeList and hasConstantField */
     public void initColumnList() {
-        List<ColMeta> colsMeta = getTableMetaData();
+        Map<String, ColMeta> colsMeta = getTableMetaData();
 
         List<FieldConf> fieldList = jdbcConf.getColumn();
 //        List<String> fullColumnList = pair.getLeft();
@@ -153,7 +155,7 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
     /**
      * for override. because some databases have case-sensitive metadata。
      */
-    protected abstract List<ColMeta> getTableMetaData(); //{
+    protected abstract Map<String, ColMeta> getTableMetaData(); //{
     // return JdbcUtil.getTableMetaData(null, jdbcConf.getSchema(), jdbcConf.getTable(), dbConn);
     // throw new UnsupportedOperationException();
     //}
@@ -163,15 +165,24 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
      */
     protected void handleColumnList(
             List<FieldConf> fieldList,
-            List<ColMeta> colsMeta) {
-        Set<String> fields = fieldList.stream().map((field) -> field.getName()).collect(Collectors.toSet());
+            Map<String, ColMeta> colsMeta) {
+        //  Set<String> fields = fieldList.stream().map((field) -> field.getName()).collect(Collectors.toSet());
 //        if (fieldList.size() == 1 && Objects.equals(fieldList.get(0).getName(), "*")) {
 //        columnNameList = fullColumnList;
 //        columnTypeList = fullColumnTypeList;
 //            return;
 //        }
+        this.colsMeta = Lists.newArrayList();
+        /**********************************************
+         * 这样能够保证'colsMeta'中的字段顺序和fieldList 字段顺序是严格保证一致的
+         * 能保证组装RowData 在DTO2RowDataMapper中依赖的 List<FlinkCol> 和 TISDorisColumnConverter toExternalConverters顺序一致
+         **********************************************/
+        for (FieldConf field : fieldList) {
+            this.colsMeta.add(Objects.requireNonNull(
+                    colsMeta.get(field.getName()), "field:" + field.getName() + " relevant ColMeta can not be null"));
+        }
 
-        this.colsMeta = colsMeta.stream().filter((meta) -> fields.contains(meta.name)).collect(Collectors.toList());
+        // this.colsMeta = colsMeta.stream().filter((meta) -> fields.contains(meta.name)).collect(Collectors.toList());
 
 //        columnNameList = new ArrayList<>(fieldList.size());
 //        columnTypeList = new ArrayList<>(fieldList.size());
