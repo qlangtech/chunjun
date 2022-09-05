@@ -1,10 +1,10 @@
 package com.dtstack.chunjun.connector.mysql.converter;
 
-import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
 
 import org.apache.flink.table.api.DataTypes;
 import org.apache.flink.table.types.DataType;
 
+import com.qlangtech.tis.plugin.ds.ColMeta;
 import com.qlangtech.tis.plugin.ds.DataType.TypeVisitor;
 
 /**

@@ -19,7 +19,6 @@
 package com.dtstack.chunjun.source.format;
 
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
-import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
 import com.dtstack.chunjun.constants.Metrics;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.dirty.DirtyConf;
@@ -46,6 +45,8 @@ import org.apache.flink.core.io.InputSplit;
 import org.apache.flink.core.io.InputSplitAssigner;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.table.data.RowData;
+
+import com.qlangtech.tis.plugin.ds.ColMeta;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

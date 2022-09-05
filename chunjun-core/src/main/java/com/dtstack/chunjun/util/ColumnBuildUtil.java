@@ -20,12 +20,9 @@ package com.dtstack.chunjun.util;
 
 import com.dtstack.chunjun.conf.FieldConf;
 import com.dtstack.chunjun.connector.jdbc.TableCols;
-import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
-import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
 
-import org.apache.commons.lang3.tuple.Pair;
+import com.qlangtech.tis.plugin.ds.ColMeta;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -39,8 +36,6 @@ public class ColumnBuildUtil {
      * 同步任务如果用户配置了常量字段，则将其他非常量字段提取出来
      *
      * @param fieldList fieldList
-     *
-     *
      */
     public static List<ColMeta> handleColumnList(
             List<FieldConf> fieldList,

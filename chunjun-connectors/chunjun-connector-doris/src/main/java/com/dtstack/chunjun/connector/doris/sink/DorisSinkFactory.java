@@ -74,7 +74,7 @@ import static com.dtstack.chunjun.connector.doris.options.DorisKeys.WRITE_MODE_K
  */
 public class DorisSinkFactory extends SinkFactory {
 
-    protected final DorisConf options;
+    public final DorisConf options;
 
     public DorisSinkFactory(SyncConf syncConf) {
         super(syncConf);

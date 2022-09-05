@@ -22,17 +22,15 @@ import com.dtstack.chunjun.connector.jdbc.JdbcDialectWrapper;
 import com.dtstack.chunjun.connector.jdbc.TableCols;
 import com.dtstack.chunjun.connector.jdbc.conf.JdbcConf;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
-import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
 import com.dtstack.chunjun.converter.RawTypeConverter;
 import com.dtstack.chunjun.util.ExceptionUtil;
 import com.dtstack.chunjun.util.GsonUtil;
-import com.dtstack.chunjun.util.TableUtil;
 import com.dtstack.chunjun.util.TelnetUtil;
 
 import org.apache.flink.table.types.logical.LogicalType;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,10 +81,6 @@ public class JdbcUtil {
 
     /**
      * 获取JDBC连接
-     *
-     * @param jdbcConf
-     * @param jdbcDialect
-     * @return
      */
     public static Connection getConnection(JdbcConf jdbcConf, JdbcDialect jdbcDialect) {
         TelnetUtil.telnet(jdbcConf.getJdbcUrl());
@@ -122,12 +116,14 @@ public class JdbcUtil {
     /**
      * get full column name and type from database
      *
-     * @see List< ColMeta >
      * @param cataLog cataLog
      * @param schema schema
      * @param tableName tableName
      * @param dbConn jdbc Connection
+     *
      * @return fullColumnList and fullColumnTypeList
+     *
+     * @see List< ColMeta >
      */
     public static TableCols getTableMetaData(
             String cataLog, String schema, String tableName, Connection dbConn) {
@@ -165,10 +161,7 @@ public class JdbcUtil {
     }
 
     /**
-     * @param tableName
-     * @param dbConn
-     * @return
-     * @throws SQLException
+     *
      */
     public static List<String> getTableIndex(String schema, String tableName, Connection dbConn)
             throws SQLException {
@@ -187,7 +180,6 @@ public class JdbcUtil {
      * @param rs ResultSet
      * @param stmt Statement
      * @param conn Connection
-     * @param commit
      */
     public static void closeDbResources(
             ResultSet rs, Statement stmt, Connection conn, boolean commit) {
@@ -256,6 +248,7 @@ public class JdbcUtil {
      * 获取结果集的列类型信息
      *
      * @param resultSet 查询结果集
+     *
      * @return 字段类型list列表
      */
     public static List<String> analyzeColumnType(ResultSet resultSet, List<FieldConf> metaColumns) {
@@ -292,8 +285,6 @@ public class JdbcUtil {
      * clob转string
      *
      * @param obj clob
-     * @return
-     * @throws Exception
      */
     public static Object clobToString(Object obj) throws Exception {
         String dataStr;
@@ -317,7 +308,6 @@ public class JdbcUtil {
      * 获取纳秒字符串
      *
      * @param timeStr 2020-03-23 11:03:22.000000000
-     * @return
      */
     public static String getNanosTimeStr(String timeStr) {
         if (timeStr.length() < FORMAT_TIME_NANOS_LENGTH) {
@@ -330,7 +320,6 @@ public class JdbcUtil {
      * 将边界位置时间转换成对应饿的纳秒时间
      *
      * @param startLocation 边界位置(起始/结束)
-     * @return
      */
     public static int getNanos(long startLocation) {
         String timeStr = String.valueOf(startLocation);
@@ -354,7 +343,6 @@ public class JdbcUtil {
      * 将边界位置时间转换成对应饿的毫秒时间
      *
      * @param startLocation 边界位置(起始/结束)
-     * @return
      */
     public static long getMillis(long startLocation) {
         String timeStr = String.valueOf(startLocation);
@@ -378,7 +366,6 @@ public class JdbcUtil {
      * Add additional parameters to jdbc properties，for MySQL
      *
      * @param jdbcConf jdbc datasource configuration
-     * @return
      */
     public static void putExtParam(JdbcConf jdbcConf) {
         Properties properties = jdbcConf.getProperties();
@@ -395,7 +382,6 @@ public class JdbcUtil {
      *
      * @param jdbcConf jdbc datasource configuration
      * @param extraProperties default customConfiguration
-     * @return
      */
     public static void putExtParam(JdbcConf jdbcConf, Properties extraProperties) {
         Properties properties = jdbcConf.getProperties();
@@ -414,7 +400,6 @@ public class JdbcUtil {
      * @param jdbcConf 连接信息
      * @param jdbcDialect 方言
      * @param converter 数据库数据类型到flink内部类型的映射
-     * @return
      */
     public static LogicalType getLogicalTypeFromJdbcMetaData(
             JdbcConf jdbcConf, JdbcDialect jdbcDialect, RawTypeConverter converter) {

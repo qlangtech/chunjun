@@ -24,7 +24,6 @@ import com.dtstack.chunjun.cdc.monitor.MonitorConf;
 import com.dtstack.chunjun.cdc.monitor.fetch.DdlObserver;
 import com.dtstack.chunjun.cdc.monitor.fetch.Event;
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
-import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
 import com.dtstack.chunjun.constants.Metrics;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.dirty.DirtyConf;
@@ -55,6 +54,8 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.table.data.RowData;
+
+import com.qlangtech.tis.plugin.ds.ColMeta;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,7 +161,7 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
     public List<ColMeta> colsMeta;
 
     public List<String> getColsName() {
-        return Objects.requireNonNull(colsMeta,"colsMeta can not be null")
+        return Objects.requireNonNull(colsMeta, "colsMeta can not be null")
                 .stream().map((cm) -> cm.name).collect(Collectors.toList());
     }
 

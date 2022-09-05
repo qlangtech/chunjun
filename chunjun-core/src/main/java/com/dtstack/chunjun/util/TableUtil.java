@@ -18,7 +18,6 @@
 package com.dtstack.chunjun.util;
 
 import com.dtstack.chunjun.conf.FieldConf;
-import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
 import com.dtstack.chunjun.converter.RawTypeConverter;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -30,6 +29,8 @@ import org.apache.flink.table.runtime.typeutils.InternalTypeInfo;
 import org.apache.flink.table.types.DataType;
 import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.table.types.logical.RowType;
+
+import com.qlangtech.tis.plugin.ds.ColMeta;
 
 import java.util.Arrays;
 import java.util.List;

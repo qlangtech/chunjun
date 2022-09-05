@@ -17,7 +17,7 @@
  */
 package com.dtstack.chunjun.connector.jdbc.statement;
 
-import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
+import com.qlangtech.tis.plugin.ds.ColMeta;
 
 import java.io.InputStream;
 import java.io.Reader;

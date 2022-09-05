@@ -2,10 +2,8 @@ package com.dtstack.chunjun.connector.jdbc;
 
 import com.dtstack.chunjun.conf.FieldConf;
 
-import com.qlangtech.tis.plugin.ds.DataType;
-import com.qlangtech.tis.plugin.ds.IColMetaGetter;
+import com.qlangtech.tis.plugin.ds.ColMeta;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -14,7 +12,7 @@ import java.util.stream.Collectors;
  * @author: 百岁（baisui@qlangtech.com）
  * @create: 2022-08-25 18:27
  **/
-public class TableCols  {
+public class TableCols {
     List<ColMeta> colsMeta;
 
     public TableCols(List<ColMeta> colsMeta) {
@@ -34,29 +32,5 @@ public class TableCols  {
         return colsMeta.stream().filter((col) -> {
             return fields.contains(col.name);
         }).collect(Collectors.toList());
-    }
-
-    /**
-     * @author: 百岁（baisui@qlangtech.com）
-     * @create: 2022-08-25 17:45
-     **/
-    public static class ColMeta implements IColMetaGetter, Serializable {
-        public final String name;
-        public final DataType type;
-
-        public ColMeta(String name, DataType type) {
-            this.name = name;
-            this.type = type;
-        }
-
-        @Override
-        public String getName() {
-            return name;
-        }
-
-        @Override
-        public DataType getType() {
-            return type;
-        }
     }
 }

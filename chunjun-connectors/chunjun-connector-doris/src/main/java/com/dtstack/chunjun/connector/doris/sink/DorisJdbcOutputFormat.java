@@ -17,8 +17,10 @@
 
 package com.dtstack.chunjun.connector.doris.sink;
 
-import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
+
 import com.dtstack.chunjun.connector.mysql.sink.MysqlOutputFormat;
+
+import com.qlangtech.tis.plugin.ds.ColMeta;
 
 import java.util.Map;
 

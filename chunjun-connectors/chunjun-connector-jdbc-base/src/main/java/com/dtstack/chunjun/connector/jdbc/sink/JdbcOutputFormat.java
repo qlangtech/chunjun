@@ -20,7 +20,6 @@ package com.dtstack.chunjun.connector.jdbc.sink;
 import com.dtstack.chunjun.cdc.DdlRowData;
 import com.dtstack.chunjun.cdc.DdlRowDataConvented;
 import com.dtstack.chunjun.conf.FieldConf;
-import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
 import com.dtstack.chunjun.connector.jdbc.conf.JdbcConf;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
 import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
@@ -40,6 +39,7 @@ import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.logical.RowType;
 
 import com.google.common.collect.Lists;
+import com.qlangtech.tis.plugin.ds.ColMeta;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;

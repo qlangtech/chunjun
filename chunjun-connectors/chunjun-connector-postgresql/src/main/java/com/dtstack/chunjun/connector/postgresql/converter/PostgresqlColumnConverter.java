@@ -23,14 +23,11 @@
 package com.dtstack.chunjun.connector.postgresql.converter;
 
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
-import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
+
 import com.dtstack.chunjun.connector.jdbc.converter.JdbcColumnConverter;
 import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
-import com.dtstack.chunjun.converter.ISerializationConverter;
 import com.dtstack.chunjun.element.AbstractBaseColumn;
-import com.dtstack.chunjun.element.ColumnRowData;
-import com.dtstack.chunjun.element.column.ArrayColumn;
 import com.dtstack.chunjun.element.column.BigDecimalColumn;
 import com.dtstack.chunjun.element.column.BooleanColumn;
 import com.dtstack.chunjun.element.column.BytesColumn;
@@ -38,6 +35,8 @@ import com.dtstack.chunjun.element.column.SqlDateColumn;
 import com.dtstack.chunjun.element.column.StringColumn;
 import com.dtstack.chunjun.element.column.TimeColumn;
 import com.dtstack.chunjun.element.column.TimestampColumn;
+
+import com.qlangtech.tis.plugin.ds.ColMeta;
 
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.logical.LogicalType;
@@ -47,7 +46,6 @@ import org.apache.flink.table.types.logical.YearMonthIntervalType;
 
 import org.postgresql.core.BaseConnection;
 import org.postgresql.core.Oid;
-import org.postgresql.jdbc.PgArray;
 
 import java.math.BigDecimal;
 import java.sql.Array;

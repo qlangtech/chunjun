@@ -18,7 +18,6 @@
 
 package com.dtstack.chunjun.connector.postgresql.sink;
 
-import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
 import com.dtstack.chunjun.connector.jdbc.converter.JdbcColumnConverter;
 import com.dtstack.chunjun.connector.jdbc.sink.JdbcOutputFormat;
 import com.dtstack.chunjun.connector.postgresql.converter.PostgresqlColumnConverter;

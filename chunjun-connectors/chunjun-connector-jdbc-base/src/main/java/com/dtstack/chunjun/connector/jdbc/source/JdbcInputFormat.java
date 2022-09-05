@@ -19,7 +19,6 @@
 package com.dtstack.chunjun.connector.jdbc.source;
 
 import com.dtstack.chunjun.connector.jdbc.TableCols;
-import com.dtstack.chunjun.connector.jdbc.TableCols.ColMeta;
 import com.dtstack.chunjun.connector.jdbc.conf.JdbcConf;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
 import com.dtstack.chunjun.connector.jdbc.util.JdbcUtil;
@@ -43,6 +42,7 @@ import org.apache.flink.core.io.InputSplit;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.logical.RowType;
 
+import com.qlangtech.tis.plugin.ds.ColMeta;
 import com.qlangtech.tis.plugin.ds.DataType;
 import com.qlangtech.tis.plugin.ds.DataXReaderColType;
 
