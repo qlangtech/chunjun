@@ -66,7 +66,7 @@ public class TableUtil {
         for (FieldConf fileCfg : fieldList) {
             dataType = com.qlangtech.tis.plugin.ds.DataType.ds(fileCfg.getType());
 //            DataType dataType = ;
-            builder.add(TableColumn.physical(fileCfg.getName(), converter.apply(new ColMeta(fileCfg.getName(), dataType,false))));
+            builder.add(TableColumn.physical(fileCfg.getName(), converter.apply(new ColMeta(fileCfg.getName(), dataType, false))));
         }
         DataType[] dataTypes =
                 builder.build().toRowDataType().getChildren().toArray(new DataType[]{});
