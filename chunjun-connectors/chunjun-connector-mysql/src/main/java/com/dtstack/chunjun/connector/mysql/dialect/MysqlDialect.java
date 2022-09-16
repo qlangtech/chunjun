@@ -19,10 +19,11 @@
 package com.dtstack.chunjun.connector.mysql.dialect;
 
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
+import com.dtstack.chunjun.connector.jdbc.dialect.SupportUpdateMode;
 import com.dtstack.chunjun.connector.mysql.converter.MysqlRawTypeConverter;
 import com.dtstack.chunjun.converter.RawTypeConverter;
+import com.dtstack.chunjun.sink.WriteMode;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
  * @author: wuren
  * @create: 2021/03/17
  */
+@SupportUpdateMode(modes = {WriteMode.INSERT, WriteMode.UPSERT, WriteMode.UPDATE, WriteMode.REPLACE})
 public class MysqlDialect implements JdbcDialect {
 
     @Override
@@ -70,7 +72,7 @@ public class MysqlDialect implements JdbcDialect {
     public Optional<String> getUpsertStatement(
             String schema,
             String tableName,
-           List< String> fieldNames,
+            List<String> fieldNames,
             List<String> uniqueKeyFields,
             boolean allReplace) {
         String updateClause;

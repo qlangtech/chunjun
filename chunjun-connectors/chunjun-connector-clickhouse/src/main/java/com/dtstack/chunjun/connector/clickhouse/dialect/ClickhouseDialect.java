@@ -18,10 +18,11 @@
 
 package com.dtstack.chunjun.connector.clickhouse.dialect;
 
-import com.dtstack.chunjun.connector.clickhouse.converter.ClickhouseRawTypeConverter;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
+import com.dtstack.chunjun.connector.jdbc.dialect.SupportUpdateMode;
 import com.dtstack.chunjun.connector.jdbc.source.JdbcInputSplit;
 import com.dtstack.chunjun.converter.RawTypeConverter;
+import com.dtstack.chunjun.sink.WriteMode;
 import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
 
 import java.util.List;
@@ -32,6 +33,7 @@ import java.util.Optional;
  * @author: xiuzhu
  * @create: 2021/05/08
  */
+@SupportUpdateMode(modes = {WriteMode.INSERT})
 public class ClickhouseDialect implements JdbcDialect {
 
     @Override
@@ -46,7 +48,7 @@ public class ClickhouseDialect implements JdbcDialect {
 
     @Override
     public RawTypeConverter getRawTypeConverter() {
-       // return ClickhouseRawTypeConverter::apply;
+        // return ClickhouseRawTypeConverter::apply;
         throw new UnsupportedOperationException();
     }
 

@@ -18,8 +18,10 @@
 
 package com.dtstack.chunjun.connector.greenplum.dialect;
 
+import com.dtstack.chunjun.connector.jdbc.dialect.SupportUpdateMode;
 import com.dtstack.chunjun.connector.postgresql.dialect.PostgresqlDialect;
 import com.dtstack.chunjun.converter.RawTypeConverter;
+import com.dtstack.chunjun.sink.WriteMode;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +31,7 @@ import java.util.Optional;
  *
  * @author jier
  */
+@SupportUpdateMode(modes = {WriteMode.INSERT})
 public class GreenplumDialect extends PostgresqlDialect {
 
     private static final String DIALECT_NAME = "Greenplum";

@@ -20,11 +20,13 @@ package com.dtstack.chunjun.connector.postgresql.dialect;
 
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
+import com.dtstack.chunjun.connector.jdbc.dialect.SupportUpdateMode;
 import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
 import com.dtstack.chunjun.connector.jdbc.util.JdbcUtil;
 import com.dtstack.chunjun.connector.postgresql.converter.PostgresqlColumnConverter;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.converter.RawTypeConverter;
+import com.dtstack.chunjun.sink.WriteMode;
 
 import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.table.types.logical.RowType;
@@ -44,6 +46,7 @@ import java.util.stream.Collectors;
  * @author: wuren
  * @create: 2021/04/22
  */
+@SupportUpdateMode(modes = {WriteMode.INSERT, WriteMode.UPDATE, WriteMode.UPSERT})
 public class PostgresqlDialect implements JdbcDialect {
 
     private static final String DIALECT_NAME = "PostgreSQL";
