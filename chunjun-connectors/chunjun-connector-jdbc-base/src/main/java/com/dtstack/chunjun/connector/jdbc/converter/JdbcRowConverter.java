@@ -32,11 +32,12 @@ import org.apache.flink.table.data.TimestampData;
 import org.apache.flink.table.types.logical.DecimalType;
 import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.table.types.logical.LogicalTypeRoot;
-import org.apache.flink.table.types.logical.RowType;
 import org.apache.flink.table.types.logical.TimestampType;
 import org.apache.flink.table.types.utils.TypeConversions;
 
 import io.vertx.core.json.JsonArray;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -46,31 +47,47 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 /** Base class for all converters that convert between JDBC object and Flink internal object. */
 public class JdbcRowConverter
         extends AbstractRowConverter<
-                ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType> {
+        ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType> {
 
     private static final long serialVersionUID = 1L;
 
-    public JdbcRowConverter(RowType rowType) {
-        super(rowType);
-        for (int i = 0; i < rowType.getFieldCount(); i++) {
-            toInternalConverters.add(
-                    wrapIntoNullableInternalConverter(
-                            createInternalConverter(rowType.getTypeAt(i))));
-            toExternalConverters.add(
-                    wrapIntoNullableExternalConverter(
-                            createExternalConverter(fieldTypes[i]), fieldTypes[i]));
-        }
+//    public JdbcRowConverter(
+//            int fieldCount //
+//            , ArrayList<IDeserializationConverter> toInternalConverters
+//            , ArrayList<ISerializationConverter> toExternalConverters) {
+//        super(null, fieldCount, toInternalConverters, toExternalConverters);
+//    }
+
+    public JdbcRowConverter(
+            int fieldCount
+            , List<IDeserializationConverter> toInternalConverters
+            , List<Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType>> toExternalConverters) {
+        super(fieldCount, toInternalConverters, toExternalConverters);
     }
+
+
+//    public JdbcRowConverter(RowType rowType) {
+//        super(rowType);
+//        for (int i = 0; i < rowType.getFieldCount(); i++) {
+//            toInternalConverters.add(
+//                    wrapIntoNullableInternalConverter(
+//                            createInternalConverter(rowType.getTypeAt(i))));
+//            toExternalConverters.add(
+//                    wrapIntoNullableExternalConverter(
+//                            createExternalConverter(fieldTypes[i]), fieldTypes[i]));
+//        }
+//    }
 
     @Override
     protected ISerializationConverter<FieldNamedPreparedStatement>
-            wrapIntoNullableExternalConverter(
-                    ISerializationConverter<FieldNamedPreparedStatement> serializationConverter,
-                    LogicalType type) {
+    wrapIntoNullableExternalConverter(
+            ISerializationConverter<FieldNamedPreparedStatement> serializationConverter,
+            LogicalType type) {
         final int sqlType =
                 JdbcTypeUtil.typeInformationToSqlType(
                         TypeConversions.fromDataTypeToLegacyInfo(
@@ -88,8 +105,8 @@ public class JdbcRowConverter
 
     @Override
     public RowData toInternal(ResultSet resultSet) throws Exception {
-        GenericRowData genericRowData = new GenericRowData(rowType.getFieldCount());
-        for (int pos = 0; pos < rowType.getFieldCount(); pos++) {
+        GenericRowData genericRowData = new GenericRowData(this.getFieldCount());
+        for (int pos = 0; pos < this.getFieldCount(); pos++) {
             Object field = resultSet.getObject(pos + 1);
             genericRowData.setField(pos, toInternalConverters.get(pos).deserialize(field));
         }
@@ -98,8 +115,8 @@ public class JdbcRowConverter
 
     @Override
     public RowData toInternalLookup(JsonArray jsonArray) throws Exception {
-        GenericRowData genericRowData = new GenericRowData(rowType.getFieldCount());
-        for (int pos = 0; pos < rowType.getFieldCount(); pos++) {
+        GenericRowData genericRowData = new GenericRowData(this.getFieldCount());
+        for (int pos = 0; pos < this.getFieldCount(); pos++) {
             Object field = jsonArray.getValue(pos);
             genericRowData.setField(pos, toInternalConverters.get(pos).deserialize(field));
         }
@@ -115,8 +132,8 @@ public class JdbcRowConverter
         return statement;
     }
 
-    @Override
-    protected IDeserializationConverter createInternalConverter(LogicalType type) {
+    // @Override
+    public static IDeserializationConverter createInternalConverter(LogicalType type) {
         switch (type.getTypeRoot()) {
             case NULL:
                 return val -> null;
@@ -144,7 +161,7 @@ public class JdbcRowConverter
                 return val ->
                         val instanceof BigInteger
                                 ? DecimalData.fromBigDecimal(
-                                        new BigDecimal((BigInteger) val, 0), precision, scale)
+                                new BigDecimal((BigInteger) val, 0), precision, scale)
                                 : DecimalData.fromBigDecimal((BigDecimal) val, precision, scale);
             case DATE:
                 return val ->
@@ -173,8 +190,8 @@ public class JdbcRowConverter
         }
     }
 
-    @Override
-    protected ISerializationConverter<FieldNamedPreparedStatement> createExternalConverter(
+    // @Override
+    public static ISerializationConverter<FieldNamedPreparedStatement> createExternalConverter(
             LogicalType type) {
         switch (type.getTypeRoot()) {
             case BOOLEAN:

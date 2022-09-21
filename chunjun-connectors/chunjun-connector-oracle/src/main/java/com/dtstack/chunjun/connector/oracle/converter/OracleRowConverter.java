@@ -32,12 +32,13 @@ import org.apache.flink.table.data.TimestampData;
 import org.apache.flink.table.types.logical.CharType;
 import org.apache.flink.table.types.logical.DecimalType;
 import org.apache.flink.table.types.logical.LogicalType;
-import org.apache.flink.table.types.logical.RowType;
 import org.apache.flink.table.types.logical.TimestampType;
 import org.apache.flink.table.types.logical.VarCharType;
 
 import io.vertx.core.json.JsonArray;
 import oracle.sql.TIMESTAMP;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -50,6 +51,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * company www.dtstack.com
@@ -64,15 +66,32 @@ public class OracleRowConverter extends JdbcRowConverter {
 
     protected ArrayList<IDeserializationConverter> toAsyncInternalConverters;
 
-    public OracleRowConverter(RowType rowType) {
-        super(rowType);
-        toAsyncInternalConverters = new ArrayList<>(rowType.getFieldCount());
-        for (int i = 0; i < rowType.getFieldCount(); i++) {
+    public OracleRowConverter(
+            int fieldCount, List<IDeserializationConverter> toInternalConverters
+            , List<Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType>> toExternalConverters
+    ) {
+        super(fieldCount, toInternalConverters, toExternalConverters);
+//        ArrayList<IDeserializationConverter> toAsyncInternalConverters
+//        this.toAsyncInternalConverters = toAsyncInternalConverters;
+
+        toAsyncInternalConverters = new ArrayList<>(fieldCount);
+        for (Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType> p : toExternalConverters) {
             toAsyncInternalConverters.add(
                     wrapIntoNullableInternalConverter(
-                            createAsyncInternalConverter(rowType.getTypeAt(i))));
+                            createAsyncInternalConverter(p.getValue())));
         }
+
     }
+
+//    public OracleRowConverter(RowType rowType) {
+//        super(rowType);
+//        toAsyncInternalConverters = new ArrayList<>(rowType.getFieldCount());
+//        for (int i = 0; i < rowType.getFieldCount(); i++) {
+//            toAsyncInternalConverters.add(
+//                    wrapIntoNullableInternalConverter(
+//                            createAsyncInternalConverter(rowType.getTypeAt(i))));
+//        }
+//    }
 
     protected IDeserializationConverter createAsyncInternalConverter(LogicalType type) {
         switch (type.getTypeRoot()) {
@@ -89,16 +108,16 @@ public class OracleRowConverter extends JdbcRowConverter {
 
     @Override
     public RowData toInternalLookup(JsonArray jsonArray) throws Exception {
-        GenericRowData genericRowData = new GenericRowData(rowType.getFieldCount());
-        for (int pos = 0; pos < rowType.getFieldCount(); pos++) {
+        GenericRowData genericRowData = new GenericRowData(this.getFieldCount());
+        for (int pos = 0; pos < this.getFieldCount(); pos++) {
             Object field = jsonArray.getValue(pos);
             genericRowData.setField(pos, toAsyncInternalConverters.get(pos).deserialize(field));
         }
         return genericRowData;
     }
 
-    @Override
-    protected IDeserializationConverter createInternalConverter(LogicalType type) {
+    // @Override
+    public static IDeserializationConverter createInternalConverter(LogicalType type) {
         switch (type.getTypeRoot()) {
             case NULL:
                 return val -> null;
@@ -125,7 +144,7 @@ public class OracleRowConverter extends JdbcRowConverter {
                 return val ->
                         val instanceof BigInteger
                                 ? DecimalData.fromBigDecimal(
-                                        new BigDecimal((BigInteger) val, 0), precision, scale)
+                                new BigDecimal((BigInteger) val, 0), precision, scale)
                                 : DecimalData.fromBigDecimal((BigDecimal) val, precision, scale);
             case DATE:
                 return val -> Long.valueOf(((Timestamp) val).getTime() / 1000).intValue();
@@ -178,8 +197,8 @@ public class OracleRowConverter extends JdbcRowConverter {
         }
     }
 
-    @Override
-    protected ISerializationConverter<FieldNamedPreparedStatement> createExternalConverter(
+    // @Override
+    public static ISerializationConverter<FieldNamedPreparedStatement> createExternalConverter(
             LogicalType type) {
         switch (type.getTypeRoot()) {
             case BOOLEAN:
@@ -203,7 +222,7 @@ public class OracleRowConverter extends JdbcRowConverter {
                 if (((CharType) type).getLength() > CLOB_LENGTH) {
                     return (val, index, statement) -> {
                         try (StringReader reader =
-                                new StringReader(val.getString(index).toString())) {
+                                     new StringReader(val.getString(index).toString())) {
                             statement.setClob(index, reader);
                         }
                     };
@@ -216,7 +235,7 @@ public class OracleRowConverter extends JdbcRowConverter {
                 if (((VarCharType) type).getLength() > CLOB_LENGTH) {
                     return (val, index, statement) -> {
                         try (StringReader reader =
-                                new StringReader(val.getString(index).toString())) {
+                                     new StringReader(val.getString(index).toString())) {
                             statement.setClob(index, reader);
                         }
                     };

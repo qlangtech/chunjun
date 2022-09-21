@@ -20,11 +20,14 @@ package com.dtstack.chunjun.connector.doris.converter;
 
 import com.dtstack.chunjun.connector.doris.options.DorisConf;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
+import com.dtstack.chunjun.converter.IDeserializationConverter;
 import com.dtstack.chunjun.converter.ISerializationConverter;
 import com.dtstack.chunjun.element.AbstractBaseColumn;
 import com.dtstack.chunjun.element.ColumnRowData;
 
 import org.apache.flink.table.data.RowData;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 import java.util.StringJoiner;
@@ -44,14 +47,22 @@ public class DorisColumnConverter
 
     private static final String NULL_VALUE = "\\N";
 
-    public DorisColumnConverter(DorisConf options) {
-        super(options.getColumn().size());
+
+    public DorisColumnConverter(
+            DorisConf options, int fieldCount, List<IDeserializationConverter> toInternalConverters
+            , List<Pair<ISerializationConverter<StringJoiner>, String>> toExternalConverters) {
+        super(fieldCount, toInternalConverters, toExternalConverters);
         this.options = options;
-        for (int i = 0; i < options.getColumn().size(); i++) {
-            toExternalConverters.add(
-                    wrapIntoNullableExternalConverter(createExternalConverter(""), ""));
-        }
     }
+
+//    public DorisColumnConverter(DorisConf options) {
+//        super(options.getColumn().size());
+//        this.options = options;
+//        for (int i = 0; i < options.getColumn().size(); i++) {
+//            toExternalConverters.add(
+//                    wrapIntoNullableExternalConverter(createExternalConverter(""), ""));
+//        }
+//    }
 
     @Override
     public RowData toInternal(RowData input) {
@@ -89,10 +100,9 @@ public class DorisColumnConverter
         });
     }
 
-    @Override
-    protected ISerializationConverter<StringJoiner> createExternalConverter(String type) {
+    // @Override
+    public static ISerializationConverter<StringJoiner> createExternalConverter(String type) {
         return (rowData, index, joiner) -> {
-
 
             AbstractBaseColumn value = ((ColumnRowData) rowData).getField(index);
             joiner.add(

@@ -31,13 +31,15 @@ import com.dtstack.chunjun.element.column.TimestampColumn;
 
 import org.apache.flink.connector.jdbc.utils.JdbcTypeUtil;
 import org.apache.flink.table.types.logical.LogicalType;
-import org.apache.flink.table.types.logical.RowType;
 import org.apache.flink.table.types.utils.TypeConversions;
 
 import oracle.sql.TIMESTAMP;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.List;
 
 /**
  * company www.dtstack.com
@@ -46,12 +48,19 @@ import java.sql.Timestamp;
  */
 public class OracleColumnConverter extends JdbcColumnConverter {
 
-    public OracleColumnConverter(RowType rowType, ChunJunCommonConf commonConf) {
-        super(rowType, commonConf);
+    public OracleColumnConverter(
+            ChunJunCommonConf commonConf, int fieldCount
+            , List<IDeserializationConverter> toInternalConverters
+            , List<Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType>> toExternalConverters) {
+        super(commonConf, fieldCount, toInternalConverters, toExternalConverters);
     }
 
-    @Override
-    protected IDeserializationConverter createInternalConverter(LogicalType type) {
+//    public OracleColumnConverter(RowType rowType, ChunJunCommonConf commonConf) {
+//        super(rowType, commonConf);
+//    }
+
+
+    public static IDeserializationConverter createInternalConverter(LogicalType type) {
         switch (type.getTypeRoot()) {
             case BOOLEAN:
                 return val -> new BooleanColumn(Boolean.parseBoolean(val.toString()));

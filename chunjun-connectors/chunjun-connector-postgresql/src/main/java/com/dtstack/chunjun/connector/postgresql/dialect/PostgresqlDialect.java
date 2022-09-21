@@ -25,13 +25,15 @@ import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
 import com.dtstack.chunjun.connector.jdbc.util.JdbcUtil;
 import com.dtstack.chunjun.connector.postgresql.converter.PostgresqlColumnConverter;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
+import com.dtstack.chunjun.converter.IDeserializationConverter;
+import com.dtstack.chunjun.converter.ISerializationConverter;
 import com.dtstack.chunjun.converter.RawTypeConverter;
 import com.dtstack.chunjun.sink.WriteMode;
 
 import org.apache.flink.table.types.logical.LogicalType;
-import org.apache.flink.table.types.logical.RowType;
 
 import io.vertx.core.json.JsonArray;
+import org.apache.commons.lang3.tuple.Pair;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -72,10 +74,19 @@ public class PostgresqlDialect implements JdbcDialect {
         throw new UnsupportedOperationException();
     }
 
+//    @Override
+//    public AbstractRowConverter<ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType>
+//    getColumnConverter(RowType rowType, ChunJunCommonConf commonConf) {
+//        return new PostgresqlColumnConverter(rowType, commonConf);
+//    }
+
     @Override
     public AbstractRowConverter<ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType>
-    getColumnConverter(RowType rowType, ChunJunCommonConf commonConf) {
-        return new PostgresqlColumnConverter(rowType, commonConf);
+    getColumnConverter(
+            ChunJunCommonConf commonConf, int fieldCount
+            , List<IDeserializationConverter> toInternalConverters
+            , List<Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType>> toExternalConverters) {
+        return new PostgresqlColumnConverter(commonConf, fieldCount, toInternalConverters, toExternalConverters);
     }
 
     @Override

@@ -23,10 +23,10 @@
 package com.dtstack.chunjun.connector.postgresql.converter;
 
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
-
 import com.dtstack.chunjun.connector.jdbc.converter.JdbcColumnConverter;
 import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
+import com.dtstack.chunjun.converter.ISerializationConverter;
 import com.dtstack.chunjun.element.AbstractBaseColumn;
 import com.dtstack.chunjun.element.column.BigDecimalColumn;
 import com.dtstack.chunjun.element.column.BooleanColumn;
@@ -36,13 +36,12 @@ import com.dtstack.chunjun.element.column.StringColumn;
 import com.dtstack.chunjun.element.column.TimeColumn;
 import com.dtstack.chunjun.element.column.TimestampColumn;
 
-import com.qlangtech.tis.plugin.ds.ColMeta;
-
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.logical.LogicalType;
-import org.apache.flink.table.types.logical.RowType;
 import org.apache.flink.table.types.logical.TimestampType;
 import org.apache.flink.table.types.logical.YearMonthIntervalType;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import org.postgresql.core.BaseConnection;
 import org.postgresql.core.Oid;
@@ -56,6 +55,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 /**
  * Company：www.dtstack.com.
  *
@@ -64,13 +64,20 @@ import java.util.Map;
  */
 public class PostgresqlColumnConverter extends JdbcColumnConverter {
 
-    private List<ColMeta> fieldTypeList;
+    // private List<ColMeta> fieldTypeList;
     private transient BaseConnection connection;
     private static final Map<String, Integer> arrayType = new HashMap<>();
 
-    public PostgresqlColumnConverter(RowType rowType, ChunJunCommonConf commonConf) {
-        super(rowType, commonConf);
+    public PostgresqlColumnConverter(
+            ChunJunCommonConf commonConf
+            , int fieldCount, List<IDeserializationConverter> toInternalConverters
+            , List<Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType>> toExternalConverters) {
+        super(commonConf, fieldCount, toInternalConverters, toExternalConverters);
     }
+
+//    public PostgresqlColumnConverter(RowType rowType, ChunJunCommonConf commonConf) {
+//        super(rowType, commonConf);
+//    }
 
     static {
         arrayType.put("_int4", Oid.INT4_ARRAY);
@@ -96,8 +103,8 @@ public class PostgresqlColumnConverter extends JdbcColumnConverter {
         return statement;
     }
 
-    @Override
-    protected IDeserializationConverter createInternalConverter(LogicalType type) {
+    // @Override
+    public static IDeserializationConverter createInternalConverter(LogicalType type) {
         switch (type.getTypeRoot()) {
             case BOOLEAN:
                 return val -> new BooleanColumn(Boolean.parseBoolean(val.toString()));
@@ -216,9 +223,9 @@ public class PostgresqlColumnConverter extends JdbcColumnConverter {
 //        }
 //    }
 
-    public void setFieldTypeList(List<ColMeta> fieldTypeList) {
-        this.fieldTypeList = fieldTypeList;
-    }
+//    public void setFieldTypeList(List<ColMeta> fieldTypeList) {
+//        this.fieldTypeList = fieldTypeList;
+//    }
 
     public void setConnection(BaseConnection connection) {
         this.connection = connection;

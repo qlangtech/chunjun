@@ -18,12 +18,42 @@
 
 package com.dtstack.chunjun.connector.doris.converter;
 
+import com.dtstack.chunjun.conf.ChunJunCommonConf;
 import com.dtstack.chunjun.connector.jdbc.converter.JdbcRowConverter;
+import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
+import com.dtstack.chunjun.converter.AbstractRowConverter;
+import com.dtstack.chunjun.converter.IDeserializationConverter;
+import com.dtstack.chunjun.converter.ISerializationConverter;
 
+import org.apache.commons.lang3.tuple.Pair;
+
+import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.table.types.logical.RowType;
 
+
+
+import java.util.List;
+
 public class DorisJdbcRowConverter extends JdbcRowConverter {
-    public DorisJdbcRowConverter(RowType rowType) {
-        super(rowType);
+
+    public DorisJdbcRowConverter(
+            ChunJunCommonConf commonConf, int fieldCount, List<IDeserializationConverter> toInternalConverters
+            , List<Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType>> toExternalConverters) {
+        super(fieldCount, toInternalConverters, toExternalConverters);
+        this.commonConf = commonConf;
     }
+
+    public static AbstractRowConverter create(RowType rowType) {
+        throw new UnsupportedOperationException();
+    }
+
+//    public DorisJdbcRowConverter(
+//            ChunJunCommonConf commonConf, int fieldCount
+//            , List<IDeserializationConverter> toInternalConverters, List<Pair<ISerializationConverter, LogicalType>> toExternalConverters) {
+//        super(commonConf, fieldCount, toInternalConverters, toExternalConverters);
+//    }
+
+//    public DorisJdbcRowConverter(RowType rowType) {
+//        super(rowType);
+//    }
 }

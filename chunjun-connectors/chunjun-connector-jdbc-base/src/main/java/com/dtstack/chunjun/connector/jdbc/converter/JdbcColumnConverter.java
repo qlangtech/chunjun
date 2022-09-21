@@ -35,24 +35,25 @@ import com.dtstack.chunjun.element.column.StringColumn;
 import com.dtstack.chunjun.element.column.TimeColumn;
 import com.dtstack.chunjun.element.column.TimestampColumn;
 
+import org.apache.flink.table.data.DecimalData;
 import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.logical.LogicalType;
-import org.apache.flink.table.types.logical.RowType;
 import org.apache.flink.table.types.logical.TimestampType;
 import org.apache.flink.table.types.logical.YearMonthIntervalType;
 
 import io.vertx.core.json.JsonArray;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.time.LocalDate;
 import java.util.List;
+import java.util.function.Function;
 
 /** Base class for all converters that convert between JDBC object and Flink internal object. */
 public class JdbcColumnConverter
@@ -60,21 +61,29 @@ public class JdbcColumnConverter
         ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType> {
 
 
-    public JdbcColumnConverter(RowType rowType) {
-        this(rowType, null);
+//    public JdbcColumnConverter(RowType rowType) {
+//        this(rowType, null);
+//    }
+
+
+    public JdbcColumnConverter(
+            ChunJunCommonConf commonConf, int fieldCount, List<IDeserializationConverter> toInternalConverters
+            , List<Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType>> toExternalConverters) {
+        super(fieldCount, toInternalConverters, toExternalConverters);
+        this.setCommonConf(commonConf);
     }
 
-    public JdbcColumnConverter(RowType rowType, ChunJunCommonConf commonConf) {
-        super(rowType, commonConf);
-        for (int i = 0; i < rowType.getFieldCount(); i++) {
-            toInternalConverters.add(
-                    wrapIntoNullableInternalConverter(
-                            createInternalConverter(rowType.getTypeAt(i))));
-            toExternalConverters.add(
-                    wrapIntoNullableExternalConverter(
-                            createExternalConverter(fieldTypes[i]), fieldTypes[i]));
-        }
-    }
+//    public JdbcColumnConverter(RowType rowType, ChunJunCommonConf commonConf) {
+//        super(rowType, commonConf);
+//        for (int i = 0; i < rowType.getFieldCount(); i++) {
+//            toInternalConverters.add(
+//                    wrapIntoNullableInternalConverter(
+//                            createInternalConverter(rowType.getTypeAt(i))));
+//            toExternalConverters.add(
+//                    wrapIntoNullableExternalConverter(
+//                            createExternalConverter(fieldTypes[i]), fieldTypes[i]));
+//        }
+//    }
 
     @Override
     protected ISerializationConverter<FieldNamedPreparedStatement>
@@ -105,8 +114,8 @@ public class JdbcColumnConverter
         ColumnRowData result;
         if (fieldConfList.size() == 1
                 && ConstantValue.STAR_SYMBOL.equals(fieldConfList.get(0).getName())) {
-            result = new ColumnRowData(fieldTypes.length);
-            for (int index = 0; index < fieldTypes.length; index++) {
+            result = new ColumnRowData(this.getFieldCount());
+            for (int index = 0; index < this.getFieldCount(); index++) {
                 Object field = resultSet.getObject(index + 1);
                 AbstractBaseColumn baseColumn =
                         (AbstractBaseColumn) toInternalConverters.get(index).deserialize(field);
@@ -151,8 +160,12 @@ public class JdbcColumnConverter
         return statement;
     }
 
-    @Override
-    protected IDeserializationConverter createInternalConverter(LogicalType type) {
+//    @Override
+//    protected IDeserializationConverter createInternalConverter(LogicalType type) {
+//        return getRowDataValConverter(type);
+//    }
+
+    public static IDeserializationConverter getRowDataValConverter(LogicalType type) {
         switch (type.getTypeRoot()) {
             case BOOLEAN:
                 return val -> new BooleanColumn(Boolean.parseBoolean(val.toString()));
@@ -209,23 +222,31 @@ public class JdbcColumnConverter
         }
     }
 
-    @Override
-    protected ISerializationConverter<FieldNamedPreparedStatement> createExternalConverter(
-            LogicalType type) {
+//    @Override
+//    protected ISerializationConverter<FieldNamedPreparedStatement> createExternalConverter(
+//            LogicalType type) {
+//        //  return createJdbcStatementValConverter(type,null);
+//        throw new UnsupportedOperationException();
+//    }
+
+    public static ISerializationConverter<FieldNamedPreparedStatement> createJdbcStatementValConverter(LogicalType type, Function<RowData, Object> valGetter) {
         switch (type.getTypeRoot()) {
             case BOOLEAN:
                 return (val, index, statement) -> {
 //                    statement.setBoolean(
 //                            index, ((ColumnRowData) val).getField(index).asBoolean());
-                    statement.setBoolean(index, val.getBoolean(index));
+                    statement.setBoolean(index, (Boolean) valGetter.apply(val) //val.getBoolean(index)
+                    );
                 };
             case TINYINT:
-                return (val, index, statement) -> statement.setByte(index, val.getByte(index));
+                return (val, index, statement) -> statement.setByte(index, (Byte) valGetter.apply(val) //val.getByte(index)
+                );
             case SMALLINT: {
                 return (val, index, statement) -> {
                     short a = 0;
                     a = val.getShort(index);
-                    statement.setShort(index, a);
+                    statement.setShort(index, (Short) valGetter.apply(val) //a
+                    );
                 };
             }
             case INTEGER:
@@ -238,25 +259,27 @@ public class JdbcColumnConverter
 //                        LOG.error("val {}, index{}", val, index, e);
 //                    }
                     a = val.getInt(index);
-                    statement.setInt(index, a);
+                    statement.setInt(index, (Integer) valGetter.apply(val));
                 };
             case FLOAT:
                 return (val, index, statement) -> {
                     // statement.setFloat(index, ((ColumnRowData) val).getField(index).asFloat());
-
-                    statement.setFloat(index, val.getFloat(index));
+                    statement.setFloat(index, (Float) valGetter.apply(val) //val.getFloat(index)
+                    );
                 };
             case DOUBLE:
                 return (val, index, statement) -> {
 //                    statement.setDouble(
 //                            index, ((ColumnRowData) val).getField(index).asDouble());
                     statement.setDouble(
-                            index, val.getDouble(index));
+                            index, (Double) valGetter.apply(val) //val.getDouble(index)
+                    );
                 };
             case BIGINT:
                 return (val, index, statement) -> {
                     // statement.setLong(index, ((ColumnRowData) val).getField(index).asLong());
-                    statement.setLong(index, val.getLong(index));
+                    statement.setLong(index, (Long) valGetter.apply(val) //val.getLong(index)
+                    );
                 };
             case DECIMAL:
                 return (val, index, statement) -> {
@@ -264,7 +287,9 @@ public class JdbcColumnConverter
 //                            index, ((ColumnRowData) val).getField(index).asBigDecimal());
 
                     statement.setBigDecimal(
-                            index, val.getDecimal(index, -1, -1).toBigDecimal());
+                            index, ((DecimalData) valGetter.apply(val)).toBigDecimal()
+                            //  val.getDecimal(index, -1, -1).toBigDecimal()
+                    );
                 };
             case CHAR:
             case VARCHAR:
@@ -272,12 +297,15 @@ public class JdbcColumnConverter
 //                    statement.setString(
 //                            index, ((ColumnRowData) val).getField(index).asString());
                     statement.setString(
-                            index, val.getString(index).toString());
+                            index, (String) valGetter.apply(val) //val.getString(index).toString()
+                    );
                 };
             case DATE:
                 return (val, index, statement) -> {
                     //  statement.setDate(index, ((ColumnRowData) val).getField(index).asSqlDate());
-                    statement.setDate(index, Date.valueOf(LocalDate.ofEpochDay(val.getInt(index))));
+                    statement.setDate(index, (java.sql.Date) valGetter.apply(val));
+                    // statement.setDate(index, Date.valueOf(LocalDate.ofEpochDay((Integer) valGetter.apply(val))) //  Date.valueOf(LocalDate.ofEpochDay(val.getInt(index)))
+                    // );
                 };
             case TIME_WITHOUT_TIME_ZONE:
                 return (val, index, statement) -> {
@@ -287,8 +315,9 @@ public class JdbcColumnConverter
                     // val.get
                     // throw new UnsupportedOperationException("index:" + index + ",val:" + val.toString());
 //                    java.sql.Time time =
-
-                    statement.setTime(index, new Time(val.getInt(index)));
+                    statement.setTime(index, (Time) valGetter.apply(val));
+//                    statement.setTime(index, new Time((Integer) valGetter.apply(val)) //   new Time(val.getInt(index))
+//                    );
                 };
             case TIMESTAMP_WITH_TIME_ZONE:
             case TIMESTAMP_WITHOUT_TIME_ZONE:
@@ -296,14 +325,16 @@ public class JdbcColumnConverter
 //                    statement.setTimestamp(
 //                            index, ((ColumnRowData) val).getField(index).asTimestamp());
                     statement.setTimestamp(
-                            index, val.getTimestamp(index, -1).toTimestamp());
+                            index, ((Timestamp) valGetter.apply(val))  //val.getTimestamp(index, -1).toTimestamp()
+                    );
                 };
 
             case BINARY:
             case VARBINARY:
                 return (val, index, statement) -> {
                     //  statement.setBytes(index, ((ColumnRowData) val).getField(index).asBytes());
-                    statement.setBytes(index, val.getBinary(index));
+                    statement.setBytes(index, (byte[]) valGetter.apply(val)  //val.getBinary(index)
+                    );
                 };
 
             default:

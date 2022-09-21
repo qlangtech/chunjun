@@ -87,7 +87,7 @@ public class DorisDynamicTableSink extends JdbcDynamicTableSink {
         builder.setColumns(Arrays.asList(physicalSchema.getFieldNames()));
         builder.setConfig(dorisConf);
         builder.setDorisOptions(dorisConf);
-        builder.setRowConverter(new DorisHttpRowConverter(rowType));
+        builder.setRowConverter( DorisHttpRowConverter.create(rowType));
         return builder;
     }
 
@@ -113,7 +113,7 @@ public class DorisDynamicTableSink extends JdbcDynamicTableSink {
         builder.setConfig(dorisConf);
         builder.setJdbcDialect(jdbcDialect);
         builder.setJdbcConf(jdbcConf);
-        builder.setRowConverter(new DorisJdbcRowConverter(rowType));
+        builder.setRowConverter( DorisJdbcRowConverter.create(rowType));
         return builder;
     }
 

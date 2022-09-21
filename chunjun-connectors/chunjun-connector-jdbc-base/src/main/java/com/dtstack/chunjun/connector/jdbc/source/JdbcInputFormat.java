@@ -148,17 +148,21 @@ public class JdbcInputFormat extends BaseRichInputFormat {
             // 增量任务
             needUpdateEndLocation =
                     jdbcConf.isIncrement() && !jdbcConf.isPolling() && !jdbcConf.isUseMaxFunc();
-            RowType rowType =
-                    TableUtil.createRowTypeByColsMeta(this.colsMeta, jdbcDialect.getRawTypeConverter());
-            setRowConverter(
-                    rowConverter == null
-                            ? jdbcDialect.getColumnConverter(rowType, jdbcConf)
-                            : rowConverter);
+            initializeRowConverter();
         } catch (SQLException se) {
             String expMsg = se.getMessage();
             expMsg = querySQL == null ? expMsg : expMsg + "\n querySQL: " + querySQL;
             throw new IllegalArgumentException("open() failed." + expMsg, se);
         }
+    }
+
+    protected void initializeRowConverter() {
+        RowType rowType =
+                TableUtil.createRowTypeByColsMeta(this.colsMeta, jdbcDialect.getRawTypeConverter());
+        this.setRowConverter(
+                rowConverter == null
+                        ? jdbcDialect.getColumnConverter(rowType, jdbcConf)
+                        : rowConverter);
     }
 
     @Override

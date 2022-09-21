@@ -25,13 +25,15 @@ import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
 import com.dtstack.chunjun.connector.oracle.converter.OracleColumnConverter;
 import com.dtstack.chunjun.connector.oracle.converter.OracleRowConverter;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
+import com.dtstack.chunjun.converter.IDeserializationConverter;
+import com.dtstack.chunjun.converter.ISerializationConverter;
 import com.dtstack.chunjun.converter.RawTypeConverter;
 import com.dtstack.chunjun.sink.WriteMode;
 
 import org.apache.flink.table.types.logical.LogicalType;
-import org.apache.flink.table.types.logical.RowType;
 
 import io.vertx.core.json.JsonArray;
+import org.apache.commons.lang3.tuple.Pair;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -56,6 +58,13 @@ public class OracleDialect implements JdbcDialect {
     @Override
     public boolean canHandle(String url) {
         return url.startsWith("jdbc:oracle:thin:");
+    }
+
+    @Override
+    public AbstractRowConverter<ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType> getColumnConverter(
+            ChunJunCommonConf commonConf, int fieldCount, List<IDeserializationConverter> toInternalConverters
+            , List<Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType>> toExternalConverters) {
+        return new OracleColumnConverter(commonConf, fieldCount, toInternalConverters, toExternalConverters);
     }
 
     @Override
@@ -117,17 +126,25 @@ public class OracleDialect implements JdbcDialect {
         return Optional.of(mergeIntoSql.toString());
     }
 
-    @Override
-    public AbstractRowConverter<ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType>
-    getRowConverter(RowType rowType) {
-        return new OracleRowConverter(rowType);
-    }
+//    @Override
+//    public AbstractRowConverter<ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType>
+//    getRowConverter(RowType rowType) {
+//        return new OracleRowConverter(rowType);
+//    }
 
     @Override
     public AbstractRowConverter<ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType>
-    getColumnConverter(RowType rowType, ChunJunCommonConf commonConf) {
-        return new OracleColumnConverter(rowType, commonConf);
+    getRowConverter(
+            int fieldCount, List<IDeserializationConverter> toInternalConverters
+            , List<Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType>> toExternalConverters) {
+        return new OracleRowConverter(fieldCount, toInternalConverters, toExternalConverters);
     }
+
+    //    @Override
+//    public AbstractRowConverter<ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType>
+//    getColumnConverter(RowType rowType, ChunJunCommonConf commonConf) {
+//        return new OracleColumnConverter(rowType, commonConf);
+//    }
 
     /** build select sql , such as (SELECT ? "A",? "B" FROM DUAL) */
     public String buildDualQueryStatement(List<String> column) {

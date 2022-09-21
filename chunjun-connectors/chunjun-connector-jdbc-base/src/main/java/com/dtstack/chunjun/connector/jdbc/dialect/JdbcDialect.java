@@ -25,7 +25,11 @@ import com.dtstack.chunjun.connector.jdbc.source.JdbcInputSplit;
 import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
 import com.dtstack.chunjun.connector.jdbc.util.JdbcUtil;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
+import com.dtstack.chunjun.converter.IDeserializationConverter;
+import com.dtstack.chunjun.converter.ISerializationConverter;
 import com.dtstack.chunjun.converter.RawTypeConverter;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.api.ValidationException;
@@ -68,16 +72,25 @@ public interface JdbcDialect extends Serializable {
     /** get jdbc RawTypeConverter */
     RawTypeConverter getRawTypeConverter();
 
+
     /**
      * Get converter that convert jdbc object and Flink internal object each other.
-     *
-     * @param rowType the given row type
-     *
-     * @return a row converter for the database
+     */
+    default AbstractRowConverter<ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType>
+    getRowConverter(
+            int fieldCount
+            , List<IDeserializationConverter> toInternalConverters
+            , List<Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType>> toExternalConverters) {
+        return new JdbcRowConverter(fieldCount, toInternalConverters, toExternalConverters);
+    }
+
+    /**
+     * Get converter that convert jdbc object and Flink internal object each other.
      */
     default AbstractRowConverter<ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType>
     getRowConverter(RowType rowType) {
-        return new JdbcRowConverter(rowType);
+        // return new JdbcRowConverter(fieldCount, toInternalConverters, toExternalConverters);
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -97,8 +110,18 @@ public interface JdbcDialect extends Serializable {
      */
     default AbstractRowConverter<ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType>
     getColumnConverter(RowType rowType, ChunJunCommonConf commonConf) {
-        return new JdbcColumnConverter(rowType, commonConf);
+        //  return new JdbcColumnConverter(rowType, commonConf);
+        throw new UnsupportedOperationException();
     }
+
+
+    default AbstractRowConverter<ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType>
+    getColumnConverter(
+            ChunJunCommonConf commonConf, int fieldCount, List<IDeserializationConverter> toInternalConverters
+            , List<Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType>> toExternalConverters) {
+        return new JdbcColumnConverter(commonConf, fieldCount, toInternalConverters, toExternalConverters);
+    }
+
 
     /**
      * Check if this dialect instance support a specific data type in table schema.

@@ -40,6 +40,7 @@ import org.apache.flink.table.types.logical.RowType;
 
 import com.google.common.collect.Lists;
 import com.qlangtech.tis.plugin.ds.ColMeta;
+import com.qlangtech.tis.plugin.ds.DataType;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -125,13 +126,7 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
             FieldNamedPreparedStatement fieldNamedPreparedStatement =
                     FieldNamedPreparedStatement.prepareStatement(
                             dbConn, prepareTemplates(), this.colsMeta);
-            RowType rowType =
-                    TableUtil.createRowTypeByColsMeta(
-                            this.colsMeta, jdbcDialect.getRawTypeConverter());
-            setRowConverter(
-                    rowConverter == null
-                            ? jdbcDialect.getColumnConverter(rowType, jdbcConf)
-                            : rowConverter);
+            initializeRowConverter();
             stmtProxy =
                     new PreparedStmtProxy(
                             fieldNamedPreparedStatement,
@@ -140,6 +135,16 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
                             jdbcConf,
                             jdbcDialect);
         }
+    }
+
+    protected void initializeRowConverter() {
+        RowType rowType =
+                TableUtil.createRowTypeByColsMeta(
+                        this.colsMeta, jdbcDialect.getRawTypeConverter());
+        setRowConverter(
+                rowConverter == null
+                        ? jdbcDialect.getColumnConverter(rowType, jdbcConf)
+                        : rowConverter);
     }
 
     /** init columnNameList、 columnTypeList and hasConstantField */
@@ -160,8 +165,12 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
     // throw new UnsupportedOperationException();
     //}
 
+
     /**
      * detailed logic for handling column
+     *
+     * @param fieldList source端的字段
+     * @param colsMeta 目标（Sink端的数据类型）
      */
     protected void handleColumnList(
             List<FieldConf> fieldList,
@@ -177,9 +186,14 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
          * 这样能够保证'colsMeta'中的字段顺序和fieldList 字段顺序是严格保证一致的
          * 能保证组装RowData 在DTO2RowDataMapper中依赖的 List<FlinkCol> 和 TISDorisColumnConverter toExternalConverters顺序一致
          **********************************************/
+        DataType type = null;
+        ColMeta sinkEndColMeta = null;
         for (FieldConf field : fieldList) {
-            this.colsMeta.add(Objects.requireNonNull(
-                    colsMeta.get(field.getName()), "field:" + field.getName() + " relevant ColMeta can not be null"));
+            sinkEndColMeta = Objects.requireNonNull(
+                    colsMeta.get(field.getName()), "field:" + field.getName() + " relevant ColMeta can not be null");
+            type = DataType.ds(field.getType());
+
+            this.colsMeta.add(new ColMeta(sinkEndColMeta.getName(), type, sinkEndColMeta.isPk()));
         }
 
         // this.colsMeta = colsMeta.stream().filter((meta) -> fields.contains(meta.name)).collect(Collectors.toList());

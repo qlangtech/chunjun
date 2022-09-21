@@ -91,7 +91,7 @@ public abstract class PostgresOutputFormat extends JdbcOutputFormat {
             checkUpsert();
             if (rowConverter instanceof PostgresqlColumnConverter) {
                 ((PostgresqlColumnConverter) rowConverter).setConnection((BaseConnection) dbConn);
-                ((PostgresqlColumnConverter) rowConverter).setFieldTypeList(colsMeta);
+//                ((PostgresqlColumnConverter) rowConverter).setFieldTypeList(colsMeta);
             }
         } catch (SQLException sqe) {
             throw new IllegalArgumentException("checkUpsert() failed.", sqe);

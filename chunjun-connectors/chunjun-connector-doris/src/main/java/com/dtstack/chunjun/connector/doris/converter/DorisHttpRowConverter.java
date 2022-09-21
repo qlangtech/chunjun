@@ -19,15 +19,19 @@
 package com.dtstack.chunjun.connector.doris.converter;
 
 import com.dtstack.chunjun.converter.AbstractRowConverter;
+import com.dtstack.chunjun.converter.IDeserializationConverter;
 import com.dtstack.chunjun.converter.ISerializationConverter;
 
-import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.table.types.logical.LogicalTypeRoot;
 import org.apache.flink.table.types.logical.RowType;
 
+import org.apache.commons.lang3.tuple.Pair;
+
+import java.util.List;
 import java.util.StringJoiner;
+import java.util.function.Function;
 
 /**
  * Company: www.dtstack.com
@@ -42,17 +46,28 @@ public class DorisHttpRowConverter
 
     private static final String NULL_VALUE = "\\N";
 
-    public DorisHttpRowConverter(RowType rowType) {
-        super(rowType);
-        for (int i = 0; i < rowType.getFieldCount(); i++) {
-            toInternalConverters.add(
-                    wrapIntoNullableInternalConverter(
-                            createInternalConverter(rowType.getTypeAt(i))));
-            toExternalConverters.add(
-                    wrapIntoNullableExternalConverter(
-                            createExternalConverter(fieldTypes[i]), fieldTypes[i]));
-        }
+
+    public static DorisHttpRowConverter create(RowType rowType) {
+        throw new UnsupportedOperationException();
     }
+
+    public DorisHttpRowConverter(
+            int fieldCount, List<IDeserializationConverter> toInternalConverters
+            , List<Pair<ISerializationConverter<StringJoiner>, LogicalType>> toExternalConverters) {
+        super(fieldCount, toInternalConverters, toExternalConverters);
+    }
+
+//    public DorisHttpRowConverter(RowType rowType) {
+//        super(rowType);
+//        for (int i = 0; i < rowType.getFieldCount(); i++) {
+//            toInternalConverters.add(
+//                    wrapIntoNullableInternalConverter(
+//                            createInternalConverter(rowType.getTypeAt(i))));
+//            toExternalConverters.add(
+//                    wrapIntoNullableExternalConverter(
+//                            createExternalConverter(fieldTypes[i]), fieldTypes[i]));
+//        }
+//    }
 
     @Override
     public RowData toInternal(RowData input) throws Exception {
@@ -61,7 +76,7 @@ public class DorisHttpRowConverter
 
     @Override
     public StringJoiner toExternal(RowData rowData, StringJoiner joiner) throws Exception {
-        for (int index = 0; index < fieldTypes.length; index++) {
+        for (int index = 0; index < this.getFieldCount(); index++) {
             toExternalConverters.get(index).serialize(rowData, index, joiner);
         }
         return joiner;
@@ -81,10 +96,11 @@ public class DorisHttpRowConverter
         });
     }
 
-    @Override
-    protected ISerializationConverter<StringJoiner> createExternalConverter(LogicalType type) {
+    // @Override
+    public static ISerializationConverter<StringJoiner> createExternalConverter(LogicalType type, Function<RowData, Object> valGetter) {
         return (rowData, index, joiner) -> {
-            Object value = ((GenericRowData) rowData).getField(index);
+            // Object value = ((GenericRowData) rowData).getField(index);
+            Object value = valGetter.apply(rowData);
             joiner.add("".equals(value.toString()) ? NULL_VALUE : value.toString());
         };
     }

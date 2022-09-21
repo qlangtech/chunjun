@@ -175,10 +175,10 @@ public class DorisLoadClient implements Serializable {
             case UPDATE_BEFORE:
                 updateBefore = true;
             case DELETE: {
-                WriteMode writeMode = conf.getDorisWriteMode();
-                if (!(WriteMode.UPDATE == writeMode || WriteMode.REPLACE == writeMode)) {
-                    throw new IllegalStateException("illegal write mode:" + writeMode);
-                }
+//                WriteMode writeMode = conf.getDorisWriteMode();
+//                if (!(WriteMode.UPDATE == writeMode || WriteMode.REPLACE == writeMode)) {
+//                    throw new IllegalStateException("illegal write mode:" + writeMode);
+//                }
                 List<ColVal> pkVals = converter.getValByColName(value, conf.getUniqueKey());
                 if (CollectionUtils.isEmpty(pkVals)) {
                     throw new IllegalArgumentException("deletePks can not be empty");

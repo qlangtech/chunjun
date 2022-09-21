@@ -25,9 +25,9 @@ import com.dtstack.chunjun.element.column.StringColumn;
 import com.dtstack.chunjun.enums.ColumnType;
 import com.dtstack.chunjun.util.DateUtil;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import org.apache.flink.table.data.RowData;
-import org.apache.flink.table.types.logical.LogicalType;
-import org.apache.flink.table.types.logical.RowType;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -39,10 +39,8 @@ import java.lang.invoke.MethodHandles;
 import java.sql.ResultSet;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.List;
-
-import static org.apache.flink.util.Preconditions.checkNotNull;
+import java.util.stream.Collectors;
 
 /**
  * Converter that is responsible to convert between JDBC object and Flink SQL internal data
@@ -60,23 +58,54 @@ public abstract class AbstractRowConverter<SourceT, LookupT, SinkT, T> implement
     protected static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private static final long serialVersionUID = 1L;
-    protected RowType rowType;
-    protected ArrayList<IDeserializationConverter> toInternalConverters;
-    protected ArrayList<ISerializationConverter> toExternalConverters;
-    protected LogicalType[] fieldTypes;
+    // protected RowType rowType;
+    protected final List<IDeserializationConverter> toInternalConverters;
+    protected final List<ISerializationConverter> toExternalConverters;
+    private final int fieldCount;
+    // protected LogicalType[] fieldTypes;
     protected ChunJunCommonConf commonConf;
 
-    public AbstractRowConverter() {
+    protected int getFieldCount() {
+        return this.fieldCount;
+    }
+//    public AbstractRowConverter() {
+//    }
+
+    public AbstractRowConverter(
+            int fieldCount
+            , List<IDeserializationConverter> toInternalConverters
+            , List<Pair<ISerializationConverter<SinkT>, T>> toExternalConverters) {
+        // this(fieldCount);
+        this.fieldCount = fieldCount;
+        // this.commonConf = commonConf;
+
+//        toInternalConverters.add(
+//                wrapIntoNullableInternalConverter(
+//                        createInternalConverter(rowType.getTypeAt(i))));
+//        toExternalConverters.add(
+//                wrapIntoNullableExternalConverter(
+//                        createExternalConverter(fieldTypes[i]), fieldTypes[i]));
+
+        this.toInternalConverters = toInternalConverters.stream()
+                .map((c) -> wrapIntoNullableInternalConverter(c)).collect(Collectors.toList());
+        this.toExternalConverters = toExternalConverters.stream()
+                .map((c) -> wrapIntoNullableExternalConverter(c.getKey(), c.getValue())).collect(Collectors.toList());
+        // this.rowType = checkNotNull(rowType);
+//        this.fieldTypes =
+//                rowType.getFields().stream()
+//                        .map(RowType.RowField::getType)
+//                        .toArray(LogicalType[]::new);
     }
 
-    public AbstractRowConverter(RowType rowType) {
-        this(rowType.getFieldCount());
-        this.rowType = checkNotNull(rowType);
-        this.fieldTypes =
-                rowType.getFields().stream()
-                        .map(RowType.RowField::getType)
-                        .toArray(LogicalType[]::new);
-    }
+//    public AbstractRowConverter(RowType rowType, ChunJunCommonConf commonConf) {
+//        this(rowType.getFieldCount());
+//        this.rowType = checkNotNull(rowType);
+//        this.fieldTypes =
+//                rowType.getFields().stream()
+//                        .map(RowType.RowField::getType)
+//                        .toArray(LogicalType[]::new);
+//        this.commonConf = commonConf;
+//    }
 
     public List<ColVal> getValByColName(RowData value, List<String> col) {
         throw new UnsupportedOperationException();
@@ -92,29 +121,20 @@ public abstract class AbstractRowConverter<SourceT, LookupT, SinkT, T> implement
         }
     }
 
-    public AbstractRowConverter(RowType rowType, ChunJunCommonConf commonConf) {
-        this(rowType.getFieldCount());
-        this.rowType = checkNotNull(rowType);
-        this.fieldTypes =
-                rowType.getFields().stream()
-                        .map(RowType.RowField::getType)
-                        .toArray(LogicalType[]::new);
-        this.commonConf = commonConf;
-    }
 
-    public AbstractRowConverter(int converterSize) {
-        this.toInternalConverters = new ArrayList<>(converterSize);
-        this.toExternalConverters = new ArrayList<>(converterSize);
-    }
+//    public AbstractRowConverter(int converterSize) {
+//        this.toInternalConverters = new ArrayList<>(converterSize);
+//        this.toExternalConverters = new ArrayList<>(converterSize);
+//    }
 
     protected IDeserializationConverter wrapIntoNullableInternalConverter(
-            IDeserializationConverter IDeserializationConverter) {
+            IDeserializationConverter deserializationConverter) {
         return val -> {
             if (val == null) {
                 return null;
             } else {
                 try {
-                    return IDeserializationConverter.deserialize(val);
+                    return deserializationConverter.deserialize(val);
                 } catch (Exception e) {
                     LOG.error("value [{}] convent failed ", val);
                     throw e;
@@ -216,27 +236,27 @@ public abstract class AbstractRowConverter<SourceT, LookupT, SinkT, T> implement
      */
     public abstract SinkT toExternal(RowData rowData, SinkT output) throws Exception;
 
-    /**
-     * 将外部数据库类型转换为flink内部类型
-     *
-     * @param type type
-     *
-     * @return return
-     */
-    protected IDeserializationConverter createInternalConverter(T type) {
-        return null;
-    }
-
-    /**
-     * 将flink内部的数据类型转换为外部数据库系统类型
-     *
-     * @param type type
-     *
-     * @return return
-     */
-    protected ISerializationConverter createExternalConverter(T type) {
-        return null;
-    }
+//    /**
+//     * 将外部数据库类型转换为flink内部类型
+//     *
+//     * @param type type
+//     *
+//     * @return return
+//     */
+//    protected IDeserializationConverter createInternalConverter(T type) {
+//        return null;
+//    }
+//
+//    /**
+//     * 将flink内部的数据类型转换为外部数据库系统类型
+//     *
+//     * @param type type
+//     *
+//     * @return return
+//     */
+//    protected ISerializationConverter createExternalConverter(T type) {
+//        return null;
+//    }
 
     public ChunJunCommonConf getCommonConf() {
         return commonConf;
