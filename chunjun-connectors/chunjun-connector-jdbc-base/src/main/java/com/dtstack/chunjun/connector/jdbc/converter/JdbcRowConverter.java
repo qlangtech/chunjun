@@ -18,14 +18,13 @@
 
 package com.dtstack.chunjun.connector.jdbc.converter;
 
-import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
 import com.dtstack.chunjun.converter.ISerializationConverter;
 
+import org.apache.flink.connector.jdbc.statement.FieldNamedPreparedStatement;
 import org.apache.flink.connector.jdbc.utils.JdbcTypeUtil;
 import org.apache.flink.table.data.DecimalData;
-import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.data.StringData;
 import org.apache.flink.table.data.TimestampData;
@@ -105,22 +104,24 @@ public class JdbcRowConverter
 
     @Override
     public RowData toInternal(ResultSet resultSet) throws Exception {
-        GenericRowData genericRowData = new GenericRowData(this.getFieldCount());
-        for (int pos = 0; pos < this.getFieldCount(); pos++) {
-            Object field = resultSet.getObject(pos + 1);
-            genericRowData.setField(pos, toInternalConverters.get(pos).deserialize(field));
-        }
-        return genericRowData;
+//        GenericRowData genericRowData = new GenericRowData(this.getFieldCount());
+//        for (int pos = 0; pos < this.getFieldCount(); pos++) {
+//            Object field = resultSet.getObject(pos + 1);
+//            genericRowData.setField(pos, toInternalConverters.get(pos).deserialize(field));
+//        }
+//        return genericRowData;
+        throw new UnsupportedOperationException("now is not support");
     }
 
     @Override
     public RowData toInternalLookup(JsonArray jsonArray) throws Exception {
-        GenericRowData genericRowData = new GenericRowData(this.getFieldCount());
-        for (int pos = 0; pos < this.getFieldCount(); pos++) {
-            Object field = jsonArray.getValue(pos);
-            genericRowData.setField(pos, toInternalConverters.get(pos).deserialize(field));
-        }
-        return genericRowData;
+//        GenericRowData genericRowData = new GenericRowData(this.getFieldCount());
+//        for (int pos = 0; pos < this.getFieldCount(); pos++) {
+//            Object field = jsonArray.getValue(pos);
+//            genericRowData.setField(pos, toInternalConverters.get(pos).deserialize(field));
+//        }
+//        return genericRowData;
+        throw new UnsupportedOperationException("now is not support");
     }
 
     @Override

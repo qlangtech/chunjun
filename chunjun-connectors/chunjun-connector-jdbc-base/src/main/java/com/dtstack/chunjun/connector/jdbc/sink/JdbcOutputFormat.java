@@ -22,7 +22,6 @@ import com.dtstack.chunjun.cdc.DdlRowDataConvented;
 import com.dtstack.chunjun.conf.FieldConf;
 import com.dtstack.chunjun.connector.jdbc.conf.JdbcConf;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
-import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
 import com.dtstack.chunjun.connector.jdbc.util.JdbcUtil;
 import com.dtstack.chunjun.element.ColumnRowData;
 import com.dtstack.chunjun.enums.EWriteMode;
@@ -34,6 +33,7 @@ import com.dtstack.chunjun.util.GsonUtil;
 import com.dtstack.chunjun.util.JsonUtil;
 import com.dtstack.chunjun.util.TableUtil;
 
+import org.apache.flink.connector.jdbc.statement.FieldNamedPreparedStatement;
 import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.logical.RowType;
@@ -125,7 +125,8 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
 
             FieldNamedPreparedStatement fieldNamedPreparedStatement =
                     FieldNamedPreparedStatement.prepareStatement(
-                            dbConn, prepareTemplates(), this.colsMeta);
+                            dbConn, prepareTemplates()
+                            , getColsName().toArray(new String[getColsName().size()]));
             initializeRowConverter();
             stmtProxy =
                     new PreparedStmtProxy(
@@ -352,7 +353,7 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
                                     jdbcConf.getTable(),
                                     columnNameList)
                             .get();
-        } else if (EWriteMode.UPDATE.name().equalsIgnoreCase(jdbcConf.getMode())) {
+        } else if (EWriteMode.UPSERT.name().equalsIgnoreCase(jdbcConf.getMode())) {
             singleSql =
                     jdbcDialect
                             .getUpsertStatement(

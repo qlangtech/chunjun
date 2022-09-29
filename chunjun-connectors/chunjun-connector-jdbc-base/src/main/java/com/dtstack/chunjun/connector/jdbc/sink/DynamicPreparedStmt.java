@@ -20,10 +20,10 @@ package com.dtstack.chunjun.connector.jdbc.sink;
 import com.dtstack.chunjun.conf.FieldConf;
 import com.dtstack.chunjun.connector.jdbc.conf.JdbcConf;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
-import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
-import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatementImpl;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 
+import org.apache.flink.connector.jdbc.statement.FieldNamedPreparedStatement;
+import org.apache.flink.connector.jdbc.statement.FieldNamedPreparedStatementImpl;
 import org.apache.flink.types.RowKind;
 
 import org.slf4j.Logger;
@@ -109,7 +109,7 @@ public class DynamicPreparedStmt {
             FieldConf fieldConf = fieldConfList.get(i);
             fieldNames[i] = fieldConf.getName();
             dynamicPreparedStmt.columnNameList.add(fieldConf.getName());
-           // dynamicPreparedStmt.columnTypeList.add(fieldConf.getType());
+            // dynamicPreparedStmt.columnTypeList.add(fieldConf.getType());
         }
         Optional<String> sql = prepareTemplatesSQL(schemaName, tableName, rowKind, dynamicPreparedStmt);
 

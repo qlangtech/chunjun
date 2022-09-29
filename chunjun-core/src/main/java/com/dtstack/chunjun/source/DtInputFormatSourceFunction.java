@@ -60,7 +60,7 @@ import java.util.NoSuchElementException;
  */
 @Internal
 public class DtInputFormatSourceFunction<OUT> extends InputFormatSourceFunction<OUT>
-        implements CheckpointedFunction , ResultTypeQueryable<OUT> {
+        implements CheckpointedFunction, ResultTypeQueryable<OUT> {
     private static final long serialVersionUID = 1L;
 
     private static final Logger LOG = LoggerFactory.getLogger(DtInputFormatSourceFunction.class);
@@ -138,6 +138,7 @@ public class DtInputFormatSourceFunction<OUT> extends InputFormatSourceFunction<
                     synchronized (ctx.getCheckpointLock()) {
                         nextElement = format.nextRecord(nextElement);
                         if (nextElement != null) {
+                            // LOG.info("nextElement:" + nextElement.getClass().getName());
                             ctx.collect(nextElement);
                         }
                     }
@@ -268,7 +269,8 @@ public class DtInputFormatSourceFunction<OUT> extends InputFormatSourceFunction<
                 stateStore.getUnionListState(
                         new ListStateDescriptor<>(
                                 LOCATION_STATE_NAME,
-                                TypeInformation.of(new TypeHint<FormatState>() {})));
+                                TypeInformation.of(new TypeHint<FormatState>() {
+                                })));
         if (context.isRestored()) {
             formatStateMap = new HashMap<>(16);
             for (FormatState formatState : unionOffsetStates.get()) {

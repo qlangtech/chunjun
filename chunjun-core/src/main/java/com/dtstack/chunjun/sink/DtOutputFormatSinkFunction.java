@@ -56,6 +56,7 @@ import java.util.Map;
  * create {@link org.apache.flink.streaming.api.operators.SimpleOutputFormatOperatorFactory}
  *
  * @param <IN> Input type
+ *
  * @author jiangbo
  */
 @PublicEvolving
@@ -114,6 +115,7 @@ public class DtOutputFormatSinkFunction<IN> extends OutputFormatSinkFunction<IN>
     @Override
     public void invoke(IN record, Context context) throws Exception {
         try {
+            //LOG.info("write2sink:" + record + ",type:" + record.getClass(), new Exception());
             format.writeRecord(record);
         } catch (Exception ex) {
             cleanup();
@@ -161,7 +163,8 @@ public class DtOutputFormatSinkFunction<IN> extends OutputFormatSinkFunction<IN>
                 stateStore.getUnionListState(
                         new ListStateDescriptor<>(
                                 LOCATION_STATE_NAME,
-                                TypeInformation.of(new TypeHint<FormatState>() {})));
+                                TypeInformation.of(new TypeHint<FormatState>() {
+                                })));
 
         LOG.info("Is restored:{}", context.isRestored());
         if (context.isRestored()) {

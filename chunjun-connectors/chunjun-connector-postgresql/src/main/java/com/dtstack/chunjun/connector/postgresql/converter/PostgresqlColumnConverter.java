@@ -24,7 +24,6 @@ package com.dtstack.chunjun.connector.postgresql.converter;
 
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
 import com.dtstack.chunjun.connector.jdbc.converter.JdbcColumnConverter;
-import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
 import com.dtstack.chunjun.converter.ISerializationConverter;
 import com.dtstack.chunjun.element.AbstractBaseColumn;
@@ -36,6 +35,7 @@ import com.dtstack.chunjun.element.column.StringColumn;
 import com.dtstack.chunjun.element.column.TimeColumn;
 import com.dtstack.chunjun.element.column.TimestampColumn;
 
+import org.apache.flink.connector.jdbc.statement.FieldNamedPreparedStatement;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.table.types.logical.TimestampType;
@@ -43,7 +43,6 @@ import org.apache.flink.table.types.logical.YearMonthIntervalType;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import org.postgresql.core.BaseConnection;
 import org.postgresql.core.Oid;
 
 import java.math.BigDecimal;
@@ -65,7 +64,7 @@ import java.util.Map;
 public class PostgresqlColumnConverter extends JdbcColumnConverter {
 
     // private List<ColMeta> fieldTypeList;
-    private transient BaseConnection connection;
+    // private transient BaseConnection connection;
     private static final Map<String, Integer> arrayType = new HashMap<>();
 
     public PostgresqlColumnConverter(
@@ -227,7 +226,7 @@ public class PostgresqlColumnConverter extends JdbcColumnConverter {
 //        this.fieldTypeList = fieldTypeList;
 //    }
 
-    public void setConnection(BaseConnection connection) {
-        this.connection = connection;
-    }
+//    public void setConnection(BaseConnection connection) {
+//        this.connection = connection;
+//    }
 }

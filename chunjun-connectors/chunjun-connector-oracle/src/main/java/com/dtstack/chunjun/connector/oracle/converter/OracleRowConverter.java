@@ -19,11 +19,12 @@
 package com.dtstack.chunjun.connector.oracle.converter;
 
 import com.dtstack.chunjun.connector.jdbc.converter.JdbcRowConverter;
-import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
+import com.dtstack.chunjun.connector.jdbc.sink.PreparedStmtProxy;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
 import com.dtstack.chunjun.converter.ISerializationConverter;
 import com.dtstack.chunjun.throwable.UnsupportedTypeException;
 
+import org.apache.flink.connector.jdbc.statement.FieldNamedPreparedStatement;
 import org.apache.flink.table.data.DecimalData;
 import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
@@ -223,7 +224,7 @@ public class OracleRowConverter extends JdbcRowConverter {
                     return (val, index, statement) -> {
                         try (StringReader reader =
                                      new StringReader(val.getString(index).toString())) {
-                            statement.setClob(index, reader);
+                            PreparedStmtProxy.getInnerStatement(statement).setClob(index, reader);
                         }
                     };
                 }
@@ -236,7 +237,7 @@ public class OracleRowConverter extends JdbcRowConverter {
                     return (val, index, statement) -> {
                         try (StringReader reader =
                                      new StringReader(val.getString(index).toString())) {
-                            statement.setClob(index, reader);
+                            PreparedStmtProxy.getInnerStatement(statement).setClob(index, reader);
                         }
                     };
                 }
@@ -247,7 +248,7 @@ public class OracleRowConverter extends JdbcRowConverter {
             case VARBINARY:
                 return (val, index, statement) -> {
                     try (InputStream is = new ByteArrayInputStream(val.getBinary(index))) {
-                        statement.setBlob(index, is);
+                        PreparedStmtProxy.getInnerStatement(statement).setBlob(index, is);
                     }
                 };
             case DATE:

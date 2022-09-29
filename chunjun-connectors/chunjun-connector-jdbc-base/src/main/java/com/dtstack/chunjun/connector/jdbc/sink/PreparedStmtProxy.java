@@ -19,12 +19,11 @@ package com.dtstack.chunjun.connector.jdbc.sink;
 
 import com.dtstack.chunjun.connector.jdbc.conf.JdbcConf;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
-import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.element.ColumnRowData;
 
-import org.apache.commons.lang3.StringUtils;
-
+import org.apache.flink.connector.jdbc.statement.FieldNamedPreparedStatement;
+import org.apache.flink.connector.jdbc.statement.FieldNamedPreparedStatementImpl;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.types.RowKind;
 
@@ -32,17 +31,19 @@ import com.esotericsoftware.minlog.Log;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
-//import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.io.Reader;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Array;
 import java.sql.Connection;
 import java.sql.Date;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -55,6 +56,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+
+//import org.apache.commons.lang.StringUtils;
 
 /**
  * build prepare proxy, proxy implements FieldNamedPreparedStatement. it support to build
@@ -225,7 +228,7 @@ public class PreparedStmtProxy implements FieldNamedPreparedStatement {
         currentFieldNamedPstmt =
                 (FieldNamedPreparedStatement)
                         currentRowConverter.toExternal(row, this.currentFieldNamedPstmt);
-        currentFieldNamedPstmt.execute();
+        this.getInnerStatement(currentFieldNamedPstmt).execute();
     }
 
     protected void initCache(boolean isExpired) {
@@ -287,17 +290,47 @@ public class PreparedStmtProxy implements FieldNamedPreparedStatement {
         return result;
     }
 
-    @Override
+    static final Field statementOfNamedPreparedStatementField;
+
+    static {
+        try {
+            statementOfNamedPreparedStatementField = FieldNamedPreparedStatementImpl.class.getDeclaredField("statement");
+            statementOfNamedPreparedStatementField.setAccessible(true);
+        } catch (NoSuchFieldException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static PreparedStatement getInnerStatement(FieldNamedPreparedStatement pstmt) {
+        try {
+            return (PreparedStatement) statementOfNamedPreparedStatementField.get(pstmt);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // @Override
     public void clearBatch() throws SQLException {
-        for (FieldNamedPreparedStatement pstmt : unExecutePstmt) {
-            pstmt.clearBatch();
+
+        try {
+            PreparedStatement preps = null;
+            for (FieldNamedPreparedStatement pstmt : unExecutePstmt) {
+                // pstmt.clearBatch();
+                preps = getInnerStatement(pstmt);
+                preps.clearBatch();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
         unExecutePstmt.clear();
     }
 
-    @Override
+    // @Override
     public boolean execute() throws SQLException {
-        return currentFieldNamedPstmt.execute();
+
+        return getInnerStatement(currentFieldNamedPstmt).execute();
+//
+//        return currentFieldNamedPstmt.execute();
     }
 
     @Override
@@ -375,19 +408,19 @@ public class PreparedStmtProxy implements FieldNamedPreparedStatement {
         currentFieldNamedPstmt.setObject(fieldIndex, x);
     }
 
-    @Override
+    //    @Override
     public void setBlob(int fieldIndex, InputStream is) throws SQLException {
-        currentFieldNamedPstmt.setBlob(fieldIndex, is);
+        this.getInnerStatement(currentFieldNamedPstmt).setBlob(fieldIndex, is);
     }
 
-    @Override
+    // @Override
     public void setClob(int fieldIndex, Reader reader) throws SQLException {
-        currentFieldNamedPstmt.setClob(fieldIndex, reader);
+        getInnerStatement(currentFieldNamedPstmt).setClob(fieldIndex, reader);
     }
 
-    @Override
+    // @Override
     public void setArray(int fieldIndex, Array array) throws SQLException {
-        currentFieldNamedPstmt.setArray(fieldIndex, array);
+        getInnerStatement(currentFieldNamedPstmt).setArray(fieldIndex, array);
     }
 
     @Override
