@@ -98,12 +98,18 @@ public class OracleColumnConverter extends JdbcColumnConverter {
             case VARCHAR:
                 // if (type instanceof ClobType) {
                 return val -> {
-                    if (val instanceof oracle.sql.CLOB) {
-                        oracle.sql.CLOB clob = (oracle.sql.CLOB) val;
+                    if (val instanceof java.sql.Clob) {
+                        java.sql.Clob clob = (java.sql.Clob) val;
                         return new StringColumn(ConvertUtil.convertClob(clob));
                     } else {
                         return new StringColumn((String) val);
                     }
+//                    if (val instanceof oracle.sql.CLOB) {
+//                        oracle.sql.CLOB clob = (oracle.sql.CLOB) val;
+//                        return new StringColumn(ConvertUtil.convertClob(clob));
+//                    } else {
+//                        return new StringColumn((String) val);
+//                    }
                 };
             //}
             // return val -> new StringColumn((String) val);
@@ -111,13 +117,22 @@ public class OracleColumnConverter extends JdbcColumnConverter {
                 return val -> new TimestampColumn((Timestamp) val, 0);
             case TIMESTAMP_WITH_TIME_ZONE:
             case TIMESTAMP_WITHOUT_TIME_ZONE:
-                return val -> new TimestampColumn(((TIMESTAMP) val).timestampValue());
+                return (val) -> new TimestampColumn(((TIMESTAMP) val).timestampValue());
             case BINARY:
             case VARBINARY:
                 return val -> {
                     //if (type instanceof BlobType) {
-                    if (val instanceof oracle.sql.BLOB) {
-                        oracle.sql.BLOB blob = (oracle.sql.BLOB) val;
+//                    if (val instanceof oracle.sql.BLOB) {
+//                        oracle.sql.BLOB blob = (oracle.sql.BLOB) val;
+//                        byte[] bytes = ConvertUtil.toByteArray(blob);
+//                        return new BytesColumn(bytes);
+//                    } else {
+//                        return new BytesColumn((byte[]) val);
+//                    }
+
+
+                    if (val instanceof java.sql.Blob) {
+                        java.sql.Blob blob = (java.sql.Blob) val;
                         byte[] bytes = ConvertUtil.toByteArray(blob);
                         return new BytesColumn(bytes);
                     } else {

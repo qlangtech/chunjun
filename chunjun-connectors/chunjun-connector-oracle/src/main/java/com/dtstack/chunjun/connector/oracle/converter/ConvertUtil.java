@@ -17,8 +17,6 @@
  */
 package com.dtstack.chunjun.connector.oracle.converter;
 
-import oracle.sql.BLOB;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.sql.Clob;
@@ -31,7 +29,7 @@ import java.sql.SQLException;
  */
 public class ConvertUtil {
 
-    public static byte[] toByteArray(BLOB fromBlob) throws SQLException {
+    public static byte[] toByteArray(java.sql.Blob fromBlob) throws SQLException {
         int blobLength = (int) fromBlob.length();
         byte[] blobAsBytes = fromBlob.getBytes(1, blobLength);
         fromBlob.free();
