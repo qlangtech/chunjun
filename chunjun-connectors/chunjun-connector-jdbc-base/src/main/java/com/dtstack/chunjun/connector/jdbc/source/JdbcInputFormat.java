@@ -188,6 +188,25 @@ public class JdbcInputFormat extends BaseRichInputFormat {
     public JdbcInputSplit[] createSplitsInternalBySplitMod(int minNumSplits, String startLocation) {
         JdbcInputSplit[] splits = new JdbcInputSplit[minNumSplits];
         if (StringUtils.isNotBlank(startLocation)) {
+
+            if (ConstantValue.START_LOCATION_LATEST_SYMBOL.equals(startLocation)) {
+                if (minNumSplits > 1) {
+                    throw new IllegalStateException("totalNumberOfPartitions:" + minNumSplits + " must be 1");
+                }
+                String maxValueFromDb = this.getMaxValueFromDb();
+                LOG.info("consume by latest update from startLocation:" + maxValueFromDb + " of column:" + jdbcConf.getIncreColumn());
+                return new JdbcInputSplit[]{new JdbcInputSplit(
+                        0,
+                        minNumSplits,
+                        0,
+                        maxValueFromDb,
+                        null,
+                        null,
+                        null,
+                        "mod",
+                        jdbcConf.isPolling())};
+            }
+
             String[] startLocations = startLocation.split(ConstantValue.COMMA_SYMBOL);
             if (startLocations.length == 1) {
                 for (int i = 0; i < minNumSplits; i++) {
@@ -287,6 +306,7 @@ public class JdbcInputFormat extends BaseRichInputFormat {
             return true;
         }
     }
+
 
     @Override
     public RowData nextRecordInternal(RowData rowData) throws ReadRecordException {
@@ -615,7 +635,8 @@ public class JdbcInputFormat extends BaseRichInputFormat {
             boolean useMaxFunc,
             boolean isPolling) {
         if (org.apache.commons.lang.StringUtils.isEmpty(startLocation)
-                || JdbcUtil.NULL_STRING.equalsIgnoreCase(startLocation)) {
+                || JdbcUtil.NULL_STRING.equalsIgnoreCase(startLocation)
+                || ConstantValue.START_LOCATION_LATEST_SYMBOL.equalsIgnoreCase(startLocation)) {
             return null;
         }
 
