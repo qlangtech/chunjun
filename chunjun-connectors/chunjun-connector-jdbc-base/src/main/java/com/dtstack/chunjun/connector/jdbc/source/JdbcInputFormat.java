@@ -193,7 +193,7 @@ public class JdbcInputFormat extends BaseRichInputFormat {
                 if (minNumSplits > 1) {
                     throw new IllegalStateException("totalNumberOfPartitions:" + minNumSplits + " must be 1");
                 }
-                String maxValueFromDb = this.getMaxValueFromDb();
+                 String maxValueFromDb = this.getMaxValueFromDb();
                 LOG.info("consume by latest update from startLocation:" + maxValueFromDb + " of column:" + jdbcConf.getIncreColumn());
                 return new JdbcInputSplit[]{new JdbcInputSplit(
                         0,
