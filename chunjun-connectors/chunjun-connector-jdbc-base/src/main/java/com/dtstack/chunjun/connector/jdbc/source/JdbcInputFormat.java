@@ -193,7 +193,7 @@ public class JdbcInputFormat extends BaseRichInputFormat {
                 if (minNumSplits > 1) {
                     throw new IllegalStateException("totalNumberOfPartitions:" + minNumSplits + " must be 1");
                 }
-                 String maxValueFromDb = this.getMaxValueFromDb();
+                String maxValueFromDb = this.getMaxValueFromDb((max) -> String.valueOf(max + 1));
                 LOG.info("consume by latest update from startLocation:" + maxValueFromDb + " of column:" + jdbcConf.getIncreColumn());
                 return new JdbcInputSplit[]{new JdbcInputSplit(
                         0,
@@ -378,7 +378,8 @@ public class JdbcInputFormat extends BaseRichInputFormat {
             return;
         }
         // 初始化增量、轮询字段类型
-        type = ColumnType.fromString(jdbcConf.getIncreColumnType());
+        //type = ColumnType.fromString(jdbcConf.getIncreColumnType());
+        type = jdbcConf.getIncreColumnType();
         startLocationAccumulator = new BigIntegerAccumulator();
         endLocationAccumulator = new BigIntegerAccumulator();
         JdbcInputSplit jdbcInputSplit = (JdbcInputSplit) inputSplit;
@@ -449,10 +450,14 @@ public class JdbcInputFormat extends BaseRichInputFormat {
         ((JdbcInputSplit) inputSplit).setEndLocation(maxValue);
     }
 
+    private String getMaxValueFromDb() {
+        return getMaxValueFromDb((max) -> String.valueOf(max));
+    }
+
     /**
      * 从数据库中查询增量字段的最大值
      */
-    private String getMaxValueFromDb() {
+    private String getMaxValueFromDb(Function<Long, String> maxValProcess) {
         String maxValue = null;
         Connection conn = null;
         Statement st = null;
@@ -489,23 +494,30 @@ public class JdbcInputFormat extends BaseRichInputFormat {
             }
 
             LOG.info(String.format("Query max value sql is '%s'", queryMaxValueSql));
-
+            final String keyMaxValue = "max_value";
             conn = getConnection();
             st = conn.createStatement(getResultSetType(), resultSetConcurrency);
             st.setQueryTimeout(jdbcConf.getQueryTimeOut());
             rs = st.executeQuery(queryMaxValueSql);
             if (rs.next()) {
-                DataType t = type.t;
-                if (t.getCollapse() == DataXReaderColType.Date) {
+                if (rs.getObject(keyMaxValue) == null) {
+                    return null;
+                }
+                DataType t = this.jdbcConf.getIncreColumnType().t;// type.t;
+                DataXReaderColType type = t.getCollapse();
+                if (type == DataXReaderColType.Date) {
                     if (t.type == Types.DATE) {
-                        maxValue = String.valueOf(rs.getDate("max_value").getTime());
+                        maxValue = maxValProcess.apply(rs.getDate(keyMaxValue).getTime());
                     } else {
-                        maxValue = String.valueOf(rs.getTimestamp("max_value").getTime());
+                        maxValue = maxValProcess.apply(rs.getTimestamp(keyMaxValue).getTime());
                     }
+                } else if (type == DataXReaderColType.INT || type == DataXReaderColType.Long) {
+//                    maxValue =
+//                            StringUtil.stringToTimestampStr(
+//                                    String.valueOf(rs.getObject(keyMaxValue)), type);
+                    maxValue = maxValProcess.apply(rs.getLong(keyMaxValue));
                 } else {
-                    maxValue =
-                            StringUtil.stringToTimestampStr(
-                                    String.valueOf(rs.getObject("max_value")), type);
+                    throw new IllegalStateException("incrColumn:" + jdbcConf.getIncreColumn() + " is not valid type:" + t.toString());
                 }
 
 //                switch (type) {
@@ -629,7 +641,7 @@ public class JdbcInputFormat extends BaseRichInputFormat {
      * @param useMaxFunc 是否保存结束位置数据
      */
     public String buildStartLocationSql(
-            String incrementColType,
+            ColumnType incrementColType,
             String incrementCol,
             String startLocation,
             boolean useMaxFunc,
@@ -659,23 +671,35 @@ public class JdbcInputFormat extends BaseRichInputFormat {
      * @param operator 判断符( >, >=, <)
      */
     protected String getLocationSql(
-            String incrementColType, String incrementCol, String location, String operator) {
+            ColumnType incrementColType, String incrementCol, String location, String operator) {
         String endTimeStr;
         String endLocationSql;
-        ColumnType type = ColumnType.fromString(incrementColType);
+        ColumnType type = (incrementColType);
         // if (type.t.type == TIMESTAMPTZ) {
         if (type.t.type == Types.TIMESTAMP) {
             return String.valueOf(Timestamp.valueOf(location).getTime());
         }
-        if (ColumnType.isTimeType(incrementColType)) {
+        DataXReaderColType ctype = incrementColType.t.getCollapse();
+        if (ctype == DataXReaderColType.Date) {
             endTimeStr = getTimeStr(Long.parseLong(location));
             endLocationSql = incrementCol + operator + endTimeStr;
-        } else if (ColumnType.isNumberType(incrementColType)) {
+        } else if (ctype == DataXReaderColType.INT
+                || ctype == DataXReaderColType.Long) {
             endLocationSql = incrementCol + operator + location;
         } else {
             endTimeStr = String.format("'%s'", location);
             endLocationSql = incrementCol + operator + endTimeStr;
         }
+
+//        if (ColumnType.isTimeType(incrementColType)) {
+//            endTimeStr = getTimeStr(Long.parseLong(location));
+//            endLocationSql = incrementCol + operator + endTimeStr;
+//        } else if (ColumnType.isNumberType(incrementColType)) {
+//            endLocationSql = incrementCol + operator + location;
+//        } else {
+//            endTimeStr = String.format("'%s'", location);
+//            endLocationSql = incrementCol + operator + endTimeStr;
+//        }
 
         return endLocationSql;
     }
@@ -1012,7 +1036,7 @@ public class JdbcInputFormat extends BaseRichInputFormat {
             String operator,
             String location,
             String columnName,
-            String columnType,
+            ColumnType columnType,
             boolean isPolling,
             Function<Long, String> function) {
         StringBuilder sql = new StringBuilder(64);
@@ -1034,10 +1058,10 @@ public class JdbcInputFormat extends BaseRichInputFormat {
      * buildLocation
      */
     public String buildLocation(
-            String columnType, String location, Function<Long, String> function) {
-        if (ColumnType.isTimeType(columnType)) {
+            ColumnType columnType, String location, Function<Long, String> function) {
+        if (columnType.isTimeType()) {
             return function.apply(Long.parseLong(location));
-        } else if (ColumnType.isNumberType(columnType)) {
+        } else if (columnType.isNumberType()) {
             return location;
         } else {
             return "'" + location + "'";

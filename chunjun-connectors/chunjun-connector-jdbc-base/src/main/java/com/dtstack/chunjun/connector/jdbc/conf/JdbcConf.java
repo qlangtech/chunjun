@@ -18,8 +18,10 @@
 package com.dtstack.chunjun.connector.jdbc.conf;
 
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
+import com.dtstack.chunjun.enums.ColumnType;
 
 import com.google.gson.annotations.SerializedName;
+
 import org.apache.commons.lang.StringUtils;
 
 import java.io.Serializable;
@@ -93,7 +95,8 @@ public class JdbcConf extends ChunJunCommonConf implements Serializable {
     private List<String> preSql;
     private List<String> postSql;
     private List<String> uniqueKey;
-    @Deprecated private Map<String, List<String>> updateKey;
+    @Deprecated
+    private Map<String, List<String>> updateKey;
 
     /** upsert 写数据库时，是否null覆盖原来的值 */
     private boolean allReplace = false;
@@ -303,8 +306,10 @@ public class JdbcConf extends ChunJunCommonConf implements Serializable {
         this.increColumnIndex = increColumnIndex;
     }
 
-    public String getIncreColumnType() {
-        return increColumnType;
+    public ColumnType getIncreColumnType() {
+
+        return ColumnType.fromString(this.increColumnType);
+        //  return increColumnType;
     }
 
     public void setIncreColumnType(String increColumnType) {
@@ -335,8 +340,8 @@ public class JdbcConf extends ChunJunCommonConf implements Serializable {
         this.restoreColumn = restoreColumn;
     }
 
-    public String getRestoreColumnType() {
-        return restoreColumnType;
+    public ColumnType getRestoreColumnType() {
+        return ColumnType.getType( restoreColumnType);
     }
 
     public void setRestoreColumnType(String restoreColumnType) {

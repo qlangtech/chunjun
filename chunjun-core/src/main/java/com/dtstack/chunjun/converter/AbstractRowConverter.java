@@ -25,11 +25,10 @@ import com.dtstack.chunjun.element.column.StringColumn;
 import com.dtstack.chunjun.enums.ColumnType;
 import com.dtstack.chunjun.util.DateUtil;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import org.apache.flink.table.data.RowData;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,8 +150,8 @@ public abstract class AbstractRowConverter<SourceT, LookupT, SinkT, T> implement
         String format = fieldConf.getFormat();
         String parseFormat = fieldConf.getParseFormat();
         if (StringUtils.isNotBlank(fieldConf.getValue())) {
-            String type = fieldConf.getType();
-            if ((ColumnType.isStringType(type) || ColumnType.isTimeType(type))
+            ColumnType type = ColumnType.getType(fieldConf.getType());
+            if ((type.isStringType() || type.isTimeType())
                     && StringUtils.isNotBlank(format)) {
                 SimpleDateFormat parseDateFormat = null;
                 if (StringUtils.isNotBlank(parseFormat)) {

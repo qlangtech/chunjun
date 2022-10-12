@@ -206,25 +206,25 @@ public class ColumnType {
 //        return ColumnType.STRING;
     }
 
-    public static boolean isTimeType(String type) {
+    public boolean isTimeType() {
         //  return TIME_TYPE.contains(getType(type));
-        ColumnType t = getType(type);
+        ColumnType t = this;//getType(type);
         return DataXReaderColType.Date == t.t.getCollapse();
     }
 
-    public static boolean isNumberType(String type) {
-        ColumnType t = getType(type);
+    public boolean isNumberType() {
+        ColumnType t = this;//getType(type);
         DataXReaderColType ctype = t.t.getCollapse();
-        return DataXReaderColType.Long == ctype || DataXReaderColType.Double == ctype;
+        return DataXReaderColType.INT == ctype || DataXReaderColType.Long == ctype || DataXReaderColType.Double == ctype;
         // return NUMBER_TYPE.contains(getType(type.replaceAll(" ", "")));
     }
 
-    public static boolean isStringType(String type) {
-        ColumnType t = getType(type);
+    public boolean isStringType() {
+        ColumnType t = this;//getType(type);
         return isStringType(t);
     }
 
-    public static boolean isStringType(ColumnType type) {
+    private static boolean isStringType(ColumnType type) {
         DataXReaderColType ctype = type.t.getCollapse();
         return DataXReaderColType.STRING == ctype;
     }

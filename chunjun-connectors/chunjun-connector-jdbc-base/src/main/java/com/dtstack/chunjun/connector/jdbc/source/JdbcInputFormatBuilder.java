@@ -76,9 +76,10 @@ public class JdbcInputFormatBuilder extends BaseRichInputFormatBuilder<JdbcInput
             } else {
                 FieldConf field =
                         FieldConf.getSameNameMetaColumn(conf.getColumn(), conf.getSplitPk());
+
                 if (field == null) {
                     sb.append("split column must in columns;\n");
-                } else if (!ColumnType.isNumberType(field.getType())) {
+                } else if (!ColumnType.fromString(field.getType()).isNumberType()) {
                     sb.append("split column's type must be number type;\n");
                 }
             }
