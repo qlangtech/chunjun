@@ -22,6 +22,8 @@ import com.qlangtech.tis.plugin.ds.DataType;
 import com.qlangtech.tis.plugin.ds.DataType.TypeVisitor;
 import com.qlangtech.tis.plugin.ds.DataXReaderColType;
 
+import org.apache.commons.lang.StringUtils;
+
 /**
  * Define standard column type for all the readers or writers that do not have special types of
  * their own
@@ -159,10 +161,9 @@ public class ColumnType {
      * 根据字段类型的字符串找出对应的枚举 找不到直接报错 IllegalArgumentException
      */
     public static ColumnType fromString(String type) {
-        if (type == null) {
-            throw new RuntimeException("null ColumnType!");
+        if (StringUtils.isEmpty(type)) {
+            throw new IllegalArgumentException("param type can not be empty");
         }
-
         DataType t = DataType.ds(type);
         return new ColumnType(t);
 

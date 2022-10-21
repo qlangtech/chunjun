@@ -20,7 +20,6 @@ package com.dtstack.chunjun.connector.mysql.dialect;
 
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
 import com.dtstack.chunjun.connector.jdbc.dialect.SupportUpdateMode;
-import com.dtstack.chunjun.connector.mysql.converter.MysqlRawTypeConverter;
 import com.dtstack.chunjun.converter.RawTypeConverter;
 import com.dtstack.chunjun.sink.WriteMode;
 
@@ -48,7 +47,8 @@ public class MysqlDialect implements JdbcDialect {
 
     @Override
     public RawTypeConverter getRawTypeConverter() {
-        return MysqlRawTypeConverter::apply;
+        // return MysqlRawTypeConverter::apply;
+        throw new UnsupportedOperationException();
     }
 
     @Override

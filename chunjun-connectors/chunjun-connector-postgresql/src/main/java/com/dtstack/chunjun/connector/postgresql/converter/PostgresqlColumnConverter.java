@@ -108,7 +108,15 @@ public class PostgresqlColumnConverter extends JdbcColumnConverter {
             case BOOLEAN:
                 return val -> new BooleanColumn(Boolean.parseBoolean(val.toString()));
             case TINYINT:
-                return val -> new BigDecimalColumn(((Integer) val).byteValue());
+                return val -> {
+                    Integer v;
+                    if (val instanceof Boolean) {
+                        v = ((Boolean) val) ? 1 : 0;
+                    } else {
+                        v = ((Integer) val);
+                    }
+                    return new BigDecimalColumn(v.byteValue());
+                };
             case SMALLINT:
             case INTEGER:
                 return val -> new BigDecimalColumn((Integer) val);

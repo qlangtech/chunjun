@@ -24,6 +24,8 @@ import com.google.gson.annotations.SerializedName;
 
 import org.apache.commons.lang.StringUtils;
 
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -306,6 +308,7 @@ public class JdbcConf extends ChunJunCommonConf implements Serializable {
         this.increColumnIndex = increColumnIndex;
     }
 
+    @JsonIgnore
     public ColumnType getIncreColumnType() {
 
         return ColumnType.fromString(this.increColumnType);
@@ -340,6 +343,7 @@ public class JdbcConf extends ChunJunCommonConf implements Serializable {
         this.restoreColumn = restoreColumn;
     }
 
+    @JsonIgnore
     public ColumnType getRestoreColumnType() {
         return ColumnType.getType( restoreColumnType);
     }
