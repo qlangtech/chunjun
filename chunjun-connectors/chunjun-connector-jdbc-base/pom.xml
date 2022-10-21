@@ -23,7 +23,7 @@
 
 		<dependency>
 			<artifactId>datax-config</artifactId>
-			<groupId>com.alibaba.datax</groupId>
+			<groupId>com.qlangtech.tis</groupId>
 		</dependency>
 
 		<dependency>

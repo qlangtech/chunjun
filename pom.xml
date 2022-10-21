@@ -234,7 +234,7 @@
 		<dependencies>
 			<dependency>
 				<artifactId>datax-config</artifactId>
-				<groupId>com.alibaba.datax</groupId>
+				<groupId>com.qlangtech.tis</groupId>
 				<version>${tis.datax.version}</version>
 			</dependency>
 			<dependency>
