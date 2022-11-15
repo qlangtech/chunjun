@@ -41,6 +41,7 @@ import org.apache.flink.table.types.logical.RowType;
 import com.google.common.collect.Lists;
 import com.qlangtech.tis.plugin.ds.ColMeta;
 import com.qlangtech.tis.plugin.ds.DataType;
+import com.qlangtech.tis.plugin.ds.IColMetaGetter;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -150,7 +151,7 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
 
     /** init columnNameList、 columnTypeList and hasConstantField */
     public void initColumnList() {
-        Map<String, ColMeta> colsMeta = getTableMetaData();
+        Map<String, IColMetaGetter> colsMeta = getTableMetaData();
 
         List<FieldConf> fieldList = jdbcConf.getColumn();
 //        List<String> fullColumnList = pair.getLeft();
@@ -161,7 +162,7 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
     /**
      * for override. because some databases have case-sensitive metadata。
      */
-    protected abstract Map<String, ColMeta> getTableMetaData(); //{
+    protected abstract Map<String, IColMetaGetter> getTableMetaData(); //{
     // return JdbcUtil.getTableMetaData(null, jdbcConf.getSchema(), jdbcConf.getTable(), dbConn);
     // throw new UnsupportedOperationException();
     //}
@@ -175,7 +176,7 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
      */
     protected void handleColumnList(
             List<FieldConf> fieldList,
-            Map<String, ColMeta> colsMeta) {
+            Map<String, IColMetaGetter> colsMeta) {
         //  Set<String> fields = fieldList.stream().map((field) -> field.getName()).collect(Collectors.toSet());
 //        if (fieldList.size() == 1 && Objects.equals(fieldList.get(0).getName(), "*")) {
 //        columnNameList = fullColumnList;
@@ -188,13 +189,14 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
          * 能保证组装RowData 在DTO2RowDataMapper中依赖的 List<FlinkCol> 和 TISDorisColumnConverter toExternalConverters顺序一致
          **********************************************/
         DataType type = null;
-        ColMeta sinkEndColMeta = null;
+        IColMetaGetter sinkEndColMeta = null;
         for (FieldConf field : fieldList) {
             sinkEndColMeta = Objects.requireNonNull(
                     colsMeta.get(field.getName()), "field:" + field.getName() + " relevant ColMeta can not be null");
             type = DataType.ds(field.getType());
 
-            this.colsMeta.add(new ColMeta(sinkEndColMeta.getName(), type, sinkEndColMeta.isPk()));
+          //  this.colsMeta.add(new ColMeta(sinkEndColMeta.getName(), type, sinkEndColMeta.isPk()));
+            this.colsMeta.add(sinkEndColMeta);
         }
 
         // this.colsMeta = colsMeta.stream().filter((meta) -> fields.contains(meta.name)).collect(Collectors.toList());

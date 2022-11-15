@@ -21,6 +21,7 @@ package com.dtstack.chunjun.connector.doris.sink;
 import com.dtstack.chunjun.connector.mysql.sink.MysqlOutputFormat;
 
 import com.qlangtech.tis.plugin.ds.ColMeta;
+import com.qlangtech.tis.plugin.ds.IColMetaGetter;
 
 import java.util.Map;
 
@@ -32,7 +33,7 @@ public class DorisJdbcOutputFormat extends MysqlOutputFormat {
 
 
     @Override
-    protected Map<String, ColMeta> getTableMetaData() {
+    protected Map<String, IColMetaGetter> getTableMetaData() {
         throw new UnsupportedOperationException();
     }
 }
