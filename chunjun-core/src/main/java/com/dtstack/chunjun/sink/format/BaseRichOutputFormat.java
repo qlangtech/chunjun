@@ -56,6 +56,7 @@ import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.table.data.RowData;
 
 import com.qlangtech.tis.plugin.ds.ColMeta;
+import com.qlangtech.tis.plugin.ds.IColMetaGetter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -158,11 +159,11 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
 //    /** A collection of field types filled in user scripts with constants removed */
 //    public List<String> columnTypeList = new ArrayList<>();
 
-    public List<ColMeta> colsMeta;
+    public List<IColMetaGetter> colsMeta;
 
     public List<String> getColsName() {
         return Objects.requireNonNull(colsMeta, "colsMeta can not be null")
-                .stream().map((cm) -> cm.name).collect(Collectors.toList());
+                .stream().map((cm) -> cm.getName()).collect(Collectors.toList());
     }
 
     /** 累加器收集器 */

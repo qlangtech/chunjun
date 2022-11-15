@@ -45,6 +45,7 @@ import org.apache.flink.table.types.logical.RowType;
 import com.qlangtech.tis.plugin.ds.ColMeta;
 import com.qlangtech.tis.plugin.ds.DataType;
 import com.qlangtech.tis.plugin.ds.DataXReaderColType;
+import com.qlangtech.tis.plugin.ds.IColMetaGetter;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -133,7 +134,7 @@ public class JdbcInputFormat extends BaseRichInputFormat {
 //                fullColumnList = colsMeta.getLeft();
 //                fullColumnTypeList = colsMeta.getRight();
             }
-            List<ColMeta> columnPair =
+            List<IColMetaGetter> columnPair =
                     ColumnBuildUtil.handleColumnList(jdbcConf.getColumn(), colsMeta);
 //            columnNameList = columnPair.getLeft();
 //            columnTypeList = columnPair.getRight();
@@ -833,7 +834,7 @@ public class JdbcInputFormat extends BaseRichInputFormat {
 
     /** create querySql for inputSplit * */
     protected String buildQuerySqlBySplit(JdbcInputSplit jdbcInputSplit, List<String> whereList) {
-        List<String> columnNameList = this.colsMeta.stream().map((col) -> col.name).collect(Collectors.toList());
+        List<String> columnNameList = this.colsMeta.stream().map((col) -> col.getName()).collect(Collectors.toList());
         return SqlUtil.buildQuerySqlBySplit(
                 jdbcConf, jdbcDialect, whereList, columnNameList, jdbcInputSplit);
     }

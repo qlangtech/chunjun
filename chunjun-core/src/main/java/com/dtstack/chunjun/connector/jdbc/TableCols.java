@@ -2,7 +2,7 @@ package com.dtstack.chunjun.connector.jdbc;
 
 import com.dtstack.chunjun.conf.FieldConf;
 
-import com.qlangtech.tis.plugin.ds.ColMeta;
+import com.qlangtech.tis.plugin.ds.IColMetaGetter;
 
 import java.util.List;
 import java.util.Set;
@@ -13,9 +13,9 @@ import java.util.stream.Collectors;
  * @create: 2022-08-25 18:27
  **/
 public class TableCols {
-    List<ColMeta> colsMeta;
+    List<IColMetaGetter> colsMeta;
 
-    public TableCols(List<ColMeta> colsMeta) {
+    public TableCols(List<IColMetaGetter> colsMeta) {
         this.colsMeta = colsMeta;
     }
 
@@ -23,14 +23,14 @@ public class TableCols {
         return null;
     }
 
-    public List<ColMeta> getCols() {
+    public List<IColMetaGetter> getCols() {
         return this.colsMeta;
     }
 
-    public List<ColMeta> filterBy(List<FieldConf> fieldList) {
+    public List<IColMetaGetter> filterBy(List<FieldConf> fieldList) {
         Set<String> fields = fieldList.stream().map((f) -> f.getName()).collect(Collectors.toSet());
         return colsMeta.stream().filter((col) -> {
-            return fields.contains(col.name);
+            return fields.contains(col.getName());
         }).collect(Collectors.toList());
     }
 }

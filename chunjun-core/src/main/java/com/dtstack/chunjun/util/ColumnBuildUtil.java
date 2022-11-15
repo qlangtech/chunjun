@@ -22,6 +22,7 @@ import com.dtstack.chunjun.conf.FieldConf;
 import com.dtstack.chunjun.connector.jdbc.TableCols;
 
 import com.qlangtech.tis.plugin.ds.ColMeta;
+import com.qlangtech.tis.plugin.ds.IColMetaGetter;
 
 import java.util.List;
 
@@ -37,7 +38,7 @@ public class ColumnBuildUtil {
      *
      * @param fieldList fieldList
      */
-    public static List<ColMeta> handleColumnList(
+    public static List<IColMetaGetter> handleColumnList(
             List<FieldConf> fieldList,
             TableCols colsMeta) {
         return colsMeta.filterBy(fieldList);

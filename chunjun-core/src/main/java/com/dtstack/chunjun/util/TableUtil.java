@@ -31,6 +31,7 @@ import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.table.types.logical.RowType;
 
 import com.qlangtech.tis.plugin.ds.ColMeta;
+import com.qlangtech.tis.plugin.ds.IColMetaGetter;
 
 import java.util.Arrays;
 import java.util.List;
@@ -106,12 +107,12 @@ public class TableUtil {
      * only using in data sync/integration
      */
     public static RowType createRowTypeByColsMeta(
-            List<ColMeta> colsMeta, RawTypeConverter converter) {
+            List<IColMetaGetter> colsMeta, RawTypeConverter converter) {
         TableSchema.Builder builder = TableSchema.builder();
 
-        for (ColMeta cm : colsMeta) {
+        for (IColMetaGetter cm : colsMeta) {
             DataType dataType = converter.apply(cm);
-            builder.add(TableColumn.physical(cm.name, dataType));
+            builder.add(TableColumn.physical(cm.getName(), dataType));
         }
 //        for (int i = 0; i < colsMeta.size(); i++) {
 //            DataType dataType = converter.apply(types.get(i));
@@ -125,7 +126,7 @@ public class TableUtil {
      *
      * @param fields List<FieldConf>, field information name, type etc.
      */
-    public static RowType createRowType(List<ColMeta> fields, RawTypeConverter converter) {
+    public static RowType createRowType(List<IColMetaGetter> fields, RawTypeConverter converter) {
         return (RowType) createTableSchema(fields, converter).toRowDataType().getLogicalType();
     }
 
@@ -135,13 +136,13 @@ public class TableUtil {
      * @param fields List<FieldConf>, field information name, type etc.
      */
     public static TableSchema createTableSchema(
-            List<ColMeta> fields, RawTypeConverter converter) {
+            List<IColMetaGetter> fields, RawTypeConverter converter) {
 //        String[] fieldNames = fields.stream().map(FieldConf::getName).toArray(String[]::new);
 //        String[] fieldTypes = fields.stream().map(FieldConf::getType).toArray(String[]::new);
         TableSchema.Builder builder = TableSchema.builder();
-        for (ColMeta col : fields) {
+        for (IColMetaGetter col : fields) {
             DataType dataType = converter.apply(col);
-            builder.add(TableColumn.physical(col.name, dataType));
+            builder.add(TableColumn.physical(col.getName(), dataType));
         }
         return builder.build();
 

@@ -47,6 +47,7 @@ import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.table.data.RowData;
 
 import com.qlangtech.tis.plugin.ds.ColMeta;
+import com.qlangtech.tis.plugin.ds.IColMetaGetter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,7 +109,7 @@ public abstract class BaseRichInputFormat extends RichInputFormat<RowData, Input
 //    protected List<String> columnNameList = new ArrayList<>();
 //    /** A collection of field types filled in user scripts with constants removed */
 //    protected List<String> columnTypeList = new ArrayList<>();
-    protected List<ColMeta> colsMeta;
+    protected List<IColMetaGetter> colsMeta;
     /** dirty manager which collects the dirty data. */
     protected DirtyManager dirtyManager;
     /** BaseRichInputFormat是否已经初始化 */
