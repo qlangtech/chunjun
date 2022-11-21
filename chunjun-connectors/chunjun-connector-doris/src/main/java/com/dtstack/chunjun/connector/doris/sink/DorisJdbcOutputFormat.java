@@ -20,20 +20,14 @@ package com.dtstack.chunjun.connector.doris.sink;
 
 import com.dtstack.chunjun.connector.mysql.sink.MysqlOutputFormat;
 
-import com.qlangtech.tis.plugin.ds.ColMeta;
+
 import com.qlangtech.tis.plugin.ds.IColMetaGetter;
 
 import java.util.Map;
 
 public class DorisJdbcOutputFormat extends MysqlOutputFormat {
-//    @Override
-//    protected List<ColMeta> getTableMetaData() {
-//        throw new UnsupportedOperationException();
-//    }
 
-
-    @Override
-    protected Map<String, IColMetaGetter> getTableMetaData() {
-        throw new UnsupportedOperationException();
+    public DorisJdbcOutputFormat(Map<String, IColMetaGetter> cols) {
+        super(cols);
     }
 }

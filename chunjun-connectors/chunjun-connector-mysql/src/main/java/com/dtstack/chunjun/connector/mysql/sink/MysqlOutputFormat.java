@@ -20,11 +20,14 @@ package com.dtstack.chunjun.connector.mysql.sink;
 
 import com.dtstack.chunjun.connector.jdbc.sink.JdbcOutputFormat;
 
-public abstract class MysqlOutputFormat extends JdbcOutputFormat {
-    public MysqlOutputFormat() {
-        super();
-    }
+import com.qlangtech.tis.plugin.ds.IColMetaGetter;
 
+import java.util.Map;
+
+public abstract class MysqlOutputFormat extends JdbcOutputFormat {
+    public MysqlOutputFormat(Map<String, IColMetaGetter> cols) {
+        super(cols);
+    }
 //    /**
 //     * for override. because some databases have case-sensitive metadata。
 //     */

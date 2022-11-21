@@ -39,6 +39,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -58,7 +59,7 @@ public class DorisDynamicTableSink extends JdbcDynamicTableSink {
                 dorisConf.setToJdbcConf(),
                 new MysqlDialect(),
                 physicalSchema,
-                new DorisJdbcOutputFormatBuilder(new DorisJdbcOutputFormat()));
+                new DorisJdbcOutputFormatBuilder(new DorisJdbcOutputFormat(Collections.emptyMap())));
         this.physicalSchema = physicalSchema;
         this.dorisConf = dorisConf;
     }
@@ -87,13 +88,13 @@ public class DorisDynamicTableSink extends JdbcDynamicTableSink {
         builder.setColumns(Arrays.asList(physicalSchema.getFieldNames()));
         builder.setConfig(dorisConf);
         builder.setDorisOptions(dorisConf);
-        builder.setRowConverter( DorisHttpRowConverter.create(rowType));
+        builder.setRowConverter(DorisHttpRowConverter.create(rowType));
         return builder;
     }
 
     private DorisJdbcOutputFormatBuilder jdbcBuilder(RowType rowType, DorisConf dorisConf) {
         DorisJdbcOutputFormatBuilder builder =
-                new DorisJdbcOutputFormatBuilder(new DorisJdbcOutputFormat());
+                new DorisJdbcOutputFormatBuilder(new DorisJdbcOutputFormat(Collections.emptyMap()));
 
         String[] fieldNames = tableSchema.getFieldNames();
         List<FieldConf> columnList = new ArrayList<>(fieldNames.length);
@@ -113,7 +114,7 @@ public class DorisDynamicTableSink extends JdbcDynamicTableSink {
         builder.setConfig(dorisConf);
         builder.setJdbcDialect(jdbcDialect);
         builder.setJdbcConf(jdbcConf);
-        builder.setRowConverter( DorisJdbcRowConverter.create(rowType));
+        builder.setRowConverter(DorisJdbcRowConverter.create(rowType));
         return builder;
     }
 

@@ -39,11 +39,11 @@ import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.logical.RowType;
 
 import com.google.common.collect.Lists;
-import com.qlangtech.tis.plugin.ds.ColMeta;
 import com.qlangtech.tis.plugin.ds.DataType;
 import com.qlangtech.tis.plugin.ds.IColMetaGetter;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import org.slf4j.Logger;
@@ -66,7 +66,7 @@ import java.util.Objects;
 public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
 
     protected static final Logger LOG = LoggerFactory.getLogger(JdbcOutputFormat.class);
-
+    protected final Map<String, IColMetaGetter> cols;
     protected static final long serialVersionUID = 1L;
 
     protected JdbcConf jdbcConf;
@@ -76,6 +76,13 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
     protected boolean autoCommit = true;
 
     protected transient PreparedStmtProxy stmtProxy;
+
+    public JdbcOutputFormat(Map<String, IColMetaGetter> cols) {
+        if (MapUtils.isEmpty(cols)) {
+            throw new IllegalArgumentException();
+        }
+        this.cols = cols;
+    }
 
     @Override
     public void initializeGlobal(int parallelism) {
@@ -162,7 +169,9 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
     /**
      * for override. because some databases have case-sensitive metadata。
      */
-    protected abstract Map<String, IColMetaGetter> getTableMetaData(); //{
+    private Map<String, IColMetaGetter> getTableMetaData() {
+        return this.cols;
+    } //{
     // return JdbcUtil.getTableMetaData(null, jdbcConf.getSchema(), jdbcConf.getTable(), dbConn);
     // throw new UnsupportedOperationException();
     //}
@@ -195,7 +204,7 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
                     colsMeta.get(field.getName()), "field:" + field.getName() + " relevant ColMeta can not be null");
             type = DataType.ds(field.getType());
 
-          //  this.colsMeta.add(new ColMeta(sinkEndColMeta.getName(), type, sinkEndColMeta.isPk()));
+            //  this.colsMeta.add(new ColMeta(sinkEndColMeta.getName(), type, sinkEndColMeta.isPk()));
             this.colsMeta.add(sinkEndColMeta);
         }
 

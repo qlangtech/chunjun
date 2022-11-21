@@ -28,6 +28,10 @@ import com.dtstack.chunjun.enums.EWriteMode;
 import com.dtstack.chunjun.throwable.NoRestartException;
 import com.dtstack.chunjun.throwable.WriteRecordException;
 
+import com.qlangtech.tis.plugin.ds.IColMetaGetter;
+
+import org.apache.commons.collections.MapUtils;
+
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.util.StringUtils;
@@ -42,6 +46,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @program: ChunJun
@@ -49,6 +54,8 @@ import java.util.List;
  * @create: 2021/08/12
  */
 public abstract class PostgresOutputFormat extends JdbcOutputFormat {
+
+
 
     // pg 字符串里含有\u0000 会报错 ERROR: invalid byte sequence for encoding "UTF8": 0x00
     public static final String SPACE = "\u0000";
@@ -64,6 +71,10 @@ public abstract class PostgresOutputFormat extends JdbcOutputFormat {
 
     /** 数据源类型信息 * */
     private final String dbType = DbType.POSTGRESQL.name();
+
+    public PostgresOutputFormat(Map<String, IColMetaGetter> cols) {
+        super(cols);
+    }
 
     @Override
     protected void openInternal(int taskNumber, int numTasks) {

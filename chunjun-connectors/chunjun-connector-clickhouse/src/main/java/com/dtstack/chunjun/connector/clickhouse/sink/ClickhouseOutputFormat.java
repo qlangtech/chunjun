@@ -21,8 +21,11 @@ package com.dtstack.chunjun.connector.clickhouse.sink;
 import com.dtstack.chunjun.connector.clickhouse.util.ClickhouseUtil;
 import com.dtstack.chunjun.connector.jdbc.sink.JdbcOutputFormat;
 
+import com.qlangtech.tis.plugin.ds.IColMetaGetter;
+
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Map;
 
 /**
  * @program chunjun
@@ -30,6 +33,9 @@ import java.sql.SQLException;
  * @create: 2021/05/10
  */
 public abstract class ClickhouseOutputFormat extends JdbcOutputFormat {
+    public ClickhouseOutputFormat(Map<String, IColMetaGetter> cols) {
+        super(cols);
+    }
 
     @Override
     protected Connection getConnection() throws SQLException {
