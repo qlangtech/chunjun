@@ -23,8 +23,13 @@ import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
 import com.dtstack.chunjun.connector.jdbc.source.JdbcInputFormatBuilder;
 import com.dtstack.chunjun.connector.jdbc.source.JdbcSourceFactory;
 import com.dtstack.chunjun.connector.postgresql.dialect.PostgresqlDialect;
+import com.dtstack.chunjun.converter.RawTypeConverter;
 
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+
+import com.qlangtech.tis.plugin.ds.IColMetaGetter;
+
+import java.util.List;
 
 /**
  * Starting with Postgresql that is for compatible with 1.10 API.
@@ -35,12 +40,12 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
  */
 public class PostgresqlSourceFactory extends JdbcSourceFactory {
 
-    public PostgresqlSourceFactory(SyncConf syncConf, StreamExecutionEnvironment env) {
-        super(syncConf, env, new PostgresqlDialect());
+    public PostgresqlSourceFactory(SyncConf syncConf, StreamExecutionEnvironment env, List<IColMetaGetter> sourceColsMeta) {
+        super(syncConf, env, new PostgresqlDialect(), sourceColsMeta);
     }
 
-    public PostgresqlSourceFactory(SyncConf syncConf, StreamExecutionEnvironment env, JdbcDialect jdbcDialect) {
-        super(syncConf, env, jdbcDialect);
+    public PostgresqlSourceFactory(SyncConf syncConf, StreamExecutionEnvironment env, JdbcDialect jdbcDialect, List<IColMetaGetter> sourceColsMeta) {
+        super(syncConf, env, jdbcDialect, sourceColsMeta);
     }
 
     @Override

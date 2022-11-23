@@ -23,6 +23,7 @@ import com.dtstack.chunjun.conf.FieldConf;
 import com.dtstack.chunjun.conf.SpeedConf;
 import com.dtstack.chunjun.conf.SyncConf;
 import com.dtstack.chunjun.constants.ConstantValue;
+import com.dtstack.chunjun.converter.RawTypeConverter;
 import com.dtstack.chunjun.converter.RawTypeConvertible;
 import com.dtstack.chunjun.util.PropertiesUtil;
 import com.dtstack.chunjun.util.TableUtil;
@@ -36,6 +37,8 @@ import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunctio
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.util.Preconditions;
 
+import com.qlangtech.tis.plugin.ds.IColMetaGetter;
+
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Collections;
@@ -48,17 +51,22 @@ import java.util.List;
  *
  * @author huyifan.zju@163.com
  */
-public abstract class SourceFactory implements RawTypeConvertible {
+public abstract class SourceFactory //implements RawTypeConvertible
+{
 
     protected StreamExecutionEnvironment env;
     protected SyncConf syncConf;
     protected List<FieldConf> fieldList;
-    protected TypeInformation<RowData> typeInformation;
+    protected final TypeInformation<RowData> typeInformation;
     protected boolean useAbstractBaseColumn = true;
+    protected final List<IColMetaGetter> sourceColsMeta;
 
-    protected SourceFactory(SyncConf syncConf, StreamExecutionEnvironment env) {
+    protected SourceFactory(SyncConf syncConf, StreamExecutionEnvironment env
+            , List<IColMetaGetter> sourceColsMeta, RawTypeConverter typeConverter) {
         this.env = env;
         this.syncConf = syncConf;
+        this.sourceColsMeta = sourceColsMeta;
+        this.typeInformation = TableUtil.getTypeInformation(sourceColsMeta, typeConverter);
 
         if (syncConf.getTransformer() == null
                 || StringUtils.isBlank(syncConf.getTransformer().getTransformSql())) {
@@ -78,8 +86,6 @@ public abstract class SourceFactory implements RawTypeConvertible {
 
     /**
      * 同步任务使用transform。不支持*、不支持常量、不支持format、必须是flinksql支持的类型 常量和format都可以在transform中做。
-     *
-     * @param commonConf
      */
     protected void checkConstant(ChunJunCommonConf commonConf) {
         List<FieldConf> fieldList = commonConf.getColumn();
@@ -132,10 +138,10 @@ public abstract class SourceFactory implements RawTypeConvertible {
                 speed.getReaderChannel() == -1 ? speed.getChannel() : speed.getReaderChannel());
     }
 
-    protected TypeInformation<RowData> getTypeInformation() {
-        if (typeInformation == null) {
-            typeInformation = TableUtil.getTypeInformation(fieldList, getRawTypeConverter());
-        }
-        return typeInformation;
+    protected final TypeInformation<RowData> getTypeInformation() {
+//        if (typeInformation == null) {
+//            typeInformation = TableUtil.getTypeInformation(fieldList, getRawTypeConverter());
+//        }
+        return this.typeInformation;
     }
 }

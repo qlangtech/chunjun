@@ -26,6 +26,8 @@ import com.dtstack.chunjun.connector.jdbc.source.JdbcSourceFactory;
 
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
+import com.qlangtech.tis.plugin.ds.IColMetaGetter;
+
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -39,8 +41,9 @@ import java.util.List;
 public abstract class DistributedJdbcSourceFactory extends JdbcSourceFactory {
 
     protected DistributedJdbcSourceFactory(
-            SyncConf syncConf, StreamExecutionEnvironment env, JdbcDialect jdbcDialect) {
-        super(syncConf, env, jdbcDialect);
+            SyncConf syncConf, StreamExecutionEnvironment env, JdbcDialect jdbcDialect
+            , List<IColMetaGetter> sourceColsMeta) {
+        super(syncConf, env, jdbcDialect, sourceColsMeta);
     }
 
     protected JdbcInputFormatBuilder getBuilder() {

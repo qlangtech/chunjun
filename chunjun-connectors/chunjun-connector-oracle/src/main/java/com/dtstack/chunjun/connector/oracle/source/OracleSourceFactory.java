@@ -27,6 +27,9 @@ import com.dtstack.chunjun.connector.oracle.dialect.OracleDialect;
 
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
+import com.qlangtech.tis.plugin.ds.IColMetaGetter;
+
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -36,12 +39,16 @@ import java.util.Properties;
  */
 public class OracleSourceFactory extends JdbcSourceFactory {
 
-    public OracleSourceFactory(SyncConf syncConf, StreamExecutionEnvironment env) {
-        super(syncConf, env, new OracleDialect());
+    public OracleSourceFactory(
+            SyncConf syncConf, StreamExecutionEnvironment env
+            , List<IColMetaGetter> sourceColsMeta) {
+        super(syncConf, env, new OracleDialect(), sourceColsMeta);
     }
 
-    public OracleSourceFactory(SyncConf syncConf, StreamExecutionEnvironment env, JdbcDialect jdbcDialect) {
-        super(syncConf, env, jdbcDialect);
+    public OracleSourceFactory(
+            SyncConf syncConf, StreamExecutionEnvironment env
+            , JdbcDialect jdbcDialect, List<IColMetaGetter> sourceColsMeta) {
+        super(syncConf, env, jdbcDialect, sourceColsMeta);
     }
 
     @Override

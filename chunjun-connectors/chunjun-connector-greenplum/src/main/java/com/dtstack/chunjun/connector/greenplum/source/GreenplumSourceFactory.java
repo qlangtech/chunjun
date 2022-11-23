@@ -21,8 +21,13 @@ package com.dtstack.chunjun.connector.greenplum.source;
 import com.dtstack.chunjun.conf.SyncConf;
 import com.dtstack.chunjun.connector.greenplum.dialect.GreenplumDialect;
 import com.dtstack.chunjun.connector.jdbc.source.JdbcSourceFactory;
+import com.dtstack.chunjun.converter.RawTypeConverter;
 
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+
+import com.qlangtech.tis.plugin.ds.IColMetaGetter;
+
+import java.util.List;
 
 /**
  * company www.dtstack.com
@@ -31,7 +36,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
  */
 public class GreenplumSourceFactory extends JdbcSourceFactory {
 
-    public GreenplumSourceFactory(SyncConf syncConf, StreamExecutionEnvironment env) {
-        super(syncConf, env, new GreenplumDialect());
+    public GreenplumSourceFactory(SyncConf syncConf, StreamExecutionEnvironment env, List<IColMetaGetter> sourceColsMeta) {
+        super(syncConf, env, new GreenplumDialect(), sourceColsMeta);
     }
 }

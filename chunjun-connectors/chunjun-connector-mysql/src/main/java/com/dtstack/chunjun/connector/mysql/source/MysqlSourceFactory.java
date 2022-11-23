@@ -27,7 +27,11 @@ import com.dtstack.chunjun.connector.mysql.dialect.MysqlDialect;
 
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
+import com.qlangtech.tis.plugin.ds.IColMetaGetter;
+
 import org.apache.commons.lang3.StringUtils;
+
+import java.util.List;
 
 /**
  * Date: 2021/04/12 Company: www.dtstack.com
@@ -39,12 +43,12 @@ public class MysqlSourceFactory extends JdbcSourceFactory {
     // 默认是Mysql流式拉取
     private static final int DEFAULT_FETCH_SIZE = Integer.MIN_VALUE;
 
-    public MysqlSourceFactory(SyncConf syncConf, StreamExecutionEnvironment env) {
-        this(syncConf, env, new MysqlDialect());
+    public MysqlSourceFactory(SyncConf syncConf, StreamExecutionEnvironment env, List<IColMetaGetter> sourceColsMeta) {
+        this(syncConf, env, new MysqlDialect(), sourceColsMeta);
     }
 
-    public MysqlSourceFactory(SyncConf syncConf, StreamExecutionEnvironment env, JdbcDialect jdbcDialect) {
-        super(syncConf, env, jdbcDialect);
+    public MysqlSourceFactory(SyncConf syncConf, StreamExecutionEnvironment env, JdbcDialect jdbcDialect, List<IColMetaGetter> sourceColsMeta) {
+        super(syncConf, env, jdbcDialect, sourceColsMeta);
         // 避免result.next阻塞
         if (jdbcConf.isPolling()
                 && StringUtils.isEmpty(jdbcConf.getStartLocation())

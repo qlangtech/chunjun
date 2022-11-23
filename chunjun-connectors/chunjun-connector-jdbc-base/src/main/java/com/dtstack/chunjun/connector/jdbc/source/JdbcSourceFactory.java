@@ -20,7 +20,6 @@ package com.dtstack.chunjun.connector.jdbc.source;
 
 import com.dtstack.chunjun.conf.FieldConf;
 import com.dtstack.chunjun.conf.SyncConf;
-import com.dtstack.chunjun.connector.jdbc.TableCols;
 import com.dtstack.chunjun.connector.jdbc.adapter.ConnectionAdapter;
 import com.dtstack.chunjun.connector.jdbc.conf.ConnectionConf;
 import com.dtstack.chunjun.connector.jdbc.conf.JdbcConf;
@@ -28,19 +27,17 @@ import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
 import com.dtstack.chunjun.connector.jdbc.exclusion.FieldNameExclusionStrategy;
 import com.dtstack.chunjun.connector.jdbc.util.JdbcUtil;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
-import com.dtstack.chunjun.converter.RawTypeConverter;
 import com.dtstack.chunjun.source.SourceFactory;
 import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
 import com.dtstack.chunjun.util.GsonUtil;
-import com.dtstack.chunjun.util.TableUtil;
 
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.data.RowData;
-import org.apache.flink.table.types.logical.RowType;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.qlangtech.tis.plugin.ds.IColMetaGetter;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -65,8 +62,9 @@ public abstract class JdbcSourceFactory extends SourceFactory {
     protected JdbcDialect jdbcDialect;
 
     public JdbcSourceFactory(
-            SyncConf syncConf, StreamExecutionEnvironment env, JdbcDialect jdbcDialect) {
-        super(syncConf, env);
+            SyncConf syncConf, StreamExecutionEnvironment env, JdbcDialect jdbcDialect
+            , List<IColMetaGetter> sourceColsMeta) {
+        super(syncConf, env, sourceColsMeta, jdbcDialect.getRawTypeConverter());
         this.jdbcDialect = jdbcDialect;
         Gson gson =
                 new GsonBuilder()
@@ -125,9 +123,10 @@ public abstract class JdbcSourceFactory extends SourceFactory {
         AbstractRowConverter rowConverter = null;
         if (!useAbstractBaseColumn) {
             checkConstant(jdbcConf);
-            final RowType rowType =
-                    TableUtil.createRowTypeByColsMeta(TableCols.create(jdbcConf.getColumn()).getCols(), getRawTypeConverter());
-            rowConverter = jdbcDialect.getRowConverter(rowType);
+            throw new UnsupportedOperationException();
+//            final RowType rowType =
+//                    TableUtil.createRowTypeByColsMeta(TableCols.create(jdbcConf.getColumn()).getCols(), getRawTypeConverter());
+            // rowConverter = jdbcDialect.getRowConverter(rowType);
         }
         builder.setRowConverter(rowConverter, useAbstractBaseColumn);
 
@@ -216,10 +215,10 @@ public abstract class JdbcSourceFactory extends SourceFactory {
         return DEFAULT_FETCH_SIZE;
     }
 
-    @Override
-    public RawTypeConverter getRawTypeConverter() {
-        return jdbcDialect.getRawTypeConverter();
-    }
+//    @Override
+//    public RawTypeConverter getRawTypeConverter() {
+//        return jdbcDialect.getRawTypeConverter();
+//    }
 
     protected void rebuildJdbcConf() {
         // table字段有可能是schema.table格式 需要转换为对应的schema 和 table 字段

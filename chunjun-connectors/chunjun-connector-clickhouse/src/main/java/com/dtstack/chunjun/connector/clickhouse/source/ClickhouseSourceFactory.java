@@ -22,10 +22,15 @@ import com.dtstack.chunjun.conf.SyncConf;
 import com.dtstack.chunjun.connector.clickhouse.dialect.ClickhouseDialect;
 import com.dtstack.chunjun.connector.jdbc.source.JdbcInputFormatBuilder;
 import com.dtstack.chunjun.connector.jdbc.source.JdbcSourceFactory;
+import com.dtstack.chunjun.converter.RawTypeConverter;
 
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
+import com.qlangtech.tis.plugin.ds.IColMetaGetter;
+
 import org.apache.commons.lang3.StringUtils;
+
+import java.util.List;
 
 /**
  * @program: ChunJun
@@ -34,8 +39,8 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class ClickhouseSourceFactory extends JdbcSourceFactory {
 
-    public ClickhouseSourceFactory(SyncConf syncConf, StreamExecutionEnvironment env) {
-        super(syncConf, env, new ClickhouseDialect());
+    public ClickhouseSourceFactory(SyncConf syncConf, StreamExecutionEnvironment env, List<IColMetaGetter> sourceColsMeta) {
+        super(syncConf, env, new ClickhouseDialect(), sourceColsMeta);
         // 避免result.next阻塞
         if (jdbcConf.isPolling()
                 && StringUtils.isEmpty(jdbcConf.getStartLocation())
