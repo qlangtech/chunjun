@@ -141,6 +141,14 @@ public class StarrocksSinkFactory extends JdbcSinkFactory {
 
     @Override
     public DataStreamSink<RowData> createSink(DataStream<RowData> dataSet) {
+        DorisHttpOutputFormatBuilder builder = createDorisHttpOutputFormatBuilder();
+
+        builder.setDorisOptions(options);
+        return createOutput(dataSet, builder.finish());
+    }
+
+    @Override
+    public DataStreamSink<RowData> createSink(DataStream<RowData> dataSet) {
 
         JdbcOutputFormatBuilder builder = getBuilder();
 
@@ -171,6 +179,12 @@ public class StarrocksSinkFactory extends JdbcSinkFactory {
 
     @Override
     public RawTypeConverter getRawTypeConverter() {
-        return StarRocksRawTypeConverter::apply;
+      //  return StarRocksRawTypeConverter::apply;
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected JdbcOutputFormatBuilder getBuilder() {
+        return null;
     }
 }
