@@ -6,15 +6,16 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * <p>
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.dtstack.chunjun.connector.binlog.inputformat;
 
 import com.dtstack.chunjun.connector.binlog.conf.BinlogConf;
@@ -38,6 +39,7 @@ import org.apache.flink.table.data.RowData;
 import com.alibaba.otter.canal.filter.aviater.AviaterRegexFilter;
 import com.alibaba.otter.canal.parse.inbound.mysql.MysqlEventParser;
 import com.alibaba.otter.canal.parse.support.AuthenticationInfo;
+import com.alibaba.otter.canal.protocol.CanalEntry;
 import com.alibaba.otter.canal.protocol.position.EntryPosition;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -52,7 +54,6 @@ import java.util.List;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 
-/** @author toutian */
 public class BinlogInputFormat extends BaseRichInputFormat {
 
     protected BinlogConf binlogConf;
@@ -62,6 +63,7 @@ public class BinlogInputFormat extends BaseRichInputFormat {
 
     protected transient MysqlEventParser controller;
     protected transient BinlogEventSink binlogEventSink;
+    protected List<String> tableFilters;
 
     @Override
     public InputSplit[] createInputSplitsInternal(int minNumSplits) {
@@ -81,11 +83,27 @@ public class BinlogInputFormat extends BaseRichInputFormat {
                 binlogConf.getTable());
         ClassUtil.forName(BinlogUtil.DRIVER_NAME, getClass().getClassLoader());
 
-        if (StringUtils.isNotEmpty(binlogConf.getCat())) {
-            LOG.info("{}", categories);
-            categories =
-                    Arrays.asList(
-                            binlogConf.getCat().toUpperCase().split(ConstantValue.COMMA_SYMBOL));
+        if (StringUtils.isNotEmpty(binlogConf.getCat()) || !binlogConf.isDdlSkip()) {
+            if (StringUtils.isNotEmpty(binlogConf.getCat())) {
+                categories =
+                        Arrays.stream(
+                                        binlogConf
+                                                .getCat()
+                                                .toUpperCase()
+                                                .split(ConstantValue.COMMA_SYMBOL))
+                                .collect(Collectors.toList());
+            }
+
+            if (!binlogConf.isDdlSkip()) {
+                categories.add(CanalEntry.EventType.CREATE.name());
+                categories.add(CanalEntry.EventType.ALTER.name());
+                categories.add(CanalEntry.EventType.ERASE.name());
+                categories.add(CanalEntry.EventType.TRUNCATE.name());
+                categories.add(CanalEntry.EventType.RENAME.name());
+                categories.add(CanalEntry.EventType.CINDEX.name());
+                categories.add(CanalEntry.EventType.DINDEX.name());
+                categories.add(CanalEntry.EventType.QUERY.name());
+            }
         }
         /*
          mysql 数据解析关注的表，Perl正则表达式.
@@ -107,16 +125,21 @@ public class BinlogInputFormat extends BaseRichInputFormat {
             String database = BinlogUtil.getDataBaseByUrl(jdbcUrl);
             List<String> tables = binlogConf.getTable();
             if (CollectionUtils.isNotEmpty(tables)) {
-                String filter =
+                tableFilters =
                         tables.stream()
                                 // 每一个表格式化为schema.tableName格式
                                 .map(t -> BinlogUtil.formatTableName(database, t))
-                                .collect(Collectors.joining(ConstantValue.COMMA_SYMBOL));
+                                .collect(Collectors.toList());
+                String filter = String.join(ConstantValue.COMMA_SYMBOL, tableFilters);
 
                 binlogConf.setFilter(filter);
             } else if (StringUtils.isBlank(binlogConf.getFilter())) {
                 // 如果table未指定  filter未指定 只消费此schema下的数据
                 binlogConf.setFilter(database + "\\..*");
+                tableFilters = new ArrayList<>();
+                tableFilters.add(database + "\\..*");
+            } else if (StringUtils.isNotBlank(binlogConf.getFilter())) {
+                tableFilters = Arrays.asList(binlogConf.getFilter().split(","));
             }
             LOG.info(
                     "binlog FilterAfter:{},tableAfter: {}",
@@ -137,6 +160,11 @@ public class BinlogInputFormat extends BaseRichInputFormat {
 
         binlogEventSink = new BinlogEventSink(this);
         controller = getController(binlogConf.username, binlogConf.getFilter(), binlogEventSink);
+
+        // 任务启动前 先初始化表结构
+        if (binlogConf.isInitialTableStructure()) {
+            binlogEventSink.initialTableStructData(tableFilters);
+        }
         controller.start();
     }
 

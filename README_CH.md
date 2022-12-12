@@ -83,7 +83,7 @@ chunjun目前支持tdh和开源hadoop平台，对不同的平台有需要使用�
 报错信息：
 
 ```java
-[ERROR]Failed to execute goal com.diffplug.spotless:spotless-maven-plugin:2.4.2:check(spotless-check)on project flinkx-core:
+[ERROR]Failed to execute goal com.diffplug.spotless:spotless-maven-plugin:2.4.2:check(spotless-check)on project chunjun-core:
         Execution spotless-check of goal com.diffplug.spotless:spotless-maven-plugin:2.4.2:check failed:Unable to resolve dependencies:
         Failed to collect dependencies at com.google.googlejavaformat:google-java-format:jar:1.7->com.google.errorprone:javac-shaded:jar:9+181-r4173-1:
         Failed to read artifact descriptor for com.google.errorprone:javac-shaded:jar:9+181-r4173-1:Could not transfer artifact
@@ -127,6 +127,11 @@ sh bin/chunjun-local.sh  -job chunjun-examples/json/stream/stream.json
 
 即可执行一个简单的 **stream -> stream** 同步任务
 
+注意:
+```
+如果你是在windows环境下打包，在linux上运行任务前需要执行 sed -i "s/\r//g" bin/*.sh 命令修复sh脚本中的  '\r' 问题。
+```
+
 [参考视频](https://www.bilibili.com/video/BV1mT411g7fJ?spm_id_from=333.999.0.0)
 
 ### Standalone
@@ -135,7 +140,18 @@ Standalone模式依赖Flink Standalone环境，不依赖Hadoop环境。
 
 #### 提交步骤
 
-##### 1. 启动Flink Standalone环境
+##### 1. 添加chunjun依赖包
+1) 根据实际情况找到依赖文件:
+   通过maven编译的方式构建项目时，依赖文件目录为'chunjun-dist';
+   通过官网下载压缩包解压使用时，依赖文件目录为解压后的目录，例如'chunjun-assembly-1.12-SNAPSHOT-chunjun-dist'
+
+2) 将依赖文件复制到Flink lib目录下,例如
+```shell
+cp -r chunjun-dist $FLINK_HOME/lib
+```
+注意: 这个复制操作需要在所有Flink cluster机器上执行，否则部分任务会出现类找不到的错误。
+
+##### 2. 启动Flink Standalone环境
 
 ```shell
 sh $FLINK_HOME/bin/start-cluster.sh
@@ -143,7 +159,7 @@ sh $FLINK_HOME/bin/start-cluster.sh
 
 启动成功后默认端口为8081，我们可以访问当前机器的8081端口进入standalone的flink web ui
 
-##### 2. 提交任务
+##### 3. 提交任务
 
 进入到本地chunjun-dist目录，执行命令
 

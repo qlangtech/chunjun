@@ -12,7 +12,7 @@
 
 ## Introduce
 
-ChunJun(formerly known as FlinkX), is a data integration tool based on Flink, which is **stable**, **easy to use**, **efficient**, and **integrated with DataStream/DataSet API**. It can realize data synchronization and calculation between various heterogeneous data sources. ChunJun has been deployed and running stably in thousands of companies so far.
+ChunJun is a distributed integration framework, and currently is based on Apache Flink. It was initially known as FlinkX and renamed ChunJun on February 22, 2022. It can realize data synchronization and calculation between various heterogeneous data sources. ChunJun has been deployed and running stably in thousands of companies so far.
 
 Official website of ChunJun: https://dtstack.github.io/chunjun/
 
@@ -21,13 +21,13 @@ Official website of ChunJun: https://dtstack.github.io/chunjun/
 ChunJun abstracts different databases into reader/source plugins, writer/sink plugins and lookup plugins, and it has the following features:
 
 - Based on the real-time computing engine--Flink, and supports JSON template and SQL script configuration tasks. The SQL script is compatible with Flink SQL syntax;
-- Support distributed operation, support flink-standalone, yarn-session, yarn-per job and other submission methods;
-- Support Docker one-click deployment, support deploy and run on k8s;
+- Supports distributed operation, support flink-standalone, yarn-session, yarn-per job and other submission methods;
+- Supports Docker one-click deployment, support deploy and run on k8s;
 - Supports a variety of heterogeneous data sources, and supports synchronization and calculation of more than 20 data sources such as MySQL, Oracle, SQLServer, Hive, Kudu, etc.
 - Easy to expand, highly flexible, newly expanded data source plugins can integrate with existing data source plugins instantly, plugin developers do not need to care about the code logic of other plugins;
 - Not only supports full synchronization, but also supports incremental synchronization and interval training;
 - Not only supports offline synchronization and calculation, but also compatible with real-time scenarios;
-- Support dirty data storage, and provide indicator monitoring, etc.;
+- Supports dirty data storage, and provide indicator monitoring, etc.;
 - Cooperate with the flink checkpoint mechanism to achieve breakpoint resuming, task disaster recovery;
 - Not only supports synchronizing DML data, but also supports DDL synchronization, like 'CREATE TABLE', 'ALTER COLUMN', etc.;
 
@@ -46,7 +46,7 @@ git clone https://github.com/DTStack/chunjun.git
 Execute the command in the project directory.
 
 ```shell
-./mvnw clean package -DskipTests
+./mvnw clean package
 ```
 
 Or execute
@@ -55,35 +55,14 @@ Or execute
 sh build/build.sh
 ```
 
-### Multi-platform compatible
-
-Chunjun currently supports tdh and open-source hadoop platforms, and different platforms need to be packaged with different maven commands.
-
-| Hadoop Platformas |                                              | Comment                                                      |
-|-------------------| -------------------------------------------- |--------------------------------------------------------------|
-| tdh               | mvn clean package -DskipTests -P default,tdh | Package the inceport plugin and plugins supported by default |
-| default           | mvn clean package -DskipTests -P default     | Package the all plugins except the inceptor plugin.          |
-
 ### Common problem
 
-#### 1.Can not find dependencies
-
-Solution: There are some driver packages in the directory '$ChunJun_HOME/jars', and you can install these dependencies manually or execute the command below:
-
-```bash
-## windows
-./$CHUNJUN_HOME/bin/install_jars.bat
-
-## unix
-./$CHUNJUN_HOME/bin/install_jars.sh
-```
-
-#### 2. Compiling module 'ChunJun-core' then throws 'Failed to read artifact descriptor for com.google.errorprone:javac-shaded'
+#### Compiling module 'ChunJun-core' then throws 'Failed to read artifact descriptor for com.google.errorprone:javac-shaded'
 
 Error message：
 
 ```java
-[ERROR]Failed to execute goal com.diffplug.spotless:spotless-maven-plugin:2.4.2:check(spotless-check)on project flinkx-core:
+[ERROR]Failed to execute goal com.diffplug.spotless:spotless-maven-plugin:2.4.2:check(spotless-check)on project chunjun-core:
         Execution spotless-check of goal com.diffplug.spotless:spotless-maven-plugin:2.4.2:check failed:Unable to resolve dependencies:
         Failed to collect dependencies at com.google.googlejavaformat:google-java-format:jar:1.7->com.google.errorprone:javac-shaded:jar:9+181-r4173-1:
         Failed to read artifact descriptor for com.google.errorprone:javac-shaded:jar:9+181-r4173-1:Could not transfer artifact
@@ -126,6 +105,11 @@ sh bin/chunjun-local.sh  -job $SCRIPT_PATH
 The parameter of "$SCRIPT_PATH" means 'the path where the task script is located'.
 After execute, you can perform a task locally.
 
+note:
+```
+when you package in windows and run sh in linux , you need to execute command  sed -i "s/\r//g" bin/*.sh to fix the '\r' problems.
+```
+
 [Reference video](https://www.bilibili.com/video/BV1mT411g7fJ?spm_id_from=333.999.0.0)
 
 ### Standalone
@@ -133,8 +117,19 @@ After execute, you can perform a task locally.
 Standalone mode depend on the Flink Standalone environment and does not depend on the Hadoop environment.
 
 #### Steps
+##### 1. add jars of chunjun 
+1) Find directory of jars:
+   if you build this project using maven, the directory name is 'chunjun-dist' ;
+   if you download tar.gz file from release page, after decompression, the directory name would be like 'chunjun-assembly-1.12-SNAPSHOT-chunjun-dist'.
 
-##### 1. Start Flink Standalone Cluster
+2) Copy jars to directory of Flink lib, command example:
+```shell
+cp -r chunjun-dist $FLINK_HOME/lib
+```
+Notice: this operation should be executed in all machines of Flink cluster, otherwise some jobs will fail because of ClassNotFoundException.
+
+
+##### 2. Start Flink Standalone Cluster
 
 ```shell
 sh $FLINK_HOME/bin/start-cluster.sh
@@ -142,7 +137,7 @@ sh $FLINK_HOME/bin/start-cluster.sh
 
 After the startup is successful, the default port of Flink Web is 8081, which you can configure in the file of 'flink-conf.yaml'. We can access the 8081 port of the current machine to enter the flink web of standalone cluster.
 
-##### 2. Submit task
+##### 3. Submit task
 
 Go to the directory of 'chunjun-dist' and execute the command below:
 
@@ -211,3 +206,8 @@ Thanks to all contributors! We are very happy that you can contribute Chunjun.
 ## License
 
 ChunJun is under the Apache 2.0 license. Please visit [LICENSE](http://www.apache.org/licenses/LICENSE-2.0) for details.
+
+## Contact Us
+
+Join ChunJun Slack.
+https://join.slack.com/t/chunjun/shared_invite/zt-1hzmvh0o3-qZ726NXmhClmLFRMpEDHYw

@@ -40,6 +40,8 @@ import net.sf.jsqlparser.statement.delete.Delete;
 import net.sf.jsqlparser.statement.insert.Insert;
 import net.sf.jsqlparser.statement.update.Update;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -204,6 +206,25 @@ public class LogParser {
         return value;
     }
 
+    public static String decodeUnicode(String dataStr) {
+        int start = dataStr.indexOf("\\");
+        int end = 0;
+        final StringBuilder buffer = new StringBuilder(dataStr.substring(0, start));
+        while (start > -1) {
+            end = dataStr.indexOf("\\", start + 1);
+            String charStr = "";
+            if (end == -1) {
+                charStr = dataStr.substring(start + 1, dataStr.length());
+            } else {
+                charStr = dataStr.substring(start + 1, end);
+            }
+            char letter = (char) Integer.parseInt(charStr, 16); // 16进制parse整形字符串。
+            buffer.append(letter);
+            start = end;
+        }
+        return new String(buffer.toString().getBytes(), StandardCharsets.UTF_8);
+    }
+
     public static String parseString(String value) {
         if (!value.endsWith("')")) {
             return value;
@@ -215,6 +236,18 @@ public class LogParser {
                 return new String(
                         Hex.decodeHex(value.substring(10, value.length() - 2).toCharArray()),
                         StandardCharsets.UTF_8);
+            } catch (Exception e) {
+                throw new RuntimeException("parse value [" + value + " ] failed ", e);
+            }
+        } else if (value.startsWith("UNISTR('")) {
+            try {
+                String valueSub = value.substring(8, value.length() - 2);
+                if (StringUtils.isNotEmpty(valueSub)) {
+                    return decodeUnicode(valueSub);
+                } else {
+                    return "";
+                }
+
             } catch (Exception e) {
                 throw new RuntimeException("parse value [" + value + " ] failed ", e);
             }
@@ -230,6 +263,13 @@ public class LogParser {
             return value.substring(15, value.length() - 2);
         }
 
+        // support nchar、nvarchar2 chinese value
+        if (value.startsWith("UNISTR('") && value.endsWith("')")) {
+            String substring = value.substring(8, value.length() - 2);
+            String replace = substring.replace("\\", "\\u");
+            return StringEscapeUtils.unescapeJava(replace);
+        }
+
         return value;
     }
 
@@ -237,12 +277,12 @@ public class LogParser {
             throws Exception {
         ColumnRowData logData = (ColumnRowData) pair.getData();
 
-        String schema = logData.getField("schema").asString();
-        String tableName = logData.getField("tableName").asString();
-        String operation = logData.getField("operation").asString();
-        String sqlLog = logData.getField("sqlLog").asString();
+        String schema = Objects.requireNonNull(logData.getField("schema")).asString();
+        String tableName = Objects.requireNonNull(logData.getField("tableName")).asString();
+        String operation = Objects.requireNonNull(logData.getField("operation")).asString();
+        String sqlLog = Objects.requireNonNull(logData.getField("sqlLog")).asString();
         String sqlRedo = sqlLog.replace("IS NULL", "= NULL");
-        Timestamp timestamp = logData.getField("opTime").asTimestamp();
+        Timestamp timestamp = Objects.requireNonNull(logData.getField("opTime")).asTimestamp();
 
         Statement stmt;
         try {
@@ -263,7 +303,7 @@ public class LogParser {
             parseDeleteStmt((Delete) stmt, EventRowDataList, afterEventRowDataList);
         }
 
-        Long ts = idWorker.nextId();
+        long ts = idWorker.nextId();
 
         if (LOG.isDebugEnabled()) {
             printDelay(pair.getScn(), ts, timestamp);

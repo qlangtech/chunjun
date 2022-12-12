@@ -18,10 +18,6 @@
 
 package com.dtstack.chunjun.connector.doris.exception;
 
-/**
- * @author tiezhu@dtstack
- * @date 2021/9/17 星期五
- */
 public class DorisConnectFailedException extends RuntimeException {
     public DorisConnectFailedException(String username, String hostUrl, Throwable cause) {
         super(String.format("User [%s] connect to [%s] failed.", username, hostUrl), cause);

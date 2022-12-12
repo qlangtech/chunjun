@@ -33,7 +33,7 @@ import com.dtstack.chunjun.util.StringUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -54,8 +54,6 @@ public class SqlServerCdcInputFormatBuilder
         extends BaseRichInputFormatBuilder<SqlServerCdcInputFormat> {
 
     protected String tableFormat = "%s.%s";
-
-    protected SqlServerCdcInputFormat format;
 
     public SqlServerCdcInputFormatBuilder() {
         super(new SqlServerCdcInputFormat());

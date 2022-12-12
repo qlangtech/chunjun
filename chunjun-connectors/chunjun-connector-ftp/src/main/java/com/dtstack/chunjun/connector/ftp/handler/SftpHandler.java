@@ -19,6 +19,7 @@
 package com.dtstack.chunjun.connector.ftp.handler;
 
 import com.dtstack.chunjun.connector.ftp.conf.FtpConfig;
+import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
 import com.dtstack.chunjun.util.ExceptionUtil;
 
 import com.jcraft.jsch.ChannelSftp;
@@ -41,13 +42,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Vector;
 
-/**
- * The concrete Ftp Utility class used for sftp
- *
- * <p>Company: www.dtstack.com
- *
- * @author huyifan.zju@163.com
- */
+/** The concrete Ftp Utility class used for sftp */
 public class SftpHandler implements IFtpHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(SftpHandler.class);
@@ -55,8 +50,8 @@ public class SftpHandler implements IFtpHandler {
     private static final String DOT_DOT = "..";
     private static final String SP = "/";
     private static final String SRC_MAIN = "src/main";
-    private static String PATH_NOT_EXIST_ERR = "no such file";
-    private static String MSG_AUTH_FAIL = "Auth fail";
+    private static final String[] PATH_NOT_EXIST_ERR = {"no such file", "is not a valid file path"};
+    private static final String MSG_AUTH_FAIL = "Auth fail";
     private Session session = null;
     private ChannelSftp channelSftp = null;
 
@@ -162,10 +157,16 @@ public class SftpHandler implements IFtpHandler {
             SftpATTRS sftpAttrs = channelSftp.lstat(directoryPath);
             return sftpAttrs.isDir();
         } catch (SftpException e) {
-            if (e.getMessage().toLowerCase().equals(PATH_NOT_EXIST_ERR)) {
-                LOG.warn("{}", e.getMessage());
-                return false;
+            for (String errMsg : PATH_NOT_EXIST_ERR) {
+                if (e.getMessage().toLowerCase().contains(errMsg)) {
+                    String message =
+                            String.format(
+                                    "file not found, sftp server reply errorCode: [%d]", e.id);
+                    LOG.warn(message);
+                    return false;
+                }
             }
+
             String message = String.format("进入目录：[%s]时发生I/O异常,请确认与ftp服务器的连接正常", directoryPath);
             LOG.error(message);
             throw new RuntimeException(message, e);
@@ -181,14 +182,19 @@ public class SftpHandler implements IFtpHandler {
                 isExitFlag = true;
             }
         } catch (SftpException e) {
-            if (e.getMessage().toLowerCase().equals(PATH_NOT_EXIST_ERR)) {
-                LOG.warn("{}", e.getMessage());
-                return false;
-            } else {
-                String message = String.format("获取文件：[%s] 属性时发生I/O异常,请确认与ftp服务器的连接正常", filePath);
-                LOG.error(message);
-                throw new RuntimeException(message, e);
+            for (String errMsg : PATH_NOT_EXIST_ERR) {
+                if (e.getMessage().toLowerCase().contains(errMsg)) {
+                    String message =
+                            String.format(
+                                    "file not found, sftp server reply errorCode: [%d]", e.id);
+                    LOG.warn(message);
+                    return false;
+                }
             }
+
+            String message = String.format("获取文件：[%s] 属性时发生I/O异常,请确认与ftp服务器的连接正常", filePath);
+            LOG.error(message);
+            throw new RuntimeException(message, e);
         }
         return isExitFlag;
     }
@@ -207,39 +213,16 @@ public class SftpHandler implements IFtpHandler {
     }
 
     @Override
-    public List<String> listDirs(String path) {
-        if (StringUtils.isBlank(path)) {
-            path = SP;
+    public InputStream getInputStreamByPosition(String filePath, long startPosition) {
+
+        try {
+            if (startPosition == 0) {
+                return this.getInputStream(filePath);
+            }
+            return channelSftp.get(filePath, null, startPosition);
+        } catch (SftpException e) {
+            throw new RuntimeException(e);
         }
-
-        List<String> dirs = new ArrayList<>();
-        if (isDirExist(path)) {
-            if (path.equals(DOT) || path.equals(SRC_MAIN)) {
-                return dirs;
-            }
-
-            if (!path.endsWith(SP)) {
-                path = path + SP;
-            }
-
-            try {
-                Vector vector = channelSftp.ls(path);
-                for (int i = 0; i < vector.size(); ++i) {
-                    ChannelSftp.LsEntry le = (ChannelSftp.LsEntry) vector.get(i);
-                    String strName = le.getFilename();
-                    if (!strName.equals(DOT)
-                            && !strName.equals(SRC_MAIN)
-                            && !strName.equals(DOT_DOT)) {
-                        String filePath = path + strName;
-                        dirs.add(filePath);
-                    }
-                }
-            } catch (SftpException e) {
-                LOG.error("", e);
-            }
-        }
-
-        return dirs;
     }
 
     @Override
@@ -256,9 +239,9 @@ public class SftpHandler implements IFtpHandler {
                 path = path + SP;
             }
             try {
-                Vector vector = channelSftp.ls(path);
-                for (int i = 0; i < vector.size(); ++i) {
-                    ChannelSftp.LsEntry le = (ChannelSftp.LsEntry) vector.get(i);
+                Vector<?> vector = channelSftp.ls(path);
+                for (Object o : vector) {
+                    ChannelSftp.LsEntry le = (ChannelSftp.LsEntry) o;
                     String strName = le.getFilename();
                     if (!strName.equals(DOT)
                             && !strName.equals(SRC_MAIN)
@@ -283,14 +266,17 @@ public class SftpHandler implements IFtpHandler {
     public void mkDirRecursive(String directoryPath) {
         boolean isDirExist = false;
         try {
-            this.printWorkingDirectory();
+            printWorkingDirectory();
             SftpATTRS sftpAttrs = this.channelSftp.lstat(directoryPath);
             isDirExist = sftpAttrs.isDir();
         } catch (SftpException e) {
-            if (e.getMessage().toLowerCase().equals(PATH_NOT_EXIST_ERR)) {
-                LOG.warn("{}", e.getMessage());
-                LOG.warn("Path [{}] does not exist and will be created.", directoryPath);
-                isDirExist = false;
+            for (String errMsg : PATH_NOT_EXIST_ERR) {
+                if (e.getMessage().toLowerCase().contains(errMsg)) {
+                    String message =
+                            String.format(
+                                    "file not found, sftp server reply errorCode: [%d]", e.id);
+                    LOG.warn(message);
+                }
             }
         }
         if (!isDirExist) {
@@ -352,9 +338,9 @@ public class SftpHandler implements IFtpHandler {
             }
 
             try {
-                Vector vector = channelSftp.ls(dir);
-                for (int i = 0; i < vector.size(); ++i) {
-                    ChannelSftp.LsEntry le = (ChannelSftp.LsEntry) vector.get(i);
+                Vector<?> vector = channelSftp.ls(dir);
+                for (Object o : vector) {
+                    ChannelSftp.LsEntry le = (ChannelSftp.LsEntry) o;
                     String strName = le.getFilename();
                     if (CollectionUtils.isNotEmpty(exclude) && exclude.contains(strName)) {
                         continue;
@@ -386,7 +372,7 @@ public class SftpHandler implements IFtpHandler {
     }
 
     @Override
-    public boolean deleteFile(String filePath) throws IOException {
+    public void deleteFile(String filePath) throws IOException {
         try {
             if (isFileExist(filePath)) {
                 channelSftp.rm(filePath);
@@ -394,36 +380,37 @@ public class SftpHandler implements IFtpHandler {
         } catch (SftpException e) {
             throw new IOException(e);
         }
-        return true;
     }
 
-    public boolean mkDirSingleHierarchy(String directoryPath) throws SftpException {
-        boolean isDirExist = false;
+    public void mkDirSingleHierarchy(String directoryPath) throws SftpException {
+        boolean isDirExist;
         try {
             SftpATTRS sftpAttrs = this.channelSftp.lstat(directoryPath);
             isDirExist = sftpAttrs.isDir();
         } catch (SftpException e) {
-            if (!isDirExist) {
-                LOG.info("Creating a directory step by step [{}]", directoryPath);
-                this.channelSftp.mkdir(directoryPath);
-                return true;
-            }
+            LOG.info("Creating a directory step by step [{}]", directoryPath);
+            this.channelSftp.mkdir(directoryPath);
+            return;
         }
         if (!isDirExist) {
             LOG.info("Creating a directory step by step [{}]", directoryPath);
             this.channelSftp.mkdir(directoryPath);
         }
-        return true;
     }
 
     @Override
     public void rename(String oldPath, String newPath) throws SftpException {
+        if (this.isFileExist(newPath)) {
+            try {
+                LOG.info(String.format("[%s] exist, delete it before rename", newPath));
+                this.deleteFile(newPath);
+            } catch (Exception e) {
+                throw new ChunJunRuntimeException(e);
+            }
+        }
+
         channelSftp.rename(oldPath, newPath);
     }
-
-    /** 仅ftp输入流需要显示关闭 */
-    @Override
-    public void completePendingCommand() {}
 
     @Override
     public long getFileSize(String path) throws IOException {
@@ -432,5 +419,10 @@ public class SftpHandler implements IFtpHandler {
         } catch (SftpException e) {
             throw new IOException(e);
         }
+    }
+
+    @Override
+    public void close() throws Exception {
+        logoutFtpServer();
     }
 }

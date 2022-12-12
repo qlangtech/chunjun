@@ -22,7 +22,7 @@ import com.dtstack.chunjun.connector.ftp.conf.FtpConfig;
 import com.dtstack.chunjun.sink.format.FileOutputFormatBuilder;
 import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * The builder of FtpOutputFormat
@@ -31,9 +31,7 @@ import org.apache.commons.lang.StringUtils;
  *
  * @author huyifan.zju@163.com
  */
-public class FtpOutputFormatBuilder extends FileOutputFormatBuilder {
-
-    private FtpOutputFormat format;
+public class FtpOutputFormatBuilder extends FileOutputFormatBuilder<FtpOutputFormat> {
 
     public FtpOutputFormatBuilder() {
         super(new FtpOutputFormat());

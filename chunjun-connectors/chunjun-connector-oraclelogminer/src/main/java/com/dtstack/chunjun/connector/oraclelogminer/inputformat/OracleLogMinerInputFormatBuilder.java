@@ -33,7 +33,7 @@ import com.dtstack.chunjun.util.TelnetUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -90,6 +90,14 @@ public class OracleLogMinerInputFormatBuilder
 
         if (config.getFetchSize() < 1) {
             sb.append("fetchSize must bigger than 0;\n");
+        }
+
+        if (config.getTransactionEventSize() <= 1) {
+            sb.append("transactionEventSize must bigger than 1;\n");
+        }
+
+        if (config.getTransactionCacheNumSize() <= 1) {
+            sb.append("transactionCacheNumSize must bigger than 1;\n");
         }
 
         if (config.getPavingData() && config.isSplit()) {

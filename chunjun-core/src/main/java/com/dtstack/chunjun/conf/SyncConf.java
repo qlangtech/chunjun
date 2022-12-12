@@ -18,23 +18,17 @@
 package com.dtstack.chunjun.conf;
 
 import com.dtstack.chunjun.cdc.CdcConf;
-import com.dtstack.chunjun.mapping.NameMappingConf;
+import com.dtstack.chunjun.mapping.MappingConf;
 import com.dtstack.chunjun.util.GsonUtil;
 
 import org.apache.flink.util.Preconditions;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Date: 2021/01/18 Company: www.dtstack.com
- *
- * @author tudou
- */
 public class SyncConf implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -105,15 +99,6 @@ public class SyncConf implements Serializable {
         Preconditions.checkNotNull(
                 writerParameter,
                 "[parameter] under [writer] in the task script is empty, please check the configuration of the task script.");
-        boolean transformer =
-                config.getTransformer() != null
-                        && StringUtils.isNotBlank(config.getTransformer().getTransformSql());
-        if (transformer) {
-            if (CollectionUtils.isEmpty(writer.getFieldList())) {
-                throw new IllegalArgumentException(
-                        "[column] under [writer] can not be empty when [transformSql] is not empty.");
-            }
-        }
 
         List<FieldConf> readerFieldList = config.getReader().getFieldList();
         // 检查并设置restore
@@ -237,7 +222,7 @@ public class SyncConf implements Serializable {
         this.syncJarList = syncJarList;
     }
 
-    public NameMappingConf getNameMappingConf() {
+    public MappingConf getNameMappingConf() {
         return job.getNameMapping();
     }
 
