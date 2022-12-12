@@ -18,6 +18,7 @@
 package com.dtstack.chunjun.connector.hdfs.converter;
 
 import com.dtstack.chunjun.conf.FieldConf;
+import com.dtstack.chunjun.connector.hdfs.conf.HdfsConf;
 import com.dtstack.chunjun.constants.ConstantValue;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
@@ -61,8 +62,8 @@ public class HdfsOrcColumnConverter
     private List<String> ColumnNameList;
     private transient Map<String, ColumnTypeUtil.DecimalInfo> decimalColInfo;
 
-    public HdfsOrcColumnConverter(List<FieldConf> fieldConfList) {
-        super(fieldConfList.size());
+    public HdfsOrcColumnConverter(List<FieldConf> fieldConfList, HdfsConf hdfsConf) {
+        super(fieldConfList.size(), hdfsConf);
         for (int i = 0; i < fieldConfList.size(); i++) {
             String type = fieldConfList.get(i).getType();
             int left = type.indexOf(ConstantValue.LEFT_PARENTHESIS_SYMBOL);
@@ -83,12 +84,15 @@ public class HdfsOrcColumnConverter
         ColumnRowData row = new ColumnRowData(input.getArity());
         if (input instanceof GenericRowData) {
             GenericRowData genericRowData = (GenericRowData) input;
+            List<FieldConf> fieldConfList = commonConf.getColumn();
             for (int i = 0; i < input.getArity(); i++) {
                 row.addField(
-                        (AbstractBaseColumn)
-                                toInternalConverters
-                                        .get(i)
-                                        .deserialize(genericRowData.getField(i)));
+                        assembleFieldProps(
+                                fieldConfList.get(i),
+                                (AbstractBaseColumn)
+                                        toInternalConverters
+                                                .get(i)
+                                                .deserialize(genericRowData.getField(i))));
             }
         } else {
             throw new ChunJunRuntimeException(
@@ -218,11 +222,18 @@ public class HdfsOrcColumnConverter
             case "CHAR":
                 return (rowData, index, data) -> data[index] = rowData.getString(index).toString();
             case "TIMESTAMP":
-                return (rowData, index, data) ->
-                        data[index] = rowData.getTimestamp(index, 6).toTimestamp();
+                return (rowData, index, data) -> {
+                    Timestamp ts = rowData.getTimestamp(index, 6).toTimestamp();
+                    int nanos = ts.getNanos();
+                    data[index] =
+                            org.apache.hadoop.hive.common.type.Timestamp.ofEpochMilli(
+                                    ts.getTime(), nanos);
+                };
             case "DATE":
                 return (rowData, index, data) ->
-                        data[index] = new Date(rowData.getTimestamp(index, 6).getMillisecond());
+                        data[index] =
+                                org.apache.hadoop.hive.common.type.Date.ofEpochMilli(
+                                        rowData.getTimestamp(index, 6).getMillisecond());
             case "BINARY":
                 return (rowData, index, data) ->
                         data[index] = new BytesWritable(rowData.getBinary(index));

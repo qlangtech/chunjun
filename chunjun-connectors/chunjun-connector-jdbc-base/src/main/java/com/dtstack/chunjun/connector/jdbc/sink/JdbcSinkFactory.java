@@ -32,6 +32,7 @@ import com.dtstack.chunjun.table.options.SinkOptions;
 import com.dtstack.chunjun.util.GsonUtil;
 import com.dtstack.chunjun.util.TableUtil;
 
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSink;
 import org.apache.flink.table.data.RowData;
@@ -42,20 +43,20 @@ import com.google.gson.GsonBuilder;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
+import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-/**
- * Date: 2021/04/13 Company: www.dtstack.com
- *
- * @author tudou
- */
 public abstract class JdbcSinkFactory extends SinkFactory {
 
     protected JdbcConf jdbcConf;
     protected JdbcDialect jdbcDialect;
+
+    protected List<String> columnNameList;
+    protected List<String> columnTypeList;
 
     public JdbcSinkFactory(SyncConf syncConf, JdbcDialect jdbcDialect) {
         super(syncConf);
@@ -94,20 +95,46 @@ public abstract class JdbcSinkFactory extends SinkFactory {
     @Override
     public DataStreamSink<RowData> createSink(DataStream<RowData> dataSet) {
         JdbcOutputFormatBuilder builder = getBuilder();
+        initColumnInfo();
         builder.setJdbcConf(jdbcConf);
+        builder.setDdlConf(ddlConf);
         builder.setJdbcDialect(jdbcDialect);
-        builder.setMonitorConfig(monitor);
+        builder.setColumnNameList(columnNameList);
+        builder.setColumnTypeList(columnTypeList);
 
-        AbstractRowConverter rowConverter = null;
+        AbstractRowConverter rowConverter;
+        final RowType rowType =
+                TableUtil.createRowType(jdbcConf.getColumn(), getRawTypeConverter());
         // 同步任务使用transform
         if (!useAbstractBaseColumn) {
-            final RowType rowType =
-                    TableUtil.createRowType(jdbcConf.getColumn(), getRawTypeConverter());
             rowConverter = jdbcDialect.getRowConverter(rowType);
+        } else {
+            rowConverter = jdbcDialect.getColumnConverter(rowType, jdbcConf);
         }
         builder.setRowConverter(rowConverter, useAbstractBaseColumn);
 
         return createOutput(dataSet, builder.finish());
+    }
+
+    protected void initColumnInfo() {
+        Connection conn = getConn();
+        Pair<List<String>, List<String>> tableMetaData = getTableMetaData(conn);
+        Pair<List<String>, List<String>> selectedColumnInfo =
+                JdbcUtil.buildColumnWithMeta(jdbcConf, tableMetaData, null);
+        columnNameList = selectedColumnInfo.getLeft();
+        columnTypeList = selectedColumnInfo.getRight();
+        JdbcUtil.closeDbResources(null, null, conn, false);
+    }
+
+    protected Pair<List<String>, List<String>> getTableMetaData(Connection dbConn) {
+        Tuple3<String, String, String> tableIdentify =
+                jdbcDialect.getTableIdentify().apply(jdbcConf);
+        return JdbcUtil.getTableMetaData(
+                tableIdentify.f0, tableIdentify.f1, tableIdentify.f2, dbConn);
+    }
+
+    protected Connection getConn() {
+        return JdbcUtil.getConnection(jdbcConf, jdbcDialect);
     }
 
     @Override

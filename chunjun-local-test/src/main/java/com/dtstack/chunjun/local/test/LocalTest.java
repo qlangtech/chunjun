@@ -20,7 +20,7 @@ package com.dtstack.chunjun.local.test;
 import com.dtstack.chunjun.Main;
 import com.dtstack.chunjun.util.GsonUtil;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +47,7 @@ public class LocalTest {
         //        confProperties.setProperty("state.checkpoints.dir", "file:///ck");
         String userDir = System.getProperty("user.dir");
 
-        String jobPath = userDir + "/chunjun-examples/json/oracle/oracle_stream.json";
+        String jobPath = userDir + "/chunjun-examples/json/stream/stream.json";
         String chunjunDistDir = userDir + "/start-chunjun-dist";
         String s = "";
 

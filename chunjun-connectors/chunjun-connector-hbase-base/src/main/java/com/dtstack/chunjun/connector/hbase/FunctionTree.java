@@ -21,7 +21,7 @@ package com.dtstack.chunjun.connector.hbase;
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -38,7 +38,7 @@ public class FunctionTree implements Serializable {
 
     private IFunction function;
 
-    private List<FunctionTree> inputFunctions = Lists.newArrayList();
+    private final List<FunctionTree> inputFunctions = Lists.newArrayList();
 
     public String evaluate(Map<String, Object> nameValueMap) throws Exception {
         if (StringUtils.isNotEmpty(columnName) && MapUtils.isNotEmpty(nameValueMap)) {

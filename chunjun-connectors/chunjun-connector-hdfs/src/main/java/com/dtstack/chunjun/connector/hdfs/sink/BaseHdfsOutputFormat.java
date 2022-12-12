@@ -38,7 +38,6 @@ import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -83,6 +82,7 @@ public abstract class BaseHdfsOutputFormat extends BaseFileOutputFormat {
                     hdfsConf.getColumn().stream()
                             .map(FieldConf::getName)
                             .collect(Collectors.toList());
+            hdfsConf.setFullColumnName(fullColumnNameList);
         }
 
         if (CollectionUtils.isNotEmpty(hdfsConf.getFullColumnType())) {
@@ -92,6 +92,7 @@ public abstract class BaseHdfsOutputFormat extends BaseFileOutputFormat {
                     hdfsConf.getColumn().stream()
                             .map(FieldConf::getType)
                             .collect(Collectors.toList());
+            hdfsConf.setFullColumnType(fullColumnTypeList);
         }
         compressType = getCompressType();
         super.initVariableFields();
@@ -115,6 +116,12 @@ public abstract class BaseHdfsOutputFormat extends BaseFileOutputFormat {
             throw new ChunJunRuntimeException(
                     "cannot check or create temp directory: " + tmpPath, e);
         }
+    }
+
+    /** 文件分隔符(File.separatorChar)在windows为\，而在linux中为/，在hadoop中路径需要固定为/， */
+    protected char getHdfsPathChar() {
+        // hadoop 文件系统固定为/，避免路径不对，文件写入错误及移动失败
+        return '/';
     }
 
     @Override
@@ -158,7 +165,7 @@ public abstract class BaseHdfsOutputFormat extends BaseFileOutputFormat {
 
     @Override
     protected long getCurrentFileSize() {
-        String path = tmpPath + File.separatorChar + currentFileName;
+        String path = tmpPath + getHdfsPathChar() + currentFileName;
         try {
             if (hdfsConf.getMaxFileSize() > ConstantValue.STORE_SIZE_G) {
                 return fs.getFileStatus(new Path(path)).getLen();
@@ -201,7 +208,7 @@ public abstract class BaseHdfsOutputFormat extends BaseFileOutputFormat {
         String currentFilePath = "";
         try {
             for (String fileName : this.preCommitFilePathList) {
-                currentFilePath = path + File.separatorChar + fileName;
+                currentFilePath = path + getHdfsPathChar() + fileName;
                 Path commitFilePath = new Path(currentFilePath);
                 fs.delete(commitFilePath, true);
                 LOG.info("delete file:{}", currentFilePath);

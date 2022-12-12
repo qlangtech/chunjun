@@ -1,32 +1,31 @@
 /*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  * Licensed to the Apache Software Foundation (ASF) under one
- *  * or more contributor license agreements.  See the NOTICE file
- *  * distributed with this work for additional information
- *  * regarding copyright ownership.  The ASF licenses this file
- *  * to you under the Apache License, Version 2.0 (the
- *  * "License"); you may not use this file except in compliance
- *  * with the License.  You may obtain a copy of the License at
- *  *
- *  *     http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 package com.dtstack.chunjun.cdc.worker;
 
 import com.dtstack.chunjun.cdc.CdcConf;
 import com.dtstack.chunjun.cdc.QueuesChamberlain;
-import com.dtstack.chunjun.cdc.WrapCollector;
 import com.dtstack.chunjun.cdc.exception.LogExceptionHandler;
 import com.dtstack.chunjun.cdc.utils.ExecutorUtils;
 
 import org.apache.flink.table.data.RowData;
+import org.apache.flink.util.Collector;
 
 import java.io.Serializable;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -51,7 +50,7 @@ public class WorkerManager implements Serializable {
 
     private WorkerOverseer overseer;
 
-    private WrapCollector<RowData> collector;
+    private Collector<RowData> collector;
 
     /** worker的核心线程数 */
     private final int workerNum;
@@ -78,12 +77,12 @@ public class WorkerManager implements Serializable {
                         0,
                         workerSize,
                         "worker-pool-%d",
-                        false,
+                        true,
                         new LogExceptionHandler());
 
         overseerExecutor =
                 ExecutorUtils.singleThreadExecutor(
-                        "overseer-pool-%d", false, new LogExceptionHandler());
+                        "overseer-pool-%d", true, new LogExceptionHandler());
     }
 
     /** 资源关闭 */
@@ -100,11 +99,11 @@ public class WorkerManager implements Serializable {
         }
     }
 
-    public WrapCollector<RowData> getCollector() {
+    public Collector<RowData> getCollector() {
         return collector;
     }
 
-    public void setCollector(WrapCollector<RowData> collector) {
+    public void setCollector(Collector<RowData> collector) {
         this.collector = collector;
         // collector赋值后才能通知Overseer启动worker线程
         openOverseer();
@@ -114,5 +113,13 @@ public class WorkerManager implements Serializable {
     private void openOverseer() {
         overseer = new WorkerOverseer(workerExecutor, chamberlain, collector, workerSize);
         overseerExecutor.execute(overseer);
+    }
+
+    public boolean isAlive() {
+        return overseer.isAlive();
+    }
+
+    public Exception getException() {
+        return overseer.getException();
     }
 }

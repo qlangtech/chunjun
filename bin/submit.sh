@@ -31,12 +31,26 @@ else
   fi
 fi
 
+#1: deploy with assembly dist package file
+#2: deploy with project package
+CHUNJUN_DEPLOY_MODE=1
 if [[ $CHUNJUN_HOME && -z $CHUNJUN_HOME ]];then
-    export CHUNJUN_HOME=$CHUNJUN_HOME
+  export CHUNJUN_HOME=$CHUNJUN_HOME
 else
-    export CHUNJUN_HOME="$(cd "`dirname "$0"`"/../chunjun-dist; pwd)"
+  CHUNJUN_HOME="$(cd "`dirname "$0"`"/..; pwd)"
+  if [ -d "$CHUNJUN_HOME/chunjun-dist" ]; then
+    CHUNJUN_HOME="$CHUNJUN_HOME/chunjun-dist"
+    CHUNJUN_DEPLOY_MODE=2
+  fi
 fi
-JAR_DIR=$CHUNJUN_HOME/../lib/*
+# 1.In yarn-session case, JAR_DIR can not be found
+# 2.In other cases, JAR_DIR can be found
+if [ $CHUNJUN_DEPLOY_MODE -eq 1 ]; then
+  JAR_DIR=$CHUNJUN_HOME/lib/chunjun-clients.jar:$CHUNJUN_HOME/lib/*
+else
+  JAR_DIR=$CHUNJUN_HOME/../lib/chunjun-clients.jar:$CHUNJUN_HOME/../lib/*
+fi
+
 CLASS_NAME=com.dtstack.chunjun.client.Launcher
 
 JOBTYPE="sync"
@@ -56,25 +70,36 @@ echo "
   #####   #     #   #### #  #     #       #    #### #  #     #
                                           #
                                       ####
-"
-echo "CHUNJUN_HOME is auto set  $CHUNJUN_HOME"
-echo "FLINK_HOME is $FLINK_HOME"
-echo "HADOOP_HOME is $HADOOP_HOME"
-echo "ChunJun starting ..."
+
+Reference site: https://dtstack.github.io/chunjun
+
+chunjun is starting ...
+CHUNJUN_HOME is auto set $CHUNJUN_HOME"
 
 # basic parameters for all jobs
 PARAMS="$ARGS -mode $MODE -jobType $JOBTYPE -chunjunDistDir $CHUNJUN_HOME"
 
 # if FLINK_HOME is not set or not a directory, ignore flinkConfDir parameter
-if [ ! -z $FLINK_HOME ] && [ -d $FLINK_HOME ];then
+if [ ! -z $FLINK_HOME ] && [ -d $FLINK_HOME ];
+  then
+    echo "FLINK_HOME is $FLINK_HOME"
     PARAMS="$PARAMS -flinkConfDir $FLINK_HOME/conf -flinkLibDir $FLINK_HOME/lib"
+  else
+    echo "FLINK_HOME is empty!"
 fi
 
 # if HADOOP_HOME is not set or not a directory, ignore hadoopConfDir parameter
-if [ ! -z $HADOOP_HOME ] && [ -d $HADOOP_HOME ];then
+if [ ! -z $HADOOP_HOME ] && [ -d $HADOOP_HOME ];
+  then
+    echo "HADOOP_HOME is $HADOOP_HOME"
     PARAMS="$PARAMS -hadoopConfDir $HADOOP_HOME/etc/hadoop"
+  else
+    echo "HADOOP_HOME is empty!"
 fi
 
+# add a new line to separate from the log
+echo ""
 echo "start command: $JAVA_RUN -cp $JAR_DIR $CLASS_NAME $PARAMS"
+echo ""
 
 $JAVA_RUN -cp $JAR_DIR $CLASS_NAME $PARAMS

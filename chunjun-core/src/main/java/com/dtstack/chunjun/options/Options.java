@@ -28,7 +28,7 @@ import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.configuration.GlobalConfiguration;
 import org.apache.flink.yarn.configuration.YarnConfigOptions;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,8 +70,11 @@ public class Options {
     @OptionRequired(description = "env properties")
     private String confProp = "{}";
 
-    @OptionRequired(description = "json modify")
+    @OptionRequired(description = "parameters in simple format")
     private String p = "";
+
+    @OptionRequired(description = "parameters in json format")
+    private String pj = "";
 
     @OptionRequired(description = "plugin load mode, by classpath or shipfile")
     private String pluginLoadMode = "shipfile";
@@ -174,6 +177,14 @@ public class Options {
 
     public void setP(String p) {
         this.p = p;
+    }
+
+    public String getPj() {
+        return pj;
+    }
+
+    public void setPj(String pj) {
+        this.pj = pj;
     }
 
     public String getPluginLoadMode() {

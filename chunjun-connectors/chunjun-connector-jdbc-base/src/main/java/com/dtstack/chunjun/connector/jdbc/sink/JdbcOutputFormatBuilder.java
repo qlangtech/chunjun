@@ -22,7 +22,9 @@ import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.sink.format.BaseRichOutputFormatBuilder;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.List;
 
 /** @author sishu.yss @Company: www.dtstack.com */
 public class JdbcOutputFormatBuilder extends BaseRichOutputFormatBuilder<JdbcOutputFormat> {
@@ -43,6 +45,14 @@ public class JdbcOutputFormatBuilder extends BaseRichOutputFormatBuilder<JdbcOut
     @Override
     public void setRowConverter(AbstractRowConverter rowConverter) {
         format.setRowConverter(rowConverter);
+    }
+
+    public void setColumnNameList(List<String> columnNameList) {
+        format.setColumnNameList(columnNameList);
+    }
+
+    public void setColumnTypeList(List<String> columnTypeList) {
+        format.setColumnTypeList(columnTypeList);
     }
 
     @Override

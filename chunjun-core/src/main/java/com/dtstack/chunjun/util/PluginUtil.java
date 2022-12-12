@@ -18,6 +18,8 @@
 
 package com.dtstack.chunjun.util;
 
+import com.dtstack.chunjun.cdc.conf.CacheConf;
+import com.dtstack.chunjun.cdc.conf.DDLConf;
 import com.dtstack.chunjun.conf.SyncConf;
 import com.dtstack.chunjun.constants.ConstantValue;
 import com.dtstack.chunjun.dirty.DirtyConf;
@@ -27,6 +29,7 @@ import com.dtstack.chunjun.enums.OperatorType;
 import com.dtstack.chunjun.options.Options;
 import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
 
+import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.cache.DistributedCache;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.PipelineOptions;
@@ -55,16 +58,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 import static com.dtstack.chunjun.constants.ConstantValue.CONNECTOR_DIR_NAME;
-import static com.dtstack.chunjun.constants.ConstantValue.DDL_DIR_NAME;
+import static com.dtstack.chunjun.constants.ConstantValue.DDL_CONVENT_DIR_NAME;
 import static com.dtstack.chunjun.constants.ConstantValue.DIRTY_DATA_DIR_NAME;
 import static com.dtstack.chunjun.constants.ConstantValue.POINT_SYMBOL;
 import static com.dtstack.chunjun.constants.ConstantValue.RESTORE_DIR_NAME;
 
-/**
- * Reason: Date: 2018/6/27 Company: www.dtstack.com
- *
- * @author xuchao
- */
 public class PluginUtil {
     public static final String FORMATS_SUFFIX = "formats";
     public static final String DIRTY_SUFFIX = "dirty-data-collector";
@@ -83,9 +81,11 @@ public class PluginUtil {
     private static final String METRIC_REPORT_PREFIX = "Report";
     private static final String DIRTY_PACKAGE_STR = "com.dtstack.chunjun.dirty.";
     private static final String RESTORE_PACKAGE_STR = "com.dtstack.chunjun.restore.";
+    private static final String RESTORE_DDL_CONVENT = "com.dtstack.chunjun.ddl.convent.";
     private static final String DIRTY_CLASS_SUFFIX = "DirtyDataCollector";
-    private static final String STORE_CLASS_SUFFIX = "Store";
-    private static final String FETCHER_CLASS_SUFFIX = "Fetcher";
+    private static final String DDL_HANDLER_CLASS_SUFFIX = "DDLHandler";
+    private static final String CACHE_HANDLER_CLASS_SUFFIX = "CacheHandler";
+    private static final String DDL_CONVENT_CLASS_SUFFIX = "DdlConventImpl";
 
     private static final String JAR_PREFIX = "chunjun";
 
@@ -232,22 +232,31 @@ public class PluginUtil {
                                 + DtStringUtil.captureFirstLetter(pluginName)
                                 + DIRTY_CLASS_SUFFIX;
                 break;
-            case store:
+            case ddl:
                 pluginClassName =
                         RESTORE_PACKAGE_STR
                                 + pluginName
                                 + "."
                                 + DtStringUtil.captureFirstLetter(pluginName)
-                                + STORE_CLASS_SUFFIX;
+                                + DDL_HANDLER_CLASS_SUFFIX;
                 break;
 
-            case fetcher:
+            case cache:
                 pluginClassName =
                         RESTORE_PACKAGE_STR
                                 + pluginName
                                 + "."
                                 + DtStringUtil.captureFirstLetter(pluginName)
-                                + FETCHER_CLASS_SUFFIX;
+                                + CACHE_HANDLER_CLASS_SUFFIX;
+                break;
+
+            case ddlConvent:
+                pluginClassName =
+                        RESTORE_DDL_CONVENT
+                                + pluginName
+                                + "."
+                                + DtStringUtil.captureFirstLetter(pluginName)
+                                + DDL_CONVENT_CLASS_SUFFIX;
                 break;
 
             default:
@@ -264,7 +273,8 @@ public class PluginUtil {
      * @param suffix 插件类型前缀，如：source、sink
      * @return 插件包类全限定名，如：com.dtstack.chunjun.connector.binlog.source.BinlogSourceFactory
      */
-    private static String camelize(String pluginName, String suffix) {
+    @VisibleForTesting
+    protected static String camelize(String pluginName, String suffix) {
         int pos = pluginName.indexOf(suffix);
         String left = pluginName.substring(0, pos);
         left = left.toLowerCase();
@@ -302,6 +312,7 @@ public class PluginUtil {
     public static void registerPluginUrlToCachedFile(
             Options options, SyncConf config, StreamExecutionEnvironment env) {
         DirtyConf dirtyConf = DirtyConfUtil.parse(options);
+
         Set<URL> urlSet = new HashSet<>();
         Set<URL> coreUrlSet =
                 getJarFileDirPath("", config.getPluginRoot(), config.getRemotePluginPath(), "");
@@ -334,32 +345,70 @@ public class PluginUtil {
                         config.getRemotePluginPath(),
                         DIRTY_DATA_DIR_NAME);
 
-        if (null != config.getCdcConf().getMonitor()) {
-            Set<URL> restoreUrlSet =
-                    getJarFileDirPath(
-                            config.getCdcConf().getMonitor().getType(),
-                            config.getPluginRoot(),
-                            config.getRemotePluginPath(),
-                            RESTORE_DIR_NAME);
+        if (null != config.getCdcConf()) {
+            Set<URL> restoreUrlSet = new HashSet<>();
+
+            CacheConf cache = config.getCdcConf().getCache();
+            DDLConf ddl = config.getCdcConf().getDdl();
+
+            if (null != cache) {
+                Set<URL> cacheUrlSet =
+                        getJarFileDirPath(
+                                cache.getType(),
+                                config.getPluginRoot(),
+                                config.getRemotePluginPath(),
+                                RESTORE_DIR_NAME);
+                restoreUrlSet.addAll(cacheUrlSet);
+            }
+
+            if (null != ddl) {
+                Set<URL> ddlUrlSet =
+                        getJarFileDirPath(
+                                ddl.getType(),
+                                config.getPluginRoot(),
+                                config.getRemotePluginPath(),
+                                RESTORE_DIR_NAME);
+                restoreUrlSet.addAll(ddlUrlSet);
+            }
             urlSet.addAll(restoreUrlSet);
+        }
 
-            Set<URL> ddlSourceUrlSet =
-                    getDdlJarFileDirPath(
-                            config.getReader().getName(),
+        String sourceConventName =
+                RealTimeDataSourceNameUtil.getDataSourceName(config.getReader().getName());
+        if (config.getNameMappingConf() != null
+                && StringUtils.isNotBlank(config.getNameMappingConf().getSourceName())) {
+            sourceConventName = config.getNameMappingConf().getSourceName();
+        }
+
+        // 实时任务的sourceConventName和config里配置的名字是不一样的 否则就是离线任务
+        if (!sourceConventName.equals(
+                PluginUtil.replaceReaderAndWriterSuffix(config.getReader().getName()))) {
+            String sinkConventName =
+                    RealTimeDataSourceNameUtil.getDataSourceName(config.getWriter().getName());
+            Set<URL> ddlConventSourceUrlSet =
+                    getJarFileDirPath(
+                            sourceConventName,
                             config.getPluginRoot(),
                             config.getRemotePluginPath(),
-                            DDL_DIR_NAME);
+                            DDL_CONVENT_DIR_NAME);
 
-            urlSet.addAll(ddlSourceUrlSet);
-
-            Set<URL> ddlSinkUrlSet =
-                    getDdlJarFileDirPath(
-                            config.getWriter().getName(),
+            Set<URL> ddlConventSinkUrlSet =
+                    getJarFileDirPath(
+                            sinkConventName,
                             config.getPluginRoot(),
                             config.getRemotePluginPath(),
-                            DDL_DIR_NAME);
+                            DDL_CONVENT_DIR_NAME);
 
-            urlSet.addAll(ddlSinkUrlSet);
+            Set<URL> ddlConventBaseUrlSet =
+                    getJarFileDirPath(
+                            "",
+                            config.getPluginRoot(),
+                            config.getRemotePluginPath(),
+                            DDL_CONVENT_DIR_NAME);
+
+            urlSet.addAll(ddlConventSourceUrlSet);
+            urlSet.addAll(ddlConventSinkUrlSet);
+            urlSet.addAll(ddlConventBaseUrlSet);
         }
 
         urlSet.addAll(coreUrlSet);
@@ -501,5 +550,13 @@ public class PluginUtil {
             LOG.warn("ClassLoader: {} is not instanceof URLClassLoader", contextClassLoader);
             return null;
         }
+    }
+
+    public static String replaceReaderAndWriterSuffix(String pluginName) {
+        return pluginName
+                .replace(READER_SUFFIX, "")
+                .replace(SOURCE_SUFFIX, "")
+                .replace(WRITER_SUFFIX, "")
+                .replace(SINK_SUFFIX, "");
     }
 }

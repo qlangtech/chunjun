@@ -6,15 +6,16 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * <p>
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.dtstack.chunjun.connector.binlog.conf;
 
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
@@ -23,11 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * config of binlog
- *
- * @author jiangbo @ 2020/1/10
- */
 public class BinlogConf extends ChunJunCommonConf {
 
     public String host;
@@ -43,6 +39,14 @@ public class BinlogConf extends ChunJunCommonConf {
     public Map<String, Object> start;
 
     public String cat;
+
+    /** 是否支持采集ddl* */
+    private boolean ddlSkip = true;
+
+    /** 任务启动时是否初始化表结构* */
+    private boolean initialTableStructure = false;
+
+    private long offsetLength = 18;
 
     public String filter;
 
@@ -314,6 +318,30 @@ public class BinlogConf extends ChunJunCommonConf {
 
     public int getTransactionSize() {
         return transactionSize;
+    }
+
+    public boolean isDdlSkip() {
+        return ddlSkip;
+    }
+
+    public void setDdlSkip(boolean ddlSkip) {
+        this.ddlSkip = ddlSkip;
+    }
+
+    public boolean isInitialTableStructure() {
+        return initialTableStructure;
+    }
+
+    public long getOffsetLength() {
+        return offsetLength;
+    }
+
+    public void setOffsetLength(long offsetLength) {
+        this.offsetLength = offsetLength;
+    }
+
+    public void setInitialTableStructure(boolean initialTableStructure) {
+        this.initialTableStructure = initialTableStructure;
     }
 
     @Override

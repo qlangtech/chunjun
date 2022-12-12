@@ -22,14 +22,14 @@ import com.dtstack.chunjun.connector.ftp.conf.FtpConfig;
 import com.dtstack.chunjun.connector.ftp.handler.FtpHandlerFactory;
 import com.dtstack.chunjun.connector.ftp.handler.IFtpHandler;
 import com.dtstack.chunjun.constants.ConstantValue;
+import com.dtstack.chunjun.enums.SizeUnitType;
+import com.dtstack.chunjun.sink.WriteMode;
 import com.dtstack.chunjun.sink.format.BaseFileOutputFormat;
 import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
 import com.dtstack.chunjun.throwable.WriteRecordException;
 import com.dtstack.chunjun.util.ExceptionUtil;
 
 import org.apache.flink.table.data.RowData;
-
-import org.apache.commons.lang.StringUtils;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -38,23 +38,15 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
-/**
- * The OutputFormat Implementation which reads data from ftp servers.
- *
- * <p>Company: www.dtstack.com
- *
- * @author huyifan.zju@163.com
- */
+/** The OutputFormat Implementation which reads data from ftp servers. */
 public class FtpOutputFormat extends BaseFileOutputFormat {
 
     /** 换行符 */
     private static final int NEWLINE = 10;
 
     protected FtpConfig ftpConfig;
-    protected List<String> columnTypes;
-
-    protected List<String> columnNames;
 
     private transient IFtpHandler ftpHandler;
 
@@ -63,30 +55,38 @@ public class FtpOutputFormat extends BaseFileOutputFormat {
     private transient OutputStream os;
 
     @Override
-    protected void openSource() {
+    protected void openInternal(int taskNumber, int numTasks) throws IOException {
+        super.openInternal(taskNumber, numTasks);
         ftpHandler = FtpHandlerFactory.createFtpHandler(ftpConfig.getProtocol());
         ftpHandler.loginFtpServer(ftpConfig);
     }
 
     @Override
+    protected void openSource() {}
+
+    @Override
     protected void checkOutputDir() {
-        if (ftpHandler.isDirExist(tmpPath)) {
-            if (ftpHandler.isFileExist(tmpPath)) {
-                throw new ChunJunRuntimeException(String.format("dir:[%s] is a file", tmpPath));
-            }
-        } else {
-            ftpHandler.mkDirRecursive(tmpPath);
-        }
+        wrapFtpHandler(
+                iFtpHandler -> {
+                    if (iFtpHandler.isDirExist(tmpPath)) {
+                        if (iFtpHandler.isFileExist(tmpPath)) {
+                            throw new ChunJunRuntimeException(
+                                    String.format("dir:[%s] is a file", tmpPath));
+                        }
+                    } else {
+                        iFtpHandler.mkDirRecursive(tmpPath);
+                    }
+                });
     }
 
     @Override
     protected void deleteDataDir() {
-        ftpHandler.deleteAllFilesInDir(outputFilePath, null);
+        wrapFtpHandler(iFtpHandler -> iFtpHandler.deleteAllFilesInDir(outputFilePath, null));
     }
 
     @Override
     protected void deleteTmpDataDir() {
-        ftpHandler.deleteAllFilesInDir(tmpPath, null);
+        wrapFtpHandler(iFtpHandler -> iFtpHandler.deleteAllFilesInDir(tmpPath, null));
     }
 
     @Override
@@ -99,27 +99,48 @@ public class FtpOutputFormat extends BaseFileOutputFormat {
         String currentBlockTmpPath = tmpPath + File.separatorChar + currentFileName;
         try {
             os = ftpHandler.getOutputStream(currentBlockTmpPath);
-            writer = new BufferedWriter(new OutputStreamWriter(os, ftpConfig.getEncoding()));
+            writer =
+                    new BufferedWriter(new OutputStreamWriter(os, ftpConfig.getEncoding()), 131072);
             LOG.info("subtask:[{}] create block file:{}", taskNumber, currentBlockTmpPath);
         } catch (IOException e) {
             throw new ChunJunRuntimeException(ExceptionUtil.getErrorMessage(e));
         }
-
         currentFileIndex++;
     }
 
     @Override
+    protected void checkCurrentFileSize() {
+        if (numWriteCounter.getLocalValue() < nextNumForCheckDataSize) {
+            return;
+        }
+        try {
+            // Does not manually flush cause a message error?
+            writer.flush();
+        } catch (IOException e) {
+            throw new ChunJunRuntimeException("flush failed when check fileSize");
+        }
+        long currentFileSize = getCurrentFileSize();
+        if (currentFileSize > ftpConfig.getMaxFileSize()) {
+            flushData();
+        }
+        nextNumForCheckDataSize += ftpConfig.getNextCheckRows();
+        LOG.info(
+                "current file: {}, size = {}, nextNumForCheckDataSize = {}",
+                currentFileName,
+                SizeUnitType.readableFileSize(currentFileSize),
+                nextNumForCheckDataSize);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
     public void writeSingleRecordToFile(RowData rowData) throws WriteRecordException {
         try {
             if (writer == null) {
                 nextBlock();
             }
-
             String line = (String) rowConverter.toExternal(rowData, "");
             this.writer.write(line);
             this.writer.write(NEWLINE);
-            this.writer.flush();
-            rowsOfCurrentBlock++;
             lastRow = rowData;
         } catch (Exception ex) {
             throw new WriteRecordException(ex.getMessage(), ex, 0, rowData);
@@ -127,7 +148,8 @@ public class FtpOutputFormat extends BaseFileOutputFormat {
     }
 
     @Override
-    protected void closeSource() {
+    public void closeInternal() throws IOException {
+        super.closeInternal();
         try {
             if (writer != null) {
                 writer.flush();
@@ -136,10 +158,27 @@ public class FtpOutputFormat extends BaseFileOutputFormat {
                 os.close();
                 os = null;
             }
-            // avoid Failure of FtpClient operating
-            this.ftpHandler.completePendingCommand();
         } catch (Exception e) {
             throw new ChunJunRuntimeException("can't close source.", e);
+        } finally {
+            this.ftpHandler.logoutFtpServer();
+        }
+    }
+
+    @Override
+    protected void closeSource() {
+        try {
+            if (writer != null) {
+                writer.close();
+                writer = null;
+            }
+
+            if (os != null) {
+                os.close();
+                os = null;
+            }
+        } catch (Exception e) {
+            throw new ChunJunRuntimeException(e);
         }
     }
 
@@ -163,7 +202,8 @@ public class FtpOutputFormat extends BaseFileOutputFormat {
 
                 currentFilePath = dataFile;
                 String fileName =
-                        handleUserSpecificFileName(tmpDataFile.getName(), dataFiles.size());
+                        handleUserSpecificFileName(
+                                tmpDataFile.getName(), dataFiles.size(), copyList, ftpHandler);
                 String newFilePath = outputFilePath + File.separatorChar + fileName;
                 ftpHandler.rename(currentFilePath, newFilePath);
                 copyList.add(newFilePath);
@@ -197,26 +237,37 @@ public class FtpOutputFormat extends BaseFileOutputFormat {
 
     @Override
     protected void moveAllTmpDataFileToDir() {
-        String dataFilePath = "";
-        try {
-            List<String> dataFiles = ftpHandler.getFiles(tmpPath);
-            for (String dataFile : dataFiles) {
-                File tmpDataFile = new File(dataFile);
-                dataFilePath = tmpDataFile.getAbsolutePath();
+        wrapFtpHandler(
+                handler -> {
+                    String dataFilePath = "";
+                    try {
+                        List<String> dataFiles = handler.getFiles(tmpPath);
+                        List<String> copyList = new ArrayList<>();
+                        for (String dataFile : dataFiles) {
+                            File tmpDataFile = new File(dataFile);
+                            dataFilePath = tmpDataFile.getAbsolutePath();
 
-                String fileName =
-                        handleUserSpecificFileName(tmpDataFile.getName(), dataFiles.size());
-                String newDataFilePath = ftpConfig.getPath() + File.separatorChar + fileName;
-                ftpHandler.rename(dataFilePath, newDataFilePath);
-                LOG.info("move temp file:{} to dir:{}", dataFilePath, outputFilePath);
-            }
-            ftpHandler.deleteAllFilesInDir(tmpPath, null);
-        } catch (Exception e) {
-            throw new ChunJunRuntimeException(
-                    String.format(
-                            "can't copy temp file:[%s] to dir:[%s]", dataFilePath, outputFilePath),
-                    e);
-        }
+                            String fileName =
+                                    handleUserSpecificFileName(
+                                            tmpDataFile.getName(),
+                                            dataFiles.size(),
+                                            copyList,
+                                            handler);
+                            String newDataFilePath =
+                                    ftpConfig.getPath() + File.separatorChar + fileName;
+                            handler.rename(dataFilePath, newDataFilePath);
+                            copyList.add(newDataFilePath);
+                            LOG.info("move temp file:{} to dir:{}", dataFilePath, outputFilePath);
+                        }
+                        handler.deleteAllFilesInDir(tmpPath, null);
+                    } catch (Exception e) {
+                        throw new ChunJunRuntimeException(
+                                String.format(
+                                        "can't copy temp file:[%s] to dir:[%s]",
+                                        dataFilePath, outputFilePath),
+                                e);
+                    }
+                });
     }
 
     @Override
@@ -241,7 +292,7 @@ public class FtpOutputFormat extends BaseFileOutputFormat {
 
     @Override
     protected void writeMultipleRecordsInternal() {
-        notSupportBatchWrite("FtpWriter");
+        throw new UnsupportedOperationException("FtpWriter don't support write batch data.");
     }
 
     public FtpConfig getFtpConfig() {
@@ -252,25 +303,23 @@ public class FtpOutputFormat extends BaseFileOutputFormat {
         this.ftpConfig = ftpConfig;
     }
 
-    protected void notSupportBatchWrite(String writerName) {
-        throw new UnsupportedOperationException(writerName + "不支持批量写入");
-    }
-
-    private String handleUserSpecificFileName(String tmpDataFileName, int fileNumber) {
+    private String handleUserSpecificFileName(
+            String tmpDataFileName, int fileNumber, List<String> copyList, IFtpHandler handler)
+            throws IOException {
         String fileName = ftpConfig.getFtpFileName();
-        if (StringUtils.isNotBlank(fileName)) {
+        if (org.apache.commons.lang.StringUtils.isNotBlank(fileName)) {
             if (fileNumber == 1) {
-                fileName = handlerSingleFile(tmpDataFileName);
+                fileName = handlerSingleFile();
             } else {
                 fileName = handlerMultiChannel(tmpDataFileName);
             }
         } else {
             fileName = tmpDataFileName;
         }
-        return fileName;
+        return checkFilePath(fileName, copyList, handler);
     }
 
-    private String handlerSingleFile(String tmpDataFileName) {
+    private String handlerSingleFile() {
         return ftpConfig.getFtpFileName();
     }
 
@@ -293,5 +342,57 @@ public class FtpOutputFormat extends BaseFileOutputFormat {
             fileName = fileName + "_" + splitFileName[1] + "_" + splitFileName[2];
         }
         return fileName;
+    }
+
+    private String checkFilePath(String filename, List<String> copyList, IFtpHandler handler)
+            throws IOException {
+        if (WriteMode.NONCONFLICT.name().equalsIgnoreCase(ftpConfig.getWriteMode())) {
+            if (handler.isFileExist(ftpConfig.getPath() + File.separatorChar + filename)) {
+                handler.deleteAllFilesInDir(tmpPath, null);
+                if (!copyList.isEmpty()) {
+                    for (String filePath : copyList) {
+                        try {
+                            handler.deleteFile(filePath);
+                        } catch (IOException e) {
+                            throw new ChunJunRuntimeException(
+                                    "Failed to rollback file,errMsg:" + e.getMessage());
+                        }
+                    }
+                }
+                throw new ChunJunRuntimeException(
+                        String.format("the file: %s already exists", filename));
+            }
+        } else if (WriteMode.INSERT.name().equalsIgnoreCase(ftpConfig.getWriteMode())) {
+            if (handler.isFileExist(ftpConfig.getPath() + File.separatorChar + filename)) {
+                String suffix =
+                        org.apache.commons.lang.StringUtils.isNotBlank(ftpConfig.getSuffix())
+                                ? "_" + ftpConfig.getSuffix()
+                                : "_" + UUID.randomUUID();
+                StringBuilder sb = new StringBuilder(filename);
+                filename =
+                        filename.contains(".")
+                                ? sb.insert(
+                                                filename.lastIndexOf(ConstantValue.POINT_SYMBOL),
+                                                suffix)
+                                        .toString()
+                                : sb.append(suffix).toString();
+            }
+        }
+        return filename;
+    }
+
+    private void wrapFtpHandler(Callback<IFtpHandler> callback) {
+        try (IFtpHandler tmpFtpHandler =
+                FtpHandlerFactory.createFtpHandler(ftpConfig.getProtocol())) {
+            tmpFtpHandler.loginFtpServer(ftpConfig);
+            callback.apply(tmpFtpHandler);
+        } catch (Exception e) {
+            throw new ChunJunRuntimeException(e);
+        }
+    }
+
+    @FunctionalInterface
+    interface Callback<T> {
+        void apply(T t) throws IOException;
     }
 }

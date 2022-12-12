@@ -1,29 +1,29 @@
 /*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  * Licensed to the Apache Software Foundation (ASF) under one
- *  * or more contributor license agreements.  See the NOTICE file
- *  * distributed with this work for additional information
- *  * regarding copyright ownership.  The ASF licenses this file
- *  * to you under the Apache License, Version 2.0 (the
- *  * "License"); you may not use this file except in compliance
- *  * with the License.  You may obtain a copy of the License at
- *  *
- *  *     http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 package com.dtstack.chunjun.cdc.worker;
 
 import com.dtstack.chunjun.cdc.QueuesChamberlain;
-import com.dtstack.chunjun.cdc.WrapCollector;
+import com.dtstack.chunjun.cdc.ddl.definition.TableIdentifier;
 
 import org.apache.flink.table.data.RowData;
+import org.apache.flink.util.Collector;
 
 import java.io.Serializable;
 import java.util.HashSet;
@@ -48,7 +48,7 @@ public class WorkerOverseer implements Runnable, Serializable {
 
     private final QueuesChamberlain chamberlain;
 
-    private final WrapCollector<RowData> collector;
+    private final Collector<RowData> collector;
 
     /** 记录已经被worker线程获得的chunk */
     private final Set<Integer> chunkSet = new HashSet<>();
@@ -59,10 +59,12 @@ public class WorkerOverseer implements Runnable, Serializable {
     /** worker遍历队列时的步长 */
     private final int workerSize;
 
+    private Exception exception;
+
     public WorkerOverseer(
             ThreadPoolExecutor workerExecutor,
             QueuesChamberlain chamberlain,
-            WrapCollector<RowData> collector,
+            Collector<RowData> collector,
             int workerSize) {
         this.workerExecutor = workerExecutor;
         this.chamberlain = chamberlain;
@@ -89,7 +91,7 @@ public class WorkerOverseer implements Runnable, Serializable {
     private void wakeUp() {
         // 创建worker
         final int workerNum = workerExecutor.getMaximumPoolSize();
-        Set<String> tableIdentities = chamberlain.unblockTableIdentities();
+        Set<TableIdentifier> tableIdentities = chamberlain.unblockTableIdentities();
         if (!tableIdentities.isEmpty()) {
             // 创建任务分片
             Chunk[] chunks = ChunkSplitter.createChunk(tableIdentities, workerNum);
@@ -113,9 +115,18 @@ public class WorkerOverseer implements Runnable, Serializable {
                 Integer chunkNum = future.get();
                 chunkSet.remove(chunkNum);
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                closed.compareAndSet(false, true);
+                this.exception = e;
             }
         }
         futureSet.clear();
+    }
+
+    public boolean isAlive() {
+        return null == exception;
+    }
+
+    public Exception getException() {
+        return exception;
     }
 }
