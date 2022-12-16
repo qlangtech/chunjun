@@ -21,6 +21,7 @@ package com.dtstack.chunjun.connector.starrocks.streamload;
 import com.dtstack.chunjun.connector.starrocks.conf.StarRocksConf;
 
 import com.alibaba.fastjson.JSON;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
@@ -33,6 +34,7 @@ import org.apache.http.impl.client.DefaultRedirectStrategy;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -268,6 +270,28 @@ public class StarRocksStreamLoadVisitor implements Serializable {
         return bos.array();
     }
 
+    //  public static final String KEY_STARROCKS_REDIRECTABLE_DISABLE = "starRockBeRedirectableDisable";
+
+
+    /**
+     * 测试中禁止BE重定向
+     */
+    public static void diableStarRockBeRedirectable() {
+        starRockBeRedirectableDisable = true;
+    }
+
+    private static boolean starRockBeRedirectableDisable = false;
+    private static final DefaultRedirectStrategy redirectStrategy = new DefaultRedirectStrategy() {
+        @Override
+        protected boolean isRedirectable(String method) {
+            if (starRockBeRedirectableDisable) {
+                return false;
+            }
+            return true;
+        }
+    };
+
+
     @SuppressWarnings("unchecked")
     private Map<String, Object> doHttpPut(
             String loadUrl, String label, byte[] data, String httpHeadColumns) throws IOException {
@@ -277,13 +301,7 @@ public class StarRocksStreamLoadVisitor implements Serializable {
                         loadUrl, data.length, Thread.currentThread().getId()));
         final HttpClientBuilder httpClientBuilder =
                 HttpClients.custom()
-                        .setRedirectStrategy(
-                                new DefaultRedirectStrategy() {
-                                    @Override
-                                    protected boolean isRedirectable(String method) {
-                                        return true;
-                                    }
-                                });
+                        .setRedirectStrategy(redirectStrategy);
         try (CloseableHttpClient httpclient = httpClientBuilder.build()) {
             HttpPut httpPut = new HttpPut(loadUrl);
             Map<String, String> props = starRocksConf.getLoadConf().getHeadProperties();
