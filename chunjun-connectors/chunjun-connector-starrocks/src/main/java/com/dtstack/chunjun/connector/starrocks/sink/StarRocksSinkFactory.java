@@ -17,31 +17,22 @@
  */
 package com.dtstack.chunjun.connector.starrocks.sink;
 
-import com.dtstack.chunjun.conf.FieldConf;
 import com.dtstack.chunjun.conf.SyncConf;
-import com.dtstack.chunjun.connector.jdbc.TableCols;
 import com.dtstack.chunjun.connector.starrocks.conf.StarRocksConf;
-import com.dtstack.chunjun.connector.starrocks.converter.StarRocksColumnConverter;
-import com.dtstack.chunjun.connector.starrocks.converter.StarRocksRawTypeConverter;
-import com.dtstack.chunjun.connector.starrocks.converter.StarRocksRowConverter;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.converter.RawTypeConverter;
 import com.dtstack.chunjun.sink.SinkFactory;
 import com.dtstack.chunjun.util.JsonUtil;
-import com.dtstack.chunjun.util.TableUtil;
 
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSink;
 import org.apache.flink.table.data.RowData;
-import org.apache.flink.table.types.logical.RowType;
-
-import java.util.stream.Collectors;
 
 /**
  * @author lihongwei
  * @date 2022/04/11
  */
-public class StarRocksSinkFactory extends SinkFactory {
+public abstract class StarRocksSinkFactory extends SinkFactory {
 
     private final StarRocksConf starRocksConf;
 
@@ -53,12 +44,12 @@ public class StarRocksSinkFactory extends SinkFactory {
 
         int batchSize = syncConf.getWriter().getIntVal("batchSize", 1024);
         starRocksConf.setBatchSize(batchSize);
-        super.initCommonConf(starRocksConf);
+        this.initCommonConf(starRocksConf);
     }
 
     @Override
     public RawTypeConverter getRawTypeConverter() {
-      //  return StarRocksRawTypeConverter::apply;
+        //  return StarRocksRawTypeConverter::apply;
         throw new UnsupportedOperationException();
     }
 
@@ -68,22 +59,27 @@ public class StarRocksSinkFactory extends SinkFactory {
                 new StarRocksOutputFormatBuilder(new StarRocksOutputFormat());
         builder.setStarRocksConf(starRocksConf);
 
-        final RowType rowType =
-                TableUtil.createRowTypeByColsMeta(TableCols.create(starRocksConf.getColumn()).getCols(), getRawTypeConverter());
-
-//        RowType rowType = TableUtil.createRowType(starRocksConf.getColumn(), getRawTypeConverter());
-        AbstractRowConverter rowConverter;
-        if (useAbstractBaseColumn) {
-            rowConverter = new StarRocksColumnConverter(rowType, starRocksConf);
-        } else {
-            rowConverter =
-                    new StarRocksRowConverter(
-                            rowType,
-                            starRocksConf.getColumn().stream()
-                                    .map(FieldConf::getName)
-                                    .collect(Collectors.toList()));
-        }
+        AbstractRowConverter rowConverter = createRowConverter();
         builder.setRowConverter(rowConverter, useAbstractBaseColumn);
         return createOutput(dataSet, builder.finish());
     }
+
+    protected abstract AbstractRowConverter createRowConverter();// {
+//        final RowType rowType =
+//                TableUtil.createRowTypeByColsMeta(TableCols.create(starRocksConf.getColumn()).getCols(), getRawTypeConverter());
+
+//        RowType rowType = TableUtil.createRowType(starRocksConf.getColumn(), getRawTypeConverter());
+//        AbstractRowConverter rowConverter;
+//        if (useAbstractBaseColumn) {
+//            rowConverter = new StarRocksColumnConverter(rowType, starRocksConf);
+//        } else {
+//            rowConverter =
+//                    new StarRocksRowConverter(
+//                            rowType,
+//                            starRocksConf.getColumn().stream()
+//                                    .map(FieldConf::getName)
+//                                    .collect(Collectors.toList()));
+//        }
+//        return rowConverter;
+//    }
 }

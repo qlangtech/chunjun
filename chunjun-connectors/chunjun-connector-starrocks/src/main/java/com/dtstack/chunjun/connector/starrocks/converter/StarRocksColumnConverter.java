@@ -18,38 +18,18 @@
 
 package com.dtstack.chunjun.connector.starrocks.converter;
 
-import com.dtstack.chunjun.conf.ChunJunCommonConf;
-import com.dtstack.chunjun.conf.FieldConf;
-import com.dtstack.chunjun.connector.starrocks.streamload.StarRocksSinkOP;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
 import com.dtstack.chunjun.converter.ISerializationConverter;
-import com.dtstack.chunjun.element.AbstractBaseColumn;
-import com.dtstack.chunjun.element.ColumnRowData;
-import com.dtstack.chunjun.element.column.BigDecimalColumn;
-import com.dtstack.chunjun.element.column.BooleanColumn;
-import com.dtstack.chunjun.element.column.ByteColumn;
-import com.dtstack.chunjun.element.column.SqlDateColumn;
-import com.dtstack.chunjun.element.column.StringColumn;
-import com.dtstack.chunjun.element.column.TimestampColumn;
 
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.table.types.logical.LogicalTypeRoot;
-import org.apache.flink.table.types.logical.RowType;
-import org.apache.flink.table.types.logical.TimestampType;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
-import java.math.BigDecimal;
-import java.sql.Date;
-import java.sql.Timestamp;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-
-import static com.dtstack.chunjun.connector.starrocks.util.StarRocksUtil.addStrForNum;
 
 /** @author liuliu 2022/7/12 */
 public class StarRocksColumnConverter
@@ -58,11 +38,19 @@ public class StarRocksColumnConverter
     private final List<String> columnList;
     public static final String DATETIME_FORMAT_SHORT = "yyyy-MM-dd HH:mm:ss";
 
-    public StarRocksColumnConverter(RowType rowType, ChunJunCommonConf conf) {
-       // super(rowType, conf);
-        super(0, null, null);
-        this.columnList =
-                conf.getColumn().stream().map(FieldConf::getName).collect(Collectors.toList());
+    public StarRocksColumnConverter(
+            int fieldCount, List<IDeserializationConverter> toInternalConverters
+            , List<Pair<ISerializationConverter<Map<String, Object>>, LogicalType>> toExternalConverters
+            , List<String> columnList) {
+        super(fieldCount, toInternalConverters, toExternalConverters);
+        this.columnList = columnList;
+    }
+
+//    public StarRocksColumnConverter(RowType rowType, ChunJunCommonConf conf) {
+//       // super(rowType, conf);
+//        super(0, null, null);
+//        this.columnList =
+//                conf.getColumn().stream().map(FieldConf::getName).collect(Collectors.toList());
 //        for (int i = 0; i < rowType.getFieldCount(); i++) {
 //            toInternalConverters.add(
 //                    wrapIntoNullableInternalConverter(
@@ -71,7 +59,7 @@ public class StarRocksColumnConverter
 //                    wrapIntoNullableExternalConverter(
 //                            createExternalConverter(fieldTypes[i]), fieldTypes[i]));
 //        }
-    }
+    //  }
 
     @Override
     public RowData toInternal(Object[] input) throws Exception {
@@ -121,8 +109,6 @@ public class StarRocksColumnConverter
 //                StarRocksSinkOP.COLUMN_KEY, StarRocksSinkOP.parse(rowData.getRowKind()).ordinal());
         return output;
     }
-
-
 
 
 //    @Override
