@@ -6,11 +6,17 @@
 		<artifactId>chunjun-connectors</artifactId>
 		<groupId>com.dtstack.chunjun</groupId>
 		<version>1.12.5</version>
+		<relativePath>../pom.xml</relativePath>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 
 	<artifactId>chunjun-connector-kafka</artifactId>
 	<name>ChunJun : Connectors : Kafka</name>
+	<properties>
+		<jackson.version>2.8.0</jackson.version>
+		<kafka.version>2.8.0</kafka.version>
+	</properties>
+
 
 	<dependencies>
 		<dependency>
@@ -25,17 +31,30 @@
 			</exclusions>
 		</dependency>
 
-		<dependency>
-			<groupId>com.pingcap.ticdc.cdc</groupId>
-			<artifactId>ticdc-decoder</artifactId>
-			<version>5.2.0-SNAPSHOT</version>
-			<exclusions>
-				<exclusion>
-					<groupId>com.alibaba</groupId>
-					<artifactId>fastjson</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>org.apache.kafka</groupId>-->
+<!--			<artifactId>connect-json</artifactId>-->
+<!--			<version>${kafka.version}</version>-->
+<!--		</dependency>-->
+
+		<!--		<dependency>-->
+		<!--			<groupId>com.pingcap.ticdc.cdc</groupId>-->
+		<!--			<artifactId>ticdc-decoder</artifactId>-->
+		<!--			<version>5.2.0-SNAPSHOT</version>-->
+		<!--			<exclusions>-->
+		<!--				<exclusion>-->
+		<!--					<groupId>com.alibaba</groupId>-->
+		<!--					<artifactId>fastjson</artifactId>-->
+		<!--				</exclusion>-->
+		<!--			</exclusions>-->
+		<!--		</dependency>-->
+
+
+<!--		<dependency>-->
+<!--			<groupId>com.fasterxml.jackson.datatype</groupId>-->
+<!--			<artifactId>jackson-datatype-jsr310</artifactId>-->
+<!--			<version>${jackson.version}</version>-->
+<!--		</dependency>-->
 
 		<dependency>
 			<groupId>com.alibaba</groupId>
@@ -64,7 +83,7 @@
 				<version>3.2.4</version>
 				<executions>
 					<execution>
-						<phase>package</phase>
+						<phase>none</phase>
 						<goals>
 							<goal>shade</goal>
 						</goals>
@@ -154,7 +173,7 @@
 					<execution>
 						<id>copy-resources</id>
 						<!-- here the phase you need -->
-						<phase>package</phase>
+						<phase>none</phase>
 						<goals>
 							<goal>run</goal>
 						</goals>

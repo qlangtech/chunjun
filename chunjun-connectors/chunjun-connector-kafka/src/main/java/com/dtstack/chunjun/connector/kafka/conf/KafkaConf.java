@@ -32,6 +32,11 @@ import java.util.UUID;
  */
 public class KafkaConf extends ChunJunCommonConf {
 
+    /**
+     * 表名称
+     */
+    private String tableName;
+
     /** source 读取数据的格式 */
     private String codec = "text";
     /** kafka topic */
@@ -47,7 +52,7 @@ public class KafkaConf extends ChunJunCommonConf {
     /** kafka其他原生参数 */
     private Map<String, String> consumerSettings;
     /** kafka其他原生参数 */
-    private Map<String, String> producerSettings;
+    private Map<String, Object> producerSettings;
     /** 字段映射配置。从reader插件传递到writer插件的的数据只包含其value属性，配置该参数后可将其还原成键值对类型json字符串输出。 */
     private List<String> tableFields;
     /** 是否强制有序，如果是则并行度只能为1 */
@@ -60,6 +65,14 @@ public class KafkaConf extends ChunJunCommonConf {
     private boolean pavingData;
 
     private boolean split;
+
+    public String getTableName() {
+        return tableName;
+    }
+
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
+    }
 
     public String getCodec() {
         return codec;
@@ -123,11 +136,11 @@ public class KafkaConf extends ChunJunCommonConf {
         this.consumerSettings = consumerSettings;
     }
 
-    public Map<String, String> getProducerSettings() {
+    public Map<String, Object> getProducerSettings() {
         return producerSettings;
     }
 
-    public void setProducerSettings(Map<String, String> producerSettings) {
+    public void setProducerSettings(Map<String, Object> producerSettings) {
         this.producerSettings = producerSettings;
     }
 
@@ -140,7 +153,7 @@ public class KafkaConf extends ChunJunCommonConf {
     }
 
     public List<String> getPartitionAssignColumns() {
-        return partitionAssignColumns;
+        return this.partitionAssignColumns;
     }
 
     public void setPartitionAssignColumns(List<String> partitionAssignColumns) {

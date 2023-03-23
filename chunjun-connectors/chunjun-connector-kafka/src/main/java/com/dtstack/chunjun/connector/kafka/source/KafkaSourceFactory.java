@@ -19,26 +19,19 @@
 package com.dtstack.chunjun.connector.kafka.source;
 
 import com.dtstack.chunjun.conf.SyncConf;
-import com.dtstack.chunjun.connector.kafka.adapter.StartupModeAdapter;
 import com.dtstack.chunjun.connector.kafka.conf.KafkaConf;
-import com.dtstack.chunjun.connector.kafka.converter.KafkaColumnConverter;
-import com.dtstack.chunjun.connector.kafka.enums.StartupMode;
-import com.dtstack.chunjun.connector.kafka.serialization.RowDeserializationSchema;
-import com.dtstack.chunjun.connector.kafka.serialization.ticdc.TicdcDeserializationSchema;
 import com.dtstack.chunjun.connector.kafka.util.KafkaUtil;
 import com.dtstack.chunjun.converter.RawTypeConverter;
 import com.dtstack.chunjun.source.SourceFactory;
-import com.dtstack.chunjun.util.GsonUtil;
 
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.data.RowData;
 
 import com.google.common.collect.Lists;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.qlangtech.tis.plugin.ds.IColMetaGetter;
 
-import java.util.Locale;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -51,16 +44,22 @@ public class KafkaSourceFactory extends SourceFactory {
     /** kafka conf */
     protected KafkaConf kafkaConf;
 
-    public KafkaSourceFactory(SyncConf config, StreamExecutionEnvironment env) {
-        super(config, env);
-        Gson gson =
-                new GsonBuilder()
-                        .registerTypeAdapter(StartupMode.class, new StartupModeAdapter())
-                        .create();
-        GsonUtil.setTypeAdapter(gson);
-        kafkaConf = gson.fromJson(gson.toJson(config.getReader().getParameter()), KafkaConf.class);
+    public KafkaSourceFactory(SyncConf syncConf, StreamExecutionEnvironment env, List<IColMetaGetter> sourceColsMeta, RawTypeConverter typeConverter, KafkaConf kafkaConf) {
+        super(syncConf, env, sourceColsMeta, typeConverter);
+        this.kafkaConf = kafkaConf;
         super.initCommonConf(kafkaConf);
     }
+
+//    public KafkaSourceFactory(SyncConf config, StreamExecutionEnvironment env) {
+//        super(config, env);
+//        Gson gson =
+//                new GsonBuilder()
+//                        .registerTypeAdapter(StartupMode.class, new StartupModeAdapter())
+//                        .create();
+//        GsonUtil.setTypeAdapter(gson);
+//        kafkaConf = gson.fromJson(gson.toJson(config.getReader().getParameter()), KafkaConf.class);
+//        super.initCommonConf(kafkaConf);
+//    }
 
     @Override
     public DataStream<RowData> createSource() {
@@ -98,18 +97,19 @@ public class KafkaSourceFactory extends SourceFactory {
         return createInput(consumer, syncConf.getReader().getName());
     }
 
-    @Override
-    public RawTypeConverter getRawTypeConverter() {
-        return null;
-    }
+//    @Override
+//    public RawTypeConverter getRawTypeConverter() {
+//        return null;
+//    }
 
     public DynamicKafkaDeserializationSchema createKafkaDeserializationSchema(String type) {
 
-        switch (type.toLowerCase(Locale.ENGLISH)) {
-            case "ticdc":
-                return new TicdcDeserializationSchema(kafkaConf);
-            default:
-                return new RowDeserializationSchema(kafkaConf, new KafkaColumnConverter(kafkaConf));
-        }
+//        switch (type.toLowerCase(Locale.ENGLISH)) {
+//            case "ticdc":
+//                return new TicdcDeserializationSchema(kafkaConf);
+//            default:
+//                return new RowDeserializationSchema(kafkaConf, new KafkaColumnConverter(kafkaConf));
+//        }
+        throw new UnsupportedOperationException();
     }
 }

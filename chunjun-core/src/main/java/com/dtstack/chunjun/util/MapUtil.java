@@ -3,8 +3,10 @@ package com.dtstack.chunjun.util;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.google.common.collect.Maps;
 import com.google.gson.internal.LinkedHashTreeMap;
 import com.google.gson.internal.LinkedTreeMap;
+
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -28,9 +30,6 @@ public class MapUtil {
     /**
      * convert LinkedTreeMap or LinkedHashTreeMap Map to HashMap,for LinkedTreeMap,LinkedHashTreeMap
      * can not serialize
-     *
-     * @param target
-     * @return
      */
     public static Map<String, Object> convertToHashMap(Map<String, Object> target) {
         for (Map.Entry<String, Object> tmp : target.entrySet()) {
@@ -166,5 +165,11 @@ public class MapUtil {
                 }
             }
         }
+    }
+
+    public static void main(String[] args) throws Exception {
+        Map<String, Object> obj = Maps.newHashMap();
+        obj.put("name", "baisui");
+        System.out.println(MapUtil.writeValueAsString(obj));
     }
 }

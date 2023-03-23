@@ -32,6 +32,7 @@ import org.apache.flink.runtime.state.FunctionSnapshotContext;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaException;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
 import org.apache.flink.streaming.connectors.kafka.KafkaSerializationSchema;
+import org.apache.flink.streaming.connectors.kafka.internals.FlinkKafkaInternalProducer;
 import org.apache.flink.table.data.RowData;
 
 import org.slf4j.Logger;
@@ -53,7 +54,7 @@ public class KafkaProducer extends FlinkKafkaProducer<RowData> {
     protected transient ListState<FormatState> unionOffsetStates;
     protected Map<Integer, FormatState> formatStateMap;
     private final KafkaSerializationSchema<RowData> serializationSchema;
-    private final Properties producerConfig;
+    //  private final Properties producerConfig;
 
     public KafkaProducer(
             String defaultTopic,
@@ -63,7 +64,7 @@ public class KafkaProducer extends FlinkKafkaProducer<RowData> {
             int kafkaProducersPoolSize) {
         super(defaultTopic, serializationSchema, producerConfig, semantic, kafkaProducersPoolSize);
         this.serializationSchema = serializationSchema;
-        this.producerConfig = producerConfig;
+        // this.producerConfig = producerConfig;
     }
 
     @Override
@@ -91,6 +92,12 @@ public class KafkaProducer extends FlinkKafkaProducer<RowData> {
     }
 
     @Override
+    protected FlinkKafkaInternalProducer<byte[], byte[]> createProducer() {
+        return new FlinkKafkaInternalProducer(this.producerConfig);
+    }
+
+
+    @Override
     public void initializeState(FunctionInitializationContext context) throws Exception {
         super.initializeState(context);
         LOG.info("Start initialize output format state");
@@ -99,7 +106,8 @@ public class KafkaProducer extends FlinkKafkaProducer<RowData> {
                 stateStore.getUnionListState(
                         new ListStateDescriptor<>(
                                 LOCATION_STATE_NAME,
-                                TypeInformation.of(new TypeHint<FormatState>() {})));
+                                TypeInformation.of(new TypeHint<FormatState>() {
+                                })));
 
         LOG.info("Is restored:{}", context.isRestored());
         if (context.isRestored()) {

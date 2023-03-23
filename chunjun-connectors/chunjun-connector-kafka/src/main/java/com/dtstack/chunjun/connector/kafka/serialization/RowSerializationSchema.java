@@ -18,9 +18,10 @@
 package com.dtstack.chunjun.connector.kafka.serialization;
 
 import com.dtstack.chunjun.connector.kafka.conf.KafkaConf;
+import com.dtstack.chunjun.connector.kafka.converter.KafkaColumnConverter;
 import com.dtstack.chunjun.connector.kafka.sink.DynamicKafkaSerializationSchema;
-import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.util.JsonUtil;
+import com.dtstack.chunjun.util.MapUtil;
 
 import org.apache.flink.api.common.serialization.SerializationSchema;
 import org.apache.flink.streaming.connectors.kafka.partitioner.FlinkKafkaPartitioner;
@@ -28,35 +29,44 @@ import org.apache.flink.table.data.RowData;
 
 import org.apache.kafka.clients.producer.ProducerRecord;
 
-import java.lang.invoke.MethodHandles;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+
+import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 /**
  * Date: 2021/03/04 Company: www.dtstack.com
  *
  * @author tudou
  */
-public class RowSerializationSchema extends DynamicKafkaSerializationSchema {
+public abstract class RowSerializationSchema extends DynamicKafkaSerializationSchema {
+
 
     private static final long serialVersionUID = 1L;
-   // protected final Logger LOG = LoggerFactory.getLogger(getClass());
+    // protected final Logger LOG = LoggerFactory.getLogger(getClass());
     protected static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     /** kafka key converter */
-    private final AbstractRowConverter<String, Object, byte[], String> keyConverter;
+    private final KafkaColumnConverter keyConverter;
     /** kafka value converter */
-    private final AbstractRowConverter<String, Object, byte[], String> valueConverter;
+    private final KafkaColumnConverter valueConverter;
     /** kafka converter */
     private final KafkaConf kafkaConf;
+
+
+    public abstract Map<String, Object> createRowVals(String tableName, Map<String, Object> data);
+
+
+    //  private final org.apache.kafka.connect.json.JsonSerializer serializer = new org.apache.kafka.connect.json.JsonSerializer();
 
     public RowSerializationSchema(
             KafkaConf kafkaConf,
             @Nullable FlinkKafkaPartitioner<RowData> partitioner,
-            AbstractRowConverter keyConverter,
-            AbstractRowConverter valueConverter) {
+            KafkaColumnConverter keyConverter,
+            KafkaColumnConverter valueConverter) {
         super(kafkaConf.getTopic(), partitioner, null, null, null, null, false, null, false);
         this.keyConverter = keyConverter;
         this.valueConverter = valueConverter;
@@ -81,16 +91,20 @@ public class RowSerializationSchema extends DynamicKafkaSerializationSchema {
     public ProducerRecord<byte[], byte[]> serialize(RowData element, @Nullable Long timestamp) {
         try {
             beforeSerialize(1, element);
-            byte[] keySerialized = null;
+            Map<String, Object> keySerialized = null;
+            byte[] key = null;
             if (keyConverter != null) {
                 keySerialized = keyConverter.toExternal(element, null);
+                key = MapUtil.writeValueAsString(keySerialized).getBytes(StandardCharsets.UTF_8);
             }
-            byte[] valueSerialized = valueConverter.toExternal(element, null);
+            String valueSerialized = MapUtil.writeValueAsString(
+                    createRowVals(kafkaConf.getTableName(), valueConverter.toExternal(element, null)));
+
             return new ProducerRecord<>(
                     this.topic,
-                    extractPartition(element, keySerialized, null),
-                    null,
-                    valueSerialized);
+                    extractPartition(element, key, null),
+                    key,
+                    valueSerialized.getBytes(StandardCharsets.UTF_8));
         } catch (Exception e) {
             dirtyManager.collect(element, e, null);
         }

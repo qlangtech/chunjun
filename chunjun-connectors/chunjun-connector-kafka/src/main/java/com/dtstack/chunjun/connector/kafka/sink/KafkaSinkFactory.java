@@ -17,16 +17,15 @@
  */
 package com.dtstack.chunjun.connector.kafka.sink;
 
+import com.dtstack.chunjun.conf.FieldConf;
 import com.dtstack.chunjun.conf.SyncConf;
-import com.dtstack.chunjun.connector.kafka.adapter.StartupModeAdapter;
 import com.dtstack.chunjun.connector.kafka.conf.KafkaConf;
 import com.dtstack.chunjun.connector.kafka.converter.KafkaColumnConverter;
-import com.dtstack.chunjun.connector.kafka.enums.StartupMode;
 import com.dtstack.chunjun.connector.kafka.partitioner.CustomerFlinkPartition;
 import com.dtstack.chunjun.connector.kafka.serialization.RowSerializationSchema;
+import com.dtstack.chunjun.converter.ISerializationConverter;
 import com.dtstack.chunjun.converter.RawTypeConverter;
 import com.dtstack.chunjun.sink.SinkFactory;
-import com.dtstack.chunjun.util.GsonUtil;
 
 import org.apache.flink.api.common.io.OutputFormat;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -36,10 +35,10 @@ import org.apache.flink.table.data.RowData;
 import org.apache.flink.util.CollectionUtil;
 import org.apache.flink.util.Preconditions;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
+import java.util.Map;
 import java.util.Properties;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Date: 2021/04/07 Company: www.dtstack.com
@@ -47,16 +46,29 @@ import java.util.Properties;
  * @author tudou
  */
 public class KafkaSinkFactory extends SinkFactory {
-    protected KafkaConf kafkaConf;
+    protected final KafkaConf kafkaConf;
 
-    public KafkaSinkFactory(SyncConf config) {
+
+//    public KafkaSinkFactory(SyncConf config) {
+//        super(config);
+//        Gson gson =
+//                new GsonBuilder()
+//                        .registerTypeAdapter(StartupMode.class, new StartupModeAdapter())
+//                        .create();
+//        GsonUtil.setTypeAdapter(gson);
+//        kafkaConf = gson.fromJson(gson.toJson(config.getWriter().getParameter()), KafkaConf.class);
+//        super.initCommonConf(kafkaConf);
+//    }
+
+    public KafkaSinkFactory(SyncConf config, KafkaConf kafkaConf) {
         super(config);
-        Gson gson =
-                new GsonBuilder()
-                        .registerTypeAdapter(StartupMode.class, new StartupModeAdapter())
-                        .create();
-        GsonUtil.setTypeAdapter(gson);
-        kafkaConf = gson.fromJson(gson.toJson(config.getWriter().getParameter()), KafkaConf.class);
+        this.kafkaConf = kafkaConf;
+//        Gson gson =
+//                new GsonBuilder()
+//                        .registerTypeAdapter(StartupMode.class, new StartupModeAdapter())
+//                        .create();
+//        GsonUtil.setTypeAdapter(gson);
+//        kafkaConf = gson.fromJson(gson.toJson(config.getWriter().getParameter()), KafkaConf.class);
         super.initCommonConf(kafkaConf);
     }
 
@@ -69,7 +81,7 @@ public class KafkaSinkFactory extends SinkFactory {
     @Override
     protected DataStreamSink<RowData> createOutput(
             DataStream<RowData> dataSet, OutputFormat<RowData> outputFormat, String sinkName) {
-        Preconditions.checkNotNull(dataSet);
+        //Preconditions.checkNotNull(dataSet);
         Preconditions.checkNotNull(sinkName);
 
         Properties props = new Properties();
@@ -80,6 +92,7 @@ public class KafkaSinkFactory extends SinkFactory {
                     kafkaConf.getParallelism() <= 1,
                     "when kafka sink dataCompelOrder set true , Parallelism must 1.");
         }
+
 
         RowSerializationSchema rowSerializationSchema;
         if (!CollectionUtil.isNullOrEmpty(kafkaConf.getPartitionAssignColumns())) {
@@ -96,33 +109,53 @@ public class KafkaSinkFactory extends SinkFactory {
                                 + "]");
             }
             rowSerializationSchema =
-                    new RowSerializationSchema(
-                            kafkaConf,
-                            new CustomerFlinkPartition<>(),
-                            new KafkaColumnConverter(
-                                    kafkaConf, kafkaConf.getPartitionAssignColumns()),
-                            new KafkaColumnConverter(kafkaConf));
+                    createRowSerializationSchema(KafkaColumnConverter.create(this.syncConf,
+                            kafkaConf, kafkaConf.getPartitionAssignColumns(), getSerializationConverterFactory()));
         } else {
-            rowSerializationSchema =
-                    new RowSerializationSchema(
-                            kafkaConf,
-                            new CustomerFlinkPartition<>(),
-                            null,
-                            new KafkaColumnConverter(kafkaConf));
+            rowSerializationSchema = createRowSerializationSchema(null);
+
         }
 
-        KafkaProducer kafkaProducer =
-                new KafkaProducer(
-                        kafkaConf.getTopic(),
-                        rowSerializationSchema,
-                        props,
-                        FlinkKafkaProducer.Semantic.AT_LEAST_ONCE,
-                        FlinkKafkaProducer.DEFAULT_KAFKA_PRODUCERS_POOL_SIZE);
+        KafkaProducer kafkaProducer = createKafkaProducer(props, rowSerializationSchema);
 
-        DataStreamSink<RowData> dataStreamSink = dataSet.addSink(kafkaProducer);
-        dataStreamSink.name(sinkName);
+        if (dataSet != null) {
+            DataStreamSink<RowData> dataStreamSink = dataSet.addSink(kafkaProducer);
+            dataStreamSink.name(sinkName);
 
-        return dataStreamSink;
+            return dataStreamSink;
+        }
+
+        return null;
+
+    }
+
+    protected KafkaProducer createKafkaProducer(Properties props, RowSerializationSchema rowSerializationSchema) {
+        return new KafkaProducer(
+               kafkaConf.getTopic(),
+               rowSerializationSchema,
+               props,
+               FlinkKafkaProducer.Semantic.AT_LEAST_ONCE,
+               FlinkKafkaProducer.DEFAULT_KAFKA_PRODUCERS_POOL_SIZE);
+    }
+
+    protected RowSerializationSchema createRowSerializationSchema(KafkaColumnConverter keyConverter) {
+
+        Function<FieldConf, ISerializationConverter<Map<String, Object>>> serializationConverterFactory = getSerializationConverterFactory();
+        Preconditions.checkNotNull(serializationConverterFactory, "serializationConverterFactory can not be null");
+        return new RowSerializationSchema(
+                kafkaConf,
+                new CustomerFlinkPartition<>(),
+                keyConverter,
+                KafkaColumnConverter.create(this.syncConf, kafkaConf, serializationConverterFactory)) {
+            @Override
+            public Map<String, Object> createRowVals(String tableName, Map<String, Object> data) {
+                throw new UnsupportedOperationException();
+            }
+        };
+    }
+
+    protected Function<FieldConf, ISerializationConverter<Map<String, Object>>> getSerializationConverterFactory() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
