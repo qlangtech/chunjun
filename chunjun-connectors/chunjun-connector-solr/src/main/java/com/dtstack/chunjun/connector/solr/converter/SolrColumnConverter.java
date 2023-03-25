@@ -25,6 +25,8 @@ import com.dtstack.chunjun.element.ColumnRowData;
 import com.dtstack.chunjun.element.column.BigDecimalColumn;
 import com.dtstack.chunjun.element.column.BooleanColumn;
 import com.dtstack.chunjun.element.column.BytesColumn;
+import com.dtstack.chunjun.element.column.DoubleColumn;
+import com.dtstack.chunjun.element.column.FloatColumn;
 import com.dtstack.chunjun.element.column.StringColumn;
 import com.dtstack.chunjun.element.column.TimestampColumn;
 
@@ -44,13 +46,9 @@ import java.util.List;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
-/**
- * @author Ada Wong
- * @program chunjun
- * @create 2021/06/20
- */
 public class SolrColumnConverter
         extends AbstractRowConverter<SolrDocument, SolrDocument, SolrInputDocument, LogicalType> {
+    private static final long serialVersionUID = -3224771447483488779L;
     protected List<SolrSerializationConverter> toExternalConverters;
     protected String[] fieldNames;
 
@@ -92,7 +90,7 @@ public class SolrColumnConverter
     @Override
     public SolrInputDocument toExternal(RowData rowData, SolrInputDocument solrInputDocument)
             throws Exception {
-        for (int pos = 0; pos < rowData.getArity(); pos++) {
+        for (int pos = 0; pos < fieldTypes.length; pos++) {
             toExternalConverters
                     .get(pos)
                     .serialize(rowData, pos, fieldNames[pos], solrInputDocument);
@@ -122,9 +120,9 @@ public class SolrColumnConverter
             case INTEGER:
                 return val -> new BigDecimalColumn(Integer.parseInt(String.valueOf(val)));
             case FLOAT:
-                return val -> new BigDecimalColumn((Float) val);
+                return val -> new FloatColumn((Float) val);
             case DOUBLE:
-                return val -> new BigDecimalColumn((Double) val);
+                return val -> new DoubleColumn((Double) val);
             case BIGINT:
                 return val -> new BigDecimalColumn((Long) val);
             case DECIMAL:
@@ -156,6 +154,9 @@ public class SolrColumnConverter
                 return (val, pos, name, document) ->
                         document.setField(name, ((ColumnRowData) val).getField(pos).asBoolean());
             case TINYINT:
+
+            case BINARY:
+            case VARBINARY:
                 return (val, pos, name, document) ->
                         document.setField(name, ((ColumnRowData) val).getField(pos).asBytes());
             case SMALLINT:
@@ -203,11 +204,6 @@ public class SolrColumnConverter
             case TIMESTAMP_WITHOUT_TIME_ZONE:
                 return (val, pos, name, document) ->
                         document.setField(name, ((ColumnRowData) val).getField(pos).asTimestamp());
-
-            case BINARY:
-            case VARBINARY:
-                return (val, pos, name, document) ->
-                        document.setField(name, ((ColumnRowData) val).getField(pos).asBytes());
             default:
                 throw new UnsupportedOperationException("Unsupported type:" + type);
         }

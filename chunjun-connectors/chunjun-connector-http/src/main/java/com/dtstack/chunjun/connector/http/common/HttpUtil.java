@@ -20,6 +20,7 @@ package com.dtstack.chunjun.connector.http.common;
 import com.dtstack.chunjun.util.ExceptionUtil;
 
 import com.google.gson.Gson;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.MapUtils;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
@@ -31,8 +32,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.ssl.SSLContextBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLContext;
 
@@ -43,12 +42,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Map;
 
-/**
- * @author : shifang
- * @date : 2020/3/16
- */
+@Slf4j
 public class HttpUtil {
-    protected static final Logger LOG = LoggerFactory.getLogger(HttpUtil.class);
     private static final int COUNT = 32;
     private static final int TOTAL_COUNT = 1000;
     private static final int TIME_OUT = 5000;
@@ -58,10 +53,10 @@ public class HttpUtil {
 
     public static CloseableHttpClient getHttpClient() {
 
-        return getBaseBuilder().build();
+        return getBaseBuilder(TIME_OUT).build();
     }
 
-    public static CloseableHttpClient getHttpsClient() {
+    public static CloseableHttpClient getHttpsClient(int timeOut) {
 
         // 设置Http连接池
         SSLContext sslContext;
@@ -71,16 +66,19 @@ public class HttpUtil {
                             .loadTrustMaterial(null, (certificate, authType) -> true)
                             .build();
         } catch (Exception e) {
-            LOG.warn(ExceptionUtil.getErrorMessage(e));
+            log.warn(ExceptionUtil.getErrorMessage(e));
             throw new RuntimeException(e);
         }
-        return getBaseBuilder()
+        return getBaseBuilder(timeOut)
                 .setSSLContext(sslContext)
                 .setSSLHostnameVerifier(new NoopHostnameVerifier())
                 .build();
     }
 
-    public static HttpClientBuilder getBaseBuilder() {
+    public static HttpClientBuilder getBaseBuilder(int timeOut) {
+        if (timeOut <= 0) {
+            timeOut = TIME_OUT;
+        }
         // 设置自定义的重试策略
         ServiceUnavailableRetryStrategyImpl strategy =
                 new ServiceUnavailableRetryStrategyImpl.Builder()
@@ -93,9 +91,9 @@ public class HttpUtil {
         // 设置超时时间
         RequestConfig requestConfig =
                 RequestConfig.custom()
-                        .setConnectTimeout(TIME_OUT)
-                        .setConnectionRequestTimeout(TIME_OUT)
-                        .setSocketTimeout(TIME_OUT)
+                        .setConnectTimeout(timeOut)
+                        .setConnectionRequestTimeout(timeOut)
+                        .setSocketTimeout(timeOut)
                         .build();
         // 设置Http连接池
         PoolingHttpClientConnectionManager pcm = new PoolingHttpClientConnectionManager();
@@ -114,7 +112,7 @@ public class HttpUtil {
             Map<String, Object> requestBody,
             Map<String, String> header,
             String url) {
-        LOG.debug("current request url: {}  current method:{} \n", url, method);
+        log.debug("current request url: {}  current method:{} \n", url, method);
         HttpRequestBase request;
 
         if (HttpMethod.GET.name().equalsIgnoreCase(method)) {
@@ -169,7 +167,7 @@ public class HttpUtil {
             }
         }
 
-        LOG.debug("current request url: {}  current method:{} \n", url, method);
+        log.debug("current request url: {}  current method:{} \n", url, method);
         if (HttpMethod.GET.name().equalsIgnoreCase(method)) {
             request = new HttpGet(url);
         } else if (HttpMethod.POST.name().equalsIgnoreCase(method)) {

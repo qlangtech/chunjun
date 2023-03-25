@@ -28,11 +28,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-/**
- * Date: 2021/07/01 Company: www.dtstack.com
- *
- * @author tudou
- */
 public class DtKafkaDeserializer<T> implements Deserializer<byte[]> {
     protected ObjectMapper objectMapper = new ObjectMapper();
     private Deserializer<T> deserializer;

@@ -39,12 +39,13 @@ import org.apache.flink.util.InstantiationUtil;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-/** @author liuliu 2022/5/12 */
 public class ColumnRowDataSerializer extends TypeSerializer<RowData> {
+
+    private static final long serialVersionUID = -3193875237503741622L;
 
     StringSerializer stringSerializer = StringSerializer.INSTANCE;
     int size;
@@ -152,7 +153,7 @@ public class ColumnRowDataSerializer extends TypeSerializer<RowData> {
 
         int infoSize = source.readInt();
         if (infoSize >= 0) {
-            final Map<String, Integer> headerInfo = new HashMap<>(infoSize);
+            final LinkedHashMap<String, Integer> headerInfo = new LinkedHashMap<>();
             for (int i = 0; i < infoSize; i++) {
                 String key = stringSerializer.deserialize(source);
                 boolean isNotNull = source.readBoolean();

@@ -18,8 +18,7 @@
 
 package com.dtstack.chunjun.connector.ftp.converter;
 
-import com.dtstack.chunjun.conf.FieldConf;
-import com.dtstack.chunjun.connector.ftp.conf.FtpConfig;
+import com.dtstack.chunjun.connector.ftp.config.FtpConfig;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
 import com.dtstack.chunjun.converter.ISerializationConverter;
@@ -47,26 +46,23 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @program chunjun
- * @author: xiuzhu
- * @create: 2021/06/19
- */
-public class FtpColumnConverter extends AbstractRowConverter<RowData, RowData, String, FieldConf> {
+public class FtpColumnConverter
+        extends AbstractRowConverter<RowData, RowData, String, LogicalType> {
+
+    private static final long serialVersionUID = -2759374929827259886L;
 
     private final FtpConfig ftpConfig;
 
     public FtpColumnConverter(RowType rowType, FtpConfig ftpConfig) {
-        super(rowType);
+        super(rowType, ftpConfig);
         this.ftpConfig = ftpConfig;
         for (int i = 0; i < rowType.getFieldCount(); i++) {
-            FieldConf fieldConf = ftpConfig.getColumn().get(i);
             toInternalConverters.add(
                     wrapIntoNullableInternalConverter(
                             createInternalConverter(rowType.getTypeAt(i))));
             toExternalConverters.add(
                     wrapIntoNullableExternalConverter(
-                            createExternalConverter(fieldConf), fieldConf));
+                            createExternalConverter(rowType.getTypeAt(i)), rowType.getTypeAt(i)));
         }
     }
 
@@ -96,7 +92,7 @@ public class FtpColumnConverter extends AbstractRowConverter<RowData, RowData, S
         StringBuilder sb = new StringBuilder(128);
 
         List<String> columnData = new ArrayList<>(ftpConfig.getColumn().size());
-        for (int index = 0; index < rowData.getArity(); index++) {
+        for (int index = 0; index < fieldTypes.length; index++) {
             toExternalConverters.get(index).serialize(rowData, index, columnData);
             if (index != 0) {
                 sb.append(ftpConfig.getFieldDelimiter());
@@ -109,7 +105,7 @@ public class FtpColumnConverter extends AbstractRowConverter<RowData, RowData, S
     @Override
     @SuppressWarnings("unchecked")
     protected ISerializationConverter<List<String>> wrapIntoNullableExternalConverter(
-            ISerializationConverter serializationConverter, FieldConf fieldConf) {
+            ISerializationConverter serializationConverter, LogicalType logicalType) {
         return (rowData, index, list) -> {
             if (rowData == null || rowData.isNullAt(index)) {
                 list.add(index, null);
@@ -119,6 +115,7 @@ public class FtpColumnConverter extends AbstractRowConverter<RowData, RowData, S
         };
     }
 
+    @Override
     protected IDeserializationConverter createInternalConverter(LogicalType type) {
         switch (type.getTypeRoot()) {
             case BOOLEAN:
@@ -159,8 +156,27 @@ public class FtpColumnConverter extends AbstractRowConverter<RowData, RowData, S
     }
 
     @Override
-    protected ISerializationConverter<List<String>> createExternalConverter(FieldConf fieldConf) {
-        return (rowData, index, list) ->
-                list.add(index, ((ColumnRowData) rowData).getField(index).asString());
+    protected ISerializationConverter<List<String>> createExternalConverter(
+            LogicalType logicalType) {
+        switch (logicalType.getTypeRoot()) {
+            case DATE:
+                return (rowData, index, list) -> {
+                    if (rowData instanceof ColumnRowData) {
+                        list.add(
+                                index,
+                                ((ColumnRowData) rowData).getField(index).asSqlDate().toString());
+                    } else {
+                        list.add(index, ((GenericRowData) rowData).getField(index).toString());
+                    }
+                };
+            default:
+                return (rowData, index, list) -> {
+                    if (rowData instanceof ColumnRowData) {
+                        list.add(index, ((ColumnRowData) rowData).getField(index).asString());
+                    } else {
+                        list.add(index, ((GenericRowData) rowData).getField(index).toString());
+                    }
+                };
+        }
     }
 }

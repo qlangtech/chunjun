@@ -18,97 +18,88 @@
 
 package com.dtstack.chunjun.connector.iceberg.sink;
 
-import com.dtstack.chunjun.conf.SyncConf;
-import com.dtstack.chunjun.connector.iceberg.conf.IcebergWriterConf;
+import com.dtstack.chunjun.config.FieldConfig;
+import com.dtstack.chunjun.config.SyncConfig;
+import com.dtstack.chunjun.connector.iceberg.config.IcebergConfig;
 import com.dtstack.chunjun.converter.RawTypeConverter;
 import com.dtstack.chunjun.sink.SinkFactory;
-import com.dtstack.chunjun.util.FileSystemUtil;
+import com.dtstack.chunjun.sink.WriteMode;
 import com.dtstack.chunjun.util.GsonUtil;
 
-import org.apache.flink.api.common.io.OutputFormat;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSink;
-import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.table.data.RowData;
-import org.apache.flink.util.Preconditions;
 
-import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.iceberg.catalog.TableIdentifier;
+import org.apache.iceberg.flink.CatalogLoader;
 import org.apache.iceberg.flink.TableLoader;
 import org.apache.iceberg.flink.sink.FlinkSink;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 public class IcebergSinkFactory extends SinkFactory {
 
-    private final IcebergWriterConf writerConf;
+    private final IcebergConfig icebergConfig;
 
-    public IcebergSinkFactory(SyncConf config) {
+    public IcebergSinkFactory(SyncConfig config) {
         super(config);
-        writerConf =
+        icebergConfig =
                 GsonUtil.GSON.fromJson(
                         GsonUtil.GSON.toJson(config.getWriter().getParameter()),
-                        IcebergWriterConf.class);
-        writerConf.setColumn(config.getWriter().getFieldList());
-        super.initCommonConf(writerConf);
-    }
-
-    @Override
-    public DataStreamSink<RowData> createSink(DataStream<RowData> dataSet) {
-        if (!useAbstractBaseColumn) {
-            throw new UnsupportedOperationException("iceberg not support transform");
-        }
-        return createOutput(dataSet, null);
-    }
-
-    @Override
-    protected DataStreamSink<RowData> createOutput(
-            DataStream<RowData> dataSet, OutputFormat<RowData> outputFormat) {
-        return createOutput(dataSet, outputFormat, this.getClass().getSimpleName().toLowerCase());
-    }
-
-    @Override
-    protected DataStreamSink<RowData> createOutput(
-            DataStream<RowData> dataSet, OutputFormat<RowData> outputFormat, String sinkName) {
-        Preconditions.checkNotNull(dataSet);
-        Preconditions.checkNotNull(sinkName);
-
-        // 初始化 hadoop conf
-        Configuration conf =
-                FileSystemUtil.getConfiguration(
-                        writerConf.getHadoopConfig(), writerConf.getDefaultFS());
-
-        TableLoader tableLoader = TableLoader.fromHadoopTable(writerConf.getPath(), conf);
-        SingleOutputStreamOperator<RowData> streamOperator =
-                dataSet.map(new IcebergMetricsMapFunction(writerConf));
-        DataStreamSink<RowData> dataDataStreamSink = null;
-        // 判断写出模式
-        String writeMode = writerConf.getWriteMode();
-        if (writeMode.equals(IcebergWriterConf.UPSERT_WRITE_MODE)) {
-            dataDataStreamSink =
-                    FlinkSink.forRowData(streamOperator)
-                            .tableLoader(tableLoader)
-                            .equalityFieldColumns(Lists.newArrayList("id"))
-                            .upsert(true)
-                            .build();
-        } else if (writeMode.equals(IcebergWriterConf.OVERWRITE_WRITE_MODE)) {
-            dataDataStreamSink =
-                    FlinkSink.forRowData(streamOperator)
-                            .tableLoader(tableLoader)
-                            .overwrite(true)
-                            .build();
-
-        } else if (writeMode.equals(IcebergWriterConf.APPEND_WRITE_MODE)) {
-            dataDataStreamSink =
-                    FlinkSink.forRowData(streamOperator).tableLoader(tableLoader).build();
-        } else {
-            throw new UnsupportedOperationException("iceberg not support writeMode :" + writeMode);
-        }
-
-        dataDataStreamSink.name(sinkName);
-        return dataDataStreamSink;
+                        IcebergConfig.class);
     }
 
     @Override
     public RawTypeConverter getRawTypeConverter() {
         return null;
+    }
+
+    @Override
+    public DataStreamSink<RowData> createSink(DataStream<RowData> dataSet) {
+        List<String> columns =
+                icebergConfig.getColumn().stream()
+                        .map(FieldConfig::getName)
+                        .collect(Collectors.toList());
+
+        DataStream<RowData> convertedDataStream =
+                dataSet.map(new ChunjunRowDataConvertMap(icebergConfig.getColumn()));
+
+        boolean isOverwrite =
+                icebergConfig.getWriteMode().equalsIgnoreCase(WriteMode.OVERWRITE.name());
+        return FlinkSink.forRowData(convertedDataStream)
+                .tableLoader(buildTableLoader())
+                .writeParallelism(icebergConfig.getParallelism())
+                .equalityFieldColumns(columns)
+                .overwrite(isOverwrite)
+                .build();
+    }
+
+    private TableLoader buildTableLoader() {
+        Map<String, String> icebergProps = new HashMap<>();
+        icebergProps.put("warehouse", icebergConfig.getWarehouse());
+        icebergProps.put("uri", icebergConfig.getUri());
+
+        /* build hadoop configuration */
+        Configuration configuration = new Configuration();
+        icebergConfig
+                .getHadoopConfig()
+                .forEach((key, value) -> configuration.set(key, (String) value));
+
+        CatalogLoader hc =
+                CatalogLoader.hive(icebergConfig.getDatabase(), configuration, icebergProps);
+        TableLoader tl =
+                TableLoader.fromCatalog(
+                        hc,
+                        TableIdentifier.of(icebergConfig.getDatabase(), icebergConfig.getTable()));
+
+        if (tl instanceof TableLoader.CatalogTableLoader) {
+            tl.open();
+        }
+
+        return tl;
     }
 }

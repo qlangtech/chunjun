@@ -17,8 +17,8 @@
  */
 package com.dtstack.chunjun.connector.hdfs.converter;
 
-import com.dtstack.chunjun.conf.FieldConf;
-import com.dtstack.chunjun.connector.hdfs.conf.HdfsConf;
+import com.dtstack.chunjun.config.FieldConfig;
+import com.dtstack.chunjun.connector.hdfs.config.HdfsConfig;
 import com.dtstack.chunjun.connector.hdfs.util.HdfsUtil;
 import com.dtstack.chunjun.constants.ConstantValue;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
@@ -30,6 +30,8 @@ import com.dtstack.chunjun.element.column.BigDecimalColumn;
 import com.dtstack.chunjun.element.column.BooleanColumn;
 import com.dtstack.chunjun.element.column.ByteColumn;
 import com.dtstack.chunjun.element.column.BytesColumn;
+import com.dtstack.chunjun.element.column.DoubleColumn;
+import com.dtstack.chunjun.element.column.FloatColumn;
 import com.dtstack.chunjun.element.column.StringColumn;
 import com.dtstack.chunjun.element.column.TimestampColumn;
 import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
@@ -54,21 +56,18 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * Date: 2021/06/16 Company: www.dtstack.com
- *
- * @author tudou
- */
 public class HdfsParquetColumnConverter
         extends AbstractRowConverter<RowData, RowData, Group, String> {
+
+    private static final long serialVersionUID = -5175141539300795729L;
 
     private List<String> columnNameList;
     private transient Map<String, ColumnTypeUtil.DecimalInfo> decimalColInfo;
 
-    public HdfsParquetColumnConverter(List<FieldConf> fieldConfList, HdfsConf hdfsConf) {
-        super(fieldConfList.size(), hdfsConf);
-        for (int i = 0; i < fieldConfList.size(); i++) {
-            String type = fieldConfList.get(i).getType();
+    public HdfsParquetColumnConverter(List<FieldConfig> fieldConfigList, HdfsConfig hdfsConfig) {
+        super(fieldConfigList.size(), hdfsConfig);
+        for (FieldConfig fieldConfig : fieldConfigList) {
+            String type = fieldConfig.getType();
             int left = type.indexOf(ConstantValue.LEFT_PARENTHESIS_SYMBOL);
             int right = type.indexOf(ConstantValue.RIGHT_PARENTHESIS_SYMBOL);
             if (left > 0 && right > 0) {
@@ -87,7 +86,7 @@ public class HdfsParquetColumnConverter
         ColumnRowData row = new ColumnRowData(input.getArity());
         if (input instanceof GenericRowData) {
             GenericRowData genericRowData = (GenericRowData) input;
-            List<FieldConf> fieldConfList = commonConf.getColumn();
+            List<FieldConfig> fieldConfList = commonConfig.getColumn();
             for (int i = 0; i < input.getArity(); i++) {
                 row.addField(
                         assembleFieldProps(
@@ -109,7 +108,7 @@ public class HdfsParquetColumnConverter
     @Override
     @SuppressWarnings("unchecked")
     public Group toExternal(RowData rowData, Group group) throws Exception {
-        for (int index = 0; index < rowData.getArity(); index++) {
+        for (int index = 0; index < fieldTypes.length; index++) {
             toExternalConverters.get(index).serialize(rowData, index, group);
         }
         return group;
@@ -148,10 +147,9 @@ public class HdfsParquetColumnConverter
             case "BIGINT":
                 return (IDeserializationConverter<Long, AbstractBaseColumn>) BigDecimalColumn::new;
             case "FLOAT":
-                return (IDeserializationConverter<Float, AbstractBaseColumn>) BigDecimalColumn::new;
+                return (IDeserializationConverter<Float, AbstractBaseColumn>) FloatColumn::new;
             case "DOUBLE":
-                return (IDeserializationConverter<Double, AbstractBaseColumn>)
-                        BigDecimalColumn::new;
+                return (IDeserializationConverter<Double, AbstractBaseColumn>) DoubleColumn::new;
             case "DECIMAL":
                 return (IDeserializationConverter<BigDecimal, AbstractBaseColumn>)
                         BigDecimalColumn::new;

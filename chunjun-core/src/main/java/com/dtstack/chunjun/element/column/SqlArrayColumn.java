@@ -27,12 +27,6 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 
-/**
- * Company：www.dtstack.com.
- *
- * @author shitou
- * @date 2022/4/15
- */
 public class SqlArrayColumn extends AbstractBaseColumn {
 
     private static final long serialVersionUID = 1L;
@@ -87,6 +81,46 @@ public class SqlArrayColumn extends AbstractBaseColumn {
 
     @Override
     public String asTimestampStr() {
+        return null;
+    }
+
+    @Override
+    protected Boolean asBooleanInternal() {
+        return null;
+    }
+
+    @Override
+    protected byte[] asBytesInternal() {
+        return new byte[0];
+    }
+
+    @Override
+    protected String asStringInternal() {
+        return null;
+    }
+
+    @Override
+    protected BigDecimal asBigDecimalInternal() {
+        return null;
+    }
+
+    @Override
+    protected Timestamp asTimestampInternal() {
+        return null;
+    }
+
+    @Override
+    protected Time asTimeInternal() {
+        return null;
+    }
+
+    @Override
+    protected Date asSqlDateInternal() {
+        return null;
+    }
+
+    @Override
+    protected String asTimestampStrInternal() {
         return null;
     }
 }

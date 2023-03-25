@@ -18,8 +18,7 @@
 
 package com.dtstack.chunjun.connector.http.converter;
 
-import com.dtstack.chunjun.connector.http.client.DefaultRestHandler;
-import com.dtstack.chunjun.connector.http.common.ConstantValue;
+import com.dtstack.chunjun.config.FieldConfig;
 import com.dtstack.chunjun.connector.http.common.HttpRestConfig;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
@@ -28,12 +27,12 @@ import com.dtstack.chunjun.element.AbstractBaseColumn;
 import com.dtstack.chunjun.element.ColumnRowData;
 import com.dtstack.chunjun.element.column.BigDecimalColumn;
 import com.dtstack.chunjun.element.column.BooleanColumn;
+import com.dtstack.chunjun.element.column.DoubleColumn;
+import com.dtstack.chunjun.element.column.FloatColumn;
 import com.dtstack.chunjun.element.column.MapColumn;
 import com.dtstack.chunjun.element.column.StringColumn;
 import com.dtstack.chunjun.element.column.TimestampColumn;
 import com.dtstack.chunjun.util.DateUtil;
-import com.dtstack.chunjun.util.GsonUtil;
-import com.dtstack.chunjun.util.MapUtil;
 
 import org.apache.flink.table.data.RowData;
 
@@ -41,22 +40,21 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * @author shifang
- * @create 2021-06-07 15:51
- * @description
- */
 public class HttpColumnConverter
-        extends AbstractRowConverter<String, Object, Map<String, Object>, String> {
+        extends AbstractRowConverter<Map<String, Object>, Object, Map<String, Object>, String> {
 
-    /** restapi Conf */
-    private HttpRestConfig httpRestConfig;
+    private static final long serialVersionUID = -7759259374957914968L;
+
+    /** restapi Config */
+    private final HttpRestConfig httpRestConfig;
 
     public HttpColumnConverter(HttpRestConfig httpRestConfig) {
         this.httpRestConfig = httpRestConfig;
+        this.commonConfig = httpRestConfig;
 
         // Only json need to extract the fields
         if (StringUtils.isNotBlank((httpRestConfig.getFields()))) {
@@ -77,34 +75,27 @@ public class HttpColumnConverter
     }
 
     @Override
-    public RowData toInternal(String input) throws Exception {
+    public RowData toInternal(Map<String, Object> input) throws Exception {
         ColumnRowData row;
-        if (httpRestConfig.getDecode().equals(ConstantValue.DEFAULT_DECODE)) {
-            Map<String, Object> result =
-                    DefaultRestHandler.gson.fromJson(input, GsonUtil.gsonMapTypeToken);
-            if (toInternalConverters != null && toInternalConverters.size() > 0) {
-                // 同步任务配置了field参数(对应的类型转换都是string) 需要对每个字段进行类型转换
-                row = new ColumnRowData(toInternalConverters.size());
-                String fields = httpRestConfig.getFields();
-                String[] split = fields.split(",");
 
-                for (int i = 0; i < split.length; i++) {
-                    Object value =
-                            MapUtil.getValueByKey(
-                                    result, split[i], httpRestConfig.getFieldDelimiter());
-                    row.addField(
-                            (AbstractBaseColumn) toInternalConverters.get(i).deserialize(value));
-                }
-            } else {
-                // 直接作为mapColumn
-                row = new ColumnRowData(1);
-                row.addField(new MapColumn(result));
+        if (toInternalConverters != null && toInternalConverters.size() > 0) {
+            List<FieldConfig> fieldConfList = commonConfig.getColumn();
+            // 同步任务配置了field参数(对应的类型转换都是string) 需要对每个字段进行类型转换
+            row = new ColumnRowData(toInternalConverters.size());
+            for (int i = 0; i < toInternalConverters.size(); i++) {
+                String name = httpRestConfig.getColumn().get(i).getName();
+                AbstractBaseColumn baseColumn =
+                        (AbstractBaseColumn)
+                                toInternalConverters.get(i).deserialize(input.get(name));
+
+                row.addField(assembleFieldProps(fieldConfList.get(i), baseColumn));
             }
-
         } else {
+            // 实时直接作为mapColumn
             row = new ColumnRowData(1);
-            row.addField(new StringColumn(input));
+            row.addField(new MapColumn(input));
         }
+
         return row;
     }
 
@@ -114,8 +105,7 @@ public class HttpColumnConverter
     }
 
     @Override
-    public Map<String, Object> toExternal(RowData rowData, Map<String, Object> output)
-            throws Exception {
+    public Map<String, Object> toExternal(RowData rowData, Map<String, Object> output) {
         return null;
     }
 
@@ -139,9 +129,9 @@ public class HttpColumnConverter
             case "BIGINT":
                 return val -> new BigDecimalColumn(Long.parseLong(val.toString()));
             case "FLOAT":
-                return val -> new BigDecimalColumn(Float.parseFloat(val.toString()));
+                return val -> new FloatColumn(Float.parseFloat(val.toString()));
             case "DOUBLE":
-                return val -> new BigDecimalColumn(Double.parseDouble(val.toString()));
+                return val -> new DoubleColumn(Double.parseDouble(val.toString()));
             case "DECIMAL":
                 return val -> new BigDecimalColumn(new BigDecimal(val.toString()));
             case "DATE":

@@ -18,8 +18,8 @@
 
 package com.dtstack.chunjun.connector.hive3.converter;
 
-import com.dtstack.chunjun.conf.FieldConf;
-import com.dtstack.chunjun.connector.hive3.conf.HdfsConf;
+import com.dtstack.chunjun.config.FieldConfig;
+import com.dtstack.chunjun.connector.hive3.config.HdfsConfig;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
 import com.dtstack.chunjun.converter.ISerializationConverter;
@@ -29,6 +29,8 @@ import com.dtstack.chunjun.element.column.BigDecimalColumn;
 import com.dtstack.chunjun.element.column.BooleanColumn;
 import com.dtstack.chunjun.element.column.ByteColumn;
 import com.dtstack.chunjun.element.column.BytesColumn;
+import com.dtstack.chunjun.element.column.DoubleColumn;
+import com.dtstack.chunjun.element.column.FloatColumn;
 import com.dtstack.chunjun.element.column.SqlDateColumn;
 import com.dtstack.chunjun.element.column.StringColumn;
 import com.dtstack.chunjun.element.column.TimestampColumn;
@@ -55,15 +57,16 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 
-/** @author liuliu 2022/3/23 */
 public class HdfsOrcColumnConverter
         extends AbstractRowConverter<RowData, RowData, List<Object>, LogicalType> {
 
-    HdfsConf hdfsConf;
+    private static final long serialVersionUID = -1143450655293766846L;
 
-    public HdfsOrcColumnConverter(RowType rowType, HdfsConf hdfsConf) {
-        super(rowType, hdfsConf);
-        this.hdfsConf = hdfsConf;
+    HdfsConfig hdfsConfig;
+
+    public HdfsOrcColumnConverter(RowType rowType, HdfsConfig hdfsConfig) {
+        super(rowType, hdfsConfig);
+        this.hdfsConfig = hdfsConfig;
         for (int i = 0; i < rowType.getFieldCount(); i++) {
             toInternalConverters.add(
                     wrapIntoNullableInternalConverter(
@@ -75,7 +78,6 @@ public class HdfsOrcColumnConverter
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     protected ISerializationConverter<List<Object>> wrapIntoNullableExternalConverter(
             ISerializationConverter serializationConverter, LogicalType type) {
         return (rowData, index, data) -> {
@@ -92,7 +94,7 @@ public class HdfsOrcColumnConverter
     public RowData toInternal(RowData input) throws Exception {
         ColumnRowData row = new ColumnRowData(input.getArity());
         if (input instanceof GenericRowData) {
-            List<FieldConf> fieldConfList = commonConf.getColumn();
+            List<FieldConfig> fieldConfList = commonConfig.getColumn();
             GenericRowData genericRowData = (GenericRowData) input;
             for (int i = 0; i < fieldConfList.size(); i++) {
                 row.addField(
@@ -119,8 +121,8 @@ public class HdfsOrcColumnConverter
 
     @Override
     public List<Object> toExternal(RowData rowData, List<Object> output) throws Exception {
-        for (int index = 0; index < hdfsConf.getFullColumnName().size(); index++) {
-            int columnIndex = hdfsConf.getFullColumnIndexes()[index];
+        for (int index = 0; index < hdfsConfig.getFullColumnName().size(); index++) {
+            int columnIndex = hdfsConfig.getFullColumnIndexes()[index];
             if (columnIndex == -1) {
                 output.add(null);
                 continue;
@@ -145,10 +147,9 @@ public class HdfsOrcColumnConverter
             case BIGINT:
                 return (IDeserializationConverter<Long, AbstractBaseColumn>) BigDecimalColumn::new;
             case FLOAT:
-                return (IDeserializationConverter<Float, AbstractBaseColumn>) BigDecimalColumn::new;
+                return (IDeserializationConverter<Float, AbstractBaseColumn>) FloatColumn::new;
             case DOUBLE:
-                return (IDeserializationConverter<Double, AbstractBaseColumn>)
-                        BigDecimalColumn::new;
+                return (IDeserializationConverter<Double, AbstractBaseColumn>) DoubleColumn::new;
             case DECIMAL:
                 return (IDeserializationConverter<BigDecimal, AbstractBaseColumn>)
                         BigDecimalColumn::new;

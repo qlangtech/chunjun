@@ -24,25 +24,25 @@ import com.dtstack.chunjun.connector.jdbc.source.JdbcInputSplit;
 
 import org.apache.flink.core.io.InputSplit;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 
-/**
- * @program chunjun
- * @author: xiuzhu
- * @create: 2021/05/10
- */
+@Slf4j
 public class ClickhouseInputFormat extends JdbcInputFormat {
+
+    private static final long serialVersionUID = 8179162549184574982L;
 
     @Override
     public void openInternal(InputSplit inputSplit) {
-        JdbcInputSplit jdbcInputSplit = (JdbcInputSplit) inputSplit;
-        initMetric(jdbcInputSplit);
-        if (!canReadData(jdbcInputSplit)) {
-            LOG.warn(
+        currentJdbcInputSplit = (JdbcInputSplit) inputSplit;
+        initMetric(currentJdbcInputSplit);
+        if (!canReadData(currentJdbcInputSplit)) {
+            log.warn(
                     "Not read data when the start location are equal to end location, start = {}, end = {}",
-                    jdbcInputSplit.getStartLocation(),
-                    jdbcInputSplit.getEndLocation());
+                    currentJdbcInputSplit.getStartLocation(),
+                    currentJdbcInputSplit.getEndLocation());
             hasNext = false;
             return;
         }
@@ -50,12 +50,14 @@ public class ClickhouseInputFormat extends JdbcInputFormat {
         String querySQL = null;
         try {
             dbConn = getConnection();
-            querySQL = buildQuerySql(jdbcInputSplit);
-            jdbcConf.setQuerySql(querySQL);
-            executeQuery(jdbcInputSplit.getStartLocation());
+            querySQL = buildQuerySql(currentJdbcInputSplit);
+            jdbcConfig.setQuerySql(querySQL);
+            executeQuery(currentJdbcInputSplit.getStartLocation());
             // 增量任务
             needUpdateEndLocation =
-                    jdbcConf.isIncrement() && !jdbcConf.isPolling() && !jdbcConf.isUseMaxFunc();
+                    jdbcConfig.isIncrement()
+                            && !jdbcConfig.isPolling()
+                            && !jdbcConfig.isUseMaxFunc();
         } catch (SQLException se) {
             String expMsg = se.getMessage();
             expMsg = querySQL == null ? expMsg : expMsg + "\n querySQL: " + querySQL;
@@ -66,6 +68,6 @@ public class ClickhouseInputFormat extends JdbcInputFormat {
     @Override
     protected Connection getConnection() throws SQLException {
         return ClickhouseUtil.getConnection(
-                jdbcConf.getJdbcUrl(), jdbcConf.getUsername(), jdbcConf.getPassword());
+                jdbcConfig.getJdbcUrl(), jdbcConfig.getUsername(), jdbcConfig.getPassword());
     }
 }

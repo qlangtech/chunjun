@@ -18,16 +18,20 @@
 
 package com.dtstack.chunjun.connector.kafka.source;
 
-import com.dtstack.chunjun.conf.SyncConf;
+import com.dtstack.chunjun.config.FieldConfig;
+import com.dtstack.chunjun.config.SyncConfig;
 import com.dtstack.chunjun.connector.kafka.adapter.StartupModeAdapter;
-import com.dtstack.chunjun.connector.kafka.conf.KafkaConf;
-import com.dtstack.chunjun.connector.kafka.converter.KafkaColumnConverter;
+import com.dtstack.chunjun.connector.kafka.conf.KafkaConfig;
+import com.dtstack.chunjun.connector.kafka.converter.KafkaRawTypeMapping;
+import com.dtstack.chunjun.connector.kafka.converter.KafkaSyncConverter;
 import com.dtstack.chunjun.connector.kafka.enums.StartupMode;
 import com.dtstack.chunjun.connector.kafka.serialization.RowDeserializationSchema;
+import com.dtstack.chunjun.connector.kafka.util.FormatNameConvertUtil;
 import com.dtstack.chunjun.connector.kafka.util.KafkaUtil;
 import com.dtstack.chunjun.converter.RawTypeConverter;
 import com.dtstack.chunjun.source.SourceFactory;
 import com.dtstack.chunjun.util.GsonUtil;
+import com.dtstack.chunjun.util.PluginUtil;
 
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -36,29 +40,65 @@ import org.apache.flink.table.data.RowData;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 
-import java.util.Locale;
+import java.io.File;
+import java.net.URL;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
-/**
- * Date: 2019/11/21 Company: www.dtstack.com
- *
- * @author tudou
- */
 public class KafkaSourceFactory extends SourceFactory {
 
     /** kafka conf */
-    protected KafkaConf kafkaConf;
+    protected KafkaConfig kafkaConfig;
 
-    public KafkaSourceFactory(SyncConf config, StreamExecutionEnvironment env) {
+    public KafkaSourceFactory(SyncConfig config, StreamExecutionEnvironment env) {
         super(config, env);
         Gson gson =
                 new GsonBuilder()
                         .registerTypeAdapter(StartupMode.class, new StartupModeAdapter())
                         .create();
         GsonUtil.setTypeAdapter(gson);
-        kafkaConf = gson.fromJson(gson.toJson(config.getReader().getParameter()), KafkaConf.class);
-        super.initCommonConf(kafkaConf);
+        kafkaConfig =
+                gson.fromJson(gson.toJson(config.getReader().getParameter()), KafkaConfig.class);
+        kafkaConfig.setColumn(config.getReader().getFieldList());
+
+        if (MapUtils.isNotEmpty(kafkaConfig.getTableSchema())) {
+            HashMap<String, List<FieldConfig>> stringListHashMap = new HashMap<>();
+            for (Map.Entry<String, List> next :
+                    ((Map<String, List>) config.getReader().getParameter().get("tableSchema"))
+                            .entrySet()) {
+                List<FieldConfig> fieldConfigs = syncConfig.getReader().getFieldList();
+                stringListHashMap.put(next.getKey(), fieldConfigs);
+            }
+            kafkaConfig.setTableSchema(stringListHashMap);
+        }
+        super.initCommonConf(kafkaConfig);
+        registerFormatPluginJar();
+    }
+
+    private void registerFormatPluginJar() {
+
+        try {
+            Set<URL> urlSet = getExtraUrl();
+
+            if (urlSet.size() > 0) {
+                List<String> urlList = PluginUtil.registerPluginUrlToCachedFile(env, urlSet);
+                syncConfig
+                        .getSyncJarList()
+                        .addAll(
+                                (PluginUtil.setPipelineOptionsToEnvConfig(
+                                        env, urlList, syncConfig.getMode())));
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("register plugin failed", e);
+        }
     }
 
     @Override
@@ -66,15 +106,18 @@ public class KafkaSourceFactory extends SourceFactory {
         if (!useAbstractBaseColumn) {
             throw new UnsupportedOperationException("kafka not support transform");
         }
+        List<String> topics = Lists.newArrayList(kafkaConfig.getTopic());
+        if (CollectionUtils.isNotEmpty(kafkaConfig.getTopics())) {
+            topics = kafkaConfig.getTopics();
+        }
         Properties props = new Properties();
-        props.put("group.id", kafkaConf.getGroupId());
-        props.putAll(kafkaConf.getConsumerSettings());
+        props.put("group.id", kafkaConfig.getGroupId());
+        props.putAll(kafkaConfig.getConsumerSettings());
         DynamicKafkaDeserializationSchema deserializationSchema =
-                createKafkaDeserializationSchema(kafkaConf.getDeserialization());
+                new RowDeserializationSchema(kafkaConfig, new KafkaSyncConverter(kafkaConfig));
         KafkaConsumerWrapper consumer =
-                new KafkaConsumerWrapper(
-                        Lists.newArrayList(kafkaConf.getTopic()), deserializationSchema, props);
-        switch (kafkaConf.getMode()) {
+                new KafkaConsumerWrapper(topics, deserializationSchema, props);
+        switch (kafkaConfig.getMode()) {
             case EARLIEST:
                 consumer.setStartFromEarliest();
                 break;
@@ -82,31 +125,43 @@ public class KafkaSourceFactory extends SourceFactory {
                 consumer.setStartFromLatest();
                 break;
             case TIMESTAMP:
-                consumer.setStartFromTimestamp(kafkaConf.getTimestamp());
+                consumer.setStartFromTimestamp(kafkaConfig.getTimestamp());
                 break;
             case SPECIFIC_OFFSETS:
                 consumer.setStartFromSpecificOffsets(
                         KafkaUtil.parseSpecificOffsetsString(
-                                kafkaConf.getTopic(), kafkaConf.getOffset()));
+                                kafkaConfig.getTopics(), kafkaConfig.getOffset()));
                 break;
             default:
                 consumer.setStartFromGroupOffsets();
                 break;
         }
-        consumer.setCommitOffsetsOnCheckpoints(kafkaConf.getGroupId() != null);
-        return createInput(consumer, syncConf.getReader().getName());
+        consumer.setCommitOffsetsOnCheckpoints(kafkaConfig.getGroupId() != null);
+        return createInput(consumer, syncConfig.getReader().getName());
+    }
+
+    public Set<URL> getExtraUrl() {
+        String deserialization = kafkaConfig.getDeserialization();
+        if (StringUtils.isNotBlank(deserialization)) {
+            String pluginPath =
+                    com.dtstack.chunjun.constants.ConstantValue.FORMAT_DIR_NAME
+                            + File.separator
+                            + FormatNameConvertUtil.convertPackageName(deserialization);
+
+            Set<URL> urlSet =
+                    PluginUtil.getJarFileDirPath(
+                            pluginPath,
+                            syncConfig.getPluginRoot(),
+                            syncConfig.getRemotePluginPath(),
+                            "");
+
+            return urlSet;
+        }
+        return Collections.emptySet();
     }
 
     @Override
     public RawTypeConverter getRawTypeConverter() {
-        return null;
-    }
-
-    public DynamicKafkaDeserializationSchema createKafkaDeserializationSchema(String type) {
-
-        switch (type.toLowerCase(Locale.ENGLISH)) {
-            default:
-                return new RowDeserializationSchema(kafkaConf, new KafkaColumnConverter(kafkaConf));
-        }
+        return KafkaRawTypeMapping::apply;
     }
 }

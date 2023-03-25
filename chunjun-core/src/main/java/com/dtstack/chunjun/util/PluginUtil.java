@@ -18,27 +18,25 @@
 
 package com.dtstack.chunjun.util;
 
-import com.dtstack.chunjun.cdc.conf.CacheConf;
-import com.dtstack.chunjun.cdc.conf.DDLConf;
-import com.dtstack.chunjun.conf.SyncConf;
+import com.dtstack.chunjun.cdc.config.CacheConfig;
+import com.dtstack.chunjun.cdc.config.DDLConfig;
+import com.dtstack.chunjun.config.SyncConfig;
 import com.dtstack.chunjun.constants.ConstantValue;
-import com.dtstack.chunjun.dirty.DirtyConf;
+import com.dtstack.chunjun.dirty.DirtyConfig;
 import com.dtstack.chunjun.dirty.utils.DirtyConfUtil;
 import com.dtstack.chunjun.enums.ClusterMode;
 import com.dtstack.chunjun.enums.OperatorType;
 import com.dtstack.chunjun.options.Options;
 import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
 
-import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.cache.DistributedCache;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.PipelineOptions;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -56,6 +54,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import static com.dtstack.chunjun.constants.ConstantValue.CONNECTOR_DIR_NAME;
 import static com.dtstack.chunjun.constants.ConstantValue.DDL_CONVENT_DIR_NAME;
@@ -63,6 +62,7 @@ import static com.dtstack.chunjun.constants.ConstantValue.DIRTY_DATA_DIR_NAME;
 import static com.dtstack.chunjun.constants.ConstantValue.POINT_SYMBOL;
 import static com.dtstack.chunjun.constants.ConstantValue.RESTORE_DIR_NAME;
 
+@Slf4j
 public class PluginUtil {
     public static final String FORMATS_SUFFIX = "formats";
     public static final String DIRTY_SUFFIX = "dirty-data-collector";
@@ -75,7 +75,6 @@ public class PluginUtil {
     public static final String METRIC_SUFFIX = "metrics";
     public static final String DEFAULT_METRIC_PLUGIN = "prometheus";
     private static final String SP = File.separator;
-    private static final Logger LOG = LoggerFactory.getLogger(PluginUtil.class);
     private static final String PACKAGE_PREFIX = "com.dtstack.chunjun.connector.";
     private static final String METRIC_PACKAGE_PREFIX = "com.dtstack.chunjun.metrics.";
     private static final String METRIC_REPORT_PREFIX = "Report";
@@ -229,7 +228,7 @@ public class PluginUtil {
                         DIRTY_PACKAGE_STR
                                 + pluginName
                                 + "."
-                                + DtStringUtil.captureFirstLetter(pluginName)
+                                + StringUtil.captureFirstLetter(pluginName)
                                 + DIRTY_CLASS_SUFFIX;
                 break;
             case ddl:
@@ -237,7 +236,7 @@ public class PluginUtil {
                         RESTORE_PACKAGE_STR
                                 + pluginName
                                 + "."
-                                + DtStringUtil.captureFirstLetter(pluginName)
+                                + StringUtil.captureFirstLetter(pluginName)
                                 + DDL_HANDLER_CLASS_SUFFIX;
                 break;
 
@@ -246,7 +245,7 @@ public class PluginUtil {
                         RESTORE_PACKAGE_STR
                                 + pluginName
                                 + "."
-                                + DtStringUtil.captureFirstLetter(pluginName)
+                                + StringUtil.captureFirstLetter(pluginName)
                                 + CACHE_HANDLER_CLASS_SUFFIX;
                 break;
 
@@ -255,7 +254,7 @@ public class PluginUtil {
                         RESTORE_DDL_CONVENT
                                 + pluginName
                                 + "."
-                                + DtStringUtil.captureFirstLetter(pluginName)
+                                + StringUtil.captureFirstLetter(pluginName)
                                 + DDL_CONVENT_CLASS_SUFFIX;
                 break;
 
@@ -273,7 +272,6 @@ public class PluginUtil {
      * @param suffix 插件类型前缀，如：source、sink
      * @return 插件包类全限定名，如：com.dtstack.chunjun.connector.binlog.source.BinlogSourceFactory
      */
-    @VisibleForTesting
     protected static String camelize(String pluginName, String suffix) {
         int pos = pluginName.indexOf(suffix);
         String left = pluginName.substring(0, pos);
@@ -310,8 +308,8 @@ public class PluginUtil {
      * @param env
      */
     public static void registerPluginUrlToCachedFile(
-            Options options, SyncConf config, StreamExecutionEnvironment env) {
-        DirtyConf dirtyConf = DirtyConfUtil.parse(options);
+            Options options, SyncConfig config, StreamExecutionEnvironment env) {
+        DirtyConfig dirtyConfig = DirtyConfUtil.parse(options);
 
         Set<URL> urlSet = new HashSet<>();
         Set<URL> coreUrlSet =
@@ -340,7 +338,7 @@ public class PluginUtil {
 
         Set<URL> dirtyUrlSet =
                 getJarFileDirPath(
-                        dirtyConf.getType(),
+                        dirtyConfig.getType(),
                         config.getPluginRoot(),
                         config.getRemotePluginPath(),
                         DIRTY_DATA_DIR_NAME);
@@ -348,8 +346,8 @@ public class PluginUtil {
         if (null != config.getCdcConf()) {
             Set<URL> restoreUrlSet = new HashSet<>();
 
-            CacheConf cache = config.getCdcConf().getCache();
-            DDLConf ddl = config.getCdcConf().getDdl();
+            CacheConfig cache = config.getCdcConf().getCache();
+            DDLConfig ddl = config.getCdcConf().getDdl();
 
             if (null != cache) {
                 Set<URL> cacheUrlSet =
@@ -375,9 +373,9 @@ public class PluginUtil {
 
         String sourceConventName =
                 RealTimeDataSourceNameUtil.getDataSourceName(config.getReader().getName());
-        if (config.getNameMappingConf() != null
-                && StringUtils.isNotBlank(config.getNameMappingConf().getSourceName())) {
-            sourceConventName = config.getNameMappingConf().getSourceName();
+        if (config.getNameMappingConfig() != null
+                && StringUtils.isNotBlank(config.getNameMappingConfig().getSourceName())) {
+            sourceConventName = config.getNameMappingConfig().getSourceName();
         }
 
         // 实时任务的sourceConventName和config里配置的名字是不一样的 否则就是离线任务
@@ -433,13 +431,39 @@ public class PluginUtil {
                 i++;
             }
         } catch (Exception e) {
-            LOG.warn(
+            log.warn(
                     "cannot add core jar into contextClassLoader, coreUrlSet = {}",
                     GsonUtil.GSON.toJson(coreUrlSet),
                     e);
         }
 
         config.setSyncJarList(setPipelineOptionsToEnvConfig(env, urlList, options.getMode()));
+    }
+
+    public static List<String> registerPluginUrlToCachedFile(
+            StreamExecutionEnvironment env, Set<URL> urlSet) throws Exception {
+        List<String> urlList = new ArrayList<>(urlSet.size());
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        Method add = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
+        add.setAccessible(true);
+        // 类加载器泄露检查的时候可以把 jar 包都加载到 ChildFirst 的 ucp 的
+        int i = env.getCachedFiles().size();
+        Set<String> collect =
+                env.getCachedFiles().stream().map(t -> t.f0).collect(Collectors.toSet());
+        for (URL url : urlSet) {
+            String classFileName = String.format(CLASS_FILE_NAME_FMT, i);
+            for (int index = 0; index < 10; index++) {
+                if (collect.contains(classFileName)) {
+                    classFileName = String.format(CLASS_FILE_NAME_FMT, ++i);
+                } else {
+                    i++;
+                }
+            }
+            env.registerCachedFile(url.getPath(), classFileName, true);
+            urlList.add(url.getPath());
+            add.invoke(contextClassLoader, url);
+        }
+        return urlList;
     }
 
     /**
@@ -449,21 +473,18 @@ public class PluginUtil {
      * @param urlList
      * @return
      */
-    @SuppressWarnings("all")
     public static List<String> setPipelineOptionsToEnvConfig(
             StreamExecutionEnvironment env, List<String> urlList, String executionMode) {
         try {
-            Configuration configuration =
-                    (Configuration)
-                            ReflectionUtils.getDeclaredMethod(env, "getConfiguration").invoke(env);
+            Configuration configuration = (Configuration) env.getConfiguration();
             List<String> jarList = configuration.get(PipelineOptions.JARS);
             if (jarList == null) {
                 jarList = new ArrayList<>(urlList.size());
             }
             jarList.addAll(urlList);
 
-            List<String> pipelineJars = new ArrayList();
-            LOG.info("ChunJun executionMode: " + executionMode);
+            List<String> pipelineJars = new ArrayList<>();
+            log.info("ChunJun executionMode: " + executionMode);
             if (ClusterMode.getByName(executionMode) == ClusterMode.kubernetesApplication) {
                 for (String jarUrl : jarList) {
                     String newJarUrl = jarUrl;
@@ -479,7 +500,7 @@ public class PluginUtil {
                 pipelineJars.addAll(jarList);
             }
 
-            LOG.info("ChunJun reset pipeline.jars: " + pipelineJars);
+            log.info("ChunJun reset pipeline.jars: " + pipelineJars);
             configuration.set(PipelineOptions.JARS, pipelineJars);
 
             List<String> classpathList = configuration.get(PipelineOptions.CLASSPATHS);
@@ -547,7 +568,7 @@ public class PluginUtil {
             }
             return new DistributedCache(distributeCachedFiles);
         } else {
-            LOG.warn("ClassLoader: {} is not instanceof URLClassLoader", contextClassLoader);
+            log.warn("ClassLoader: {} is not instanceof URLClassLoader", contextClassLoader);
             return null;
         }
     }

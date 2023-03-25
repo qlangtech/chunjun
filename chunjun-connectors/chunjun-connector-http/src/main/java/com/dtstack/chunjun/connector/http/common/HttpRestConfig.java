@@ -17,20 +17,22 @@
  */
 package com.dtstack.chunjun.connector.http.common;
 
-import com.dtstack.chunjun.conf.ChunJunCommonConf;
+import com.dtstack.chunjun.config.CommonConfig;
 import com.dtstack.chunjun.connector.http.client.Strategy;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-/**
- * HttpRestConfig
- *
- * @author by shifang@dtstack.com @Date 2020/9/28
- */
-public class HttpRestConfig extends ChunJunCommonConf {
+@EqualsAndHashCode(callSuper = true)
+@Data
+public class HttpRestConfig extends CommonConfig {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1100442976901794740L;
 
     /** https/http */
     private String protocol = "https";
@@ -43,6 +45,13 @@ public class HttpRestConfig extends ChunJunCommonConf {
 
     private String fieldDelimiter = com.dtstack.chunjun.constants.ConstantValue.POINT_SYMBOL;
 
+    /** 数据主体，代表json或者xml返回数据里，数据主体字段对应的数据一定是一个数组，里面的数据需要拆分 */
+    private String dataSubject;
+
+    private String csvDelimiter = com.dtstack.chunjun.constants.ConstantValue.COMMA_SYMBOL;
+
+    private Map<String, Object> csvConfig = new HashMap<>();
+
     /** response text/json */
     private String decode = "text";
 
@@ -53,7 +62,11 @@ public class HttpRestConfig extends ChunJunCommonConf {
     private String fieldTypes;
 
     /** 请求的间隔时间 单位毫秒 */
-    private Long intervalTime;
+    private Long intervalTime = 3000L;
+
+    // allow request num cycles 为-1时，除非异常或者strategy生效导致任务结束，否则任务会一直循环请求，如果 大于
+    // 0，则代表循环请求的次数，如配置为3，则会发送三次http请求
+    private long cycles = -1;
 
     /** 请求的header头 */
     private List<MetaParam> header = new ArrayList<>(2);
@@ -67,6 +80,9 @@ public class HttpRestConfig extends ChunJunCommonConf {
     /** 返回结果的处理策略 */
     protected List<Strategy> strategy = new ArrayList<>(2);
 
+    /** 请求的超时时间 单位毫秒 */
+    private long timeOut = 10000;
+
     public String getFieldTypes() {
         return fieldTypes;
     }
@@ -77,126 +93,5 @@ public class HttpRestConfig extends ChunJunCommonConf {
 
     public boolean isJsonDecode() {
         return getDecode().equalsIgnoreCase(ConstantValue.DEFAULT_DECODE);
-    }
-
-    public String getProtocol() {
-        return protocol;
-    }
-
-    public void setProtocol(String protocol) {
-        this.protocol = protocol;
-    }
-
-    public String getUrl() {
-        return url;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    public String getRequestMode() {
-        return requestMode;
-    }
-
-    public void setRequestMode(String requestMode) {
-        this.requestMode = requestMode;
-    }
-
-    public String getDecode() {
-        return decode;
-    }
-
-    public void setDecode(String decode) {
-        this.decode = decode;
-    }
-
-    public Long getIntervalTime() {
-        return intervalTime;
-    }
-
-    public void setIntervalTime(Long intervalTime) {
-        this.intervalTime = intervalTime;
-    }
-
-    public List<Strategy> getStrategy() {
-        return strategy;
-    }
-
-    public void setStrategy(List<Strategy> strategy) {
-        this.strategy = strategy;
-    }
-
-    public String getFields() {
-        return fields;
-    }
-
-    public void setFields(String fields) {
-        this.fields = fields;
-    }
-
-    public List<MetaParam> getHeader() {
-        return header;
-    }
-
-    public void setHeader(List<MetaParam> header) {
-        this.header = header;
-    }
-
-    public List<MetaParam> getParam() {
-        return param;
-    }
-
-    public void setParam(List<MetaParam> param) {
-        this.param = param;
-    }
-
-    public List<MetaParam> getBody() {
-        return body;
-    }
-
-    public void setBody(List<MetaParam> body) {
-        this.body = body;
-    }
-
-    public String getFieldDelimiter() {
-        return fieldDelimiter;
-    }
-
-    public void setFieldDelimiter(String fieldDelimiter) {
-        this.fieldDelimiter = fieldDelimiter;
-    }
-
-    @Override
-    public String toString() {
-        return "HttpRestConfig{"
-                + "protocol='"
-                + protocol
-                + '\''
-                + ", url='"
-                + url
-                + '\''
-                + ", requestMode='"
-                + requestMode
-                + '\''
-                + ", decode='"
-                + decode
-                + '\''
-                + ", fields='"
-                + fields
-                + '\''
-                + ", intervalTime="
-                + intervalTime
-                + ", fieldDelimiter="
-                + fieldDelimiter
-                + ", header="
-                + header
-                + ", param="
-                + param
-                + ", body="
-                + body
-                + ", strategy="
-                + strategy
-                + '}';
     }
 }

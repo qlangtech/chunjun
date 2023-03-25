@@ -21,7 +21,7 @@ import com.dtstack.chunjun.cdc.DdlRowData;
 import com.dtstack.chunjun.cdc.EventType;
 import com.dtstack.chunjun.cdc.ddl.DdlRowDataConvented;
 import com.dtstack.chunjun.cdc.ddl.definition.TableIdentifier;
-import com.dtstack.chunjun.connector.jdbc.conf.JdbcConf;
+import com.dtstack.chunjun.connector.jdbc.config.JdbcConfig;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
 import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
 import com.dtstack.chunjun.connector.jdbc.util.JdbcUtil;
@@ -29,7 +29,6 @@ import com.dtstack.chunjun.element.ColumnRowData;
 import com.dtstack.chunjun.enums.EWriteMode;
 import com.dtstack.chunjun.enums.Semantic;
 import com.dtstack.chunjun.sink.format.BaseRichOutputFormat;
-import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
 import com.dtstack.chunjun.throwable.WriteRecordException;
 import com.dtstack.chunjun.util.ExceptionUtil;
 import com.dtstack.chunjun.util.GsonUtil;
@@ -37,12 +36,10 @@ import com.dtstack.chunjun.util.JsonUtil;
 
 import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
-import org.apache.flink.util.FlinkRuntimeException;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -51,24 +48,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * OutputFormat for writing data to relational database.
- *
- * <p>Company: www.dtstack.com
- *
- * @author huyifan.zju@163.com
- */
+/** OutputFormat for writing data to relational database. */
+@Slf4j
 public class JdbcOutputFormat extends BaseRichOutputFormat {
-
-    protected static final Logger LOG = LoggerFactory.getLogger(JdbcOutputFormat.class);
 
     protected static final long serialVersionUID = 1L;
 
-    protected JdbcConf jdbcConf;
+    protected JdbcConfig jdbcConfig;
     protected JdbcDialect jdbcDialect;
 
     protected transient Connection dbConn;
-    protected boolean autoCommit = true;
 
     protected transient PreparedStmtProxy stmtProxy;
 
@@ -76,12 +65,12 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
 
     @Override
     public void initializeGlobal(int parallelism) {
-        executeBatch(jdbcConf.getPreSql());
+        executeBatch(jdbcConfig.getPreSql());
     }
 
     @Override
     public void finalizeGlobal(int parallelism) {
-        executeBatch(jdbcConf.getPostSql());
+        executeBatch(jdbcConfig.getPostSql());
     }
 
     @Override
@@ -89,23 +78,20 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
         try {
             dbConn = getConnection();
             // 默认关闭事务自动提交，手动控制事务
-            if (Semantic.EXACTLY_ONCE == semantic) {
-                autoCommit = false;
-                dbConn.setAutoCommit(autoCommit);
-            }
-            if (!EWriteMode.INSERT.name().equalsIgnoreCase(jdbcConf.getMode())) {
-                List<String> updateKey = jdbcConf.getUniqueKey();
+            dbConn.setAutoCommit(jdbcConfig.isAutoCommit());
+            if (!EWriteMode.INSERT.name().equalsIgnoreCase(jdbcConfig.getMode())) {
+                List<String> updateKey = jdbcConfig.getUniqueKey();
                 if (CollectionUtils.isEmpty(updateKey)) {
                     List<String> tableIndex =
                             JdbcUtil.getTableUniqueIndex(
-                                    jdbcConf.getSchema(), jdbcConf.getTable(), dbConn);
-                    jdbcConf.setUniqueKey(tableIndex);
-                    LOG.info("updateKey = {}", JsonUtil.toJson(tableIndex));
+                                    jdbcConfig.getSchema(), jdbcConfig.getTable(), dbConn);
+                    jdbcConfig.setUniqueKey(tableIndex);
+                    log.info("updateKey = {}", JsonUtil.toJson(tableIndex));
                 }
             }
 
             buildStmtProxy();
-            LOG.info("subTask[{}}] wait finished", taskNumber);
+            log.info("subTask[{}}] wait finished", taskNumber);
         } catch (SQLException sqe) {
             throw new IllegalArgumentException("open() failed.", sqe);
         } finally {
@@ -114,7 +100,7 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
     }
 
     public void buildStmtProxy() throws SQLException {
-        String tableInfo = jdbcConf.getTable();
+        String tableInfo = jdbcConfig.getTable();
 
         if ("*".equalsIgnoreCase(tableInfo)) {
             stmtProxy = new PreparedStmtProxy(dbConn, jdbcDialect, false);
@@ -127,7 +113,7 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
                             fieldNamedPreparedStatement,
                             rowConverter,
                             dbConn,
-                            jdbcConf,
+                            jdbcConfig,
                             jdbcDialect);
         }
     }
@@ -137,6 +123,11 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
         int index = 0;
         try {
             stmtProxy.writeSingleRecordInternal(row);
+            if (Semantic.EXACTLY_ONCE == semantic) {
+                rowsOfCurrentTransaction += rows.size();
+            } else {
+                JdbcUtil.commit(dbConn);
+            }
         } catch (Exception e) {
             JdbcUtil.rollBack(dbConn);
             processWriteException(e, index, row);
@@ -160,15 +151,16 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
             for (RowData row : rows) {
                 stmtProxy.convertToExternal(row);
                 stmtProxy.addBatch();
-                lastRow = row;
             }
             stmtProxy.executeBatch();
             // 开启了cp，但是并没有使用2pc方式让下游数据可见
             if (Semantic.EXACTLY_ONCE == semantic) {
                 rowsOfCurrentTransaction += rows.size();
+            } else {
+                JdbcUtil.commit(dbConn);
             }
         } catch (Exception e) {
-            LOG.warn(
+            log.warn(
                     "write Multiple Records error, start to rollback connection, row size = {}, first row = {}",
                     rows.size(),
                     rows.size() > 0 ? GsonUtil.GSON.toJson(rows.get(0)) : "null",
@@ -182,41 +174,18 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
     }
 
     @Override
-    public synchronized void writeRecord(RowData rowData) {
-        checkConnValid();
-        super.writeRecord(rowData);
-    }
-
-    public void checkConnValid() {
-        try {
-            LOG.debug("check db connection valid..");
-            if (!dbConn.isValid(10)) {
-                if (Semantic.EXACTLY_ONCE == semantic) {
-                    throw new FlinkRuntimeException(
-                            "jdbc connection is valid!work's semantic is ExactlyOnce.To prevent data loss,we don't try to reopen the connection");
-                }
-                LOG.info("db connection reconnect..");
-                dbConn = getConnection();
-                stmtProxy.reOpen(dbConn);
-            }
-        } catch (Exception e) {
-            throw new ChunJunRuntimeException("failed to check jdbcConnection valid", e);
-        }
-    }
-
-    @Override
     public void preCommit() throws Exception {
-        if (jdbcConf.getRestoreColumnIndex() > -1) {
+        if (jdbcConfig.getRestoreColumnIndex() > -1) {
             Object state;
             if (lastRow instanceof GenericRowData) {
-                state = ((GenericRowData) lastRow).getField(jdbcConf.getRestoreColumnIndex());
+                state = ((GenericRowData) lastRow).getField(jdbcConfig.getRestoreColumnIndex());
             } else if (lastRow instanceof ColumnRowData) {
                 state =
                         ((ColumnRowData) lastRow)
-                                .getField(jdbcConf.getRestoreColumnIndex())
+                                .getField(jdbcConfig.getRestoreColumnIndex())
                                 .asString();
             } else {
-                LOG.warn("can't get [{}] from lastRow:{}", jdbcConf.getRestoreColumn(), lastRow);
+                log.warn("can't get [{}] from lastRow:{}", jdbcConfig.getRestoreColumn(), lastRow);
                 state = null;
             }
             formatState.setState(state);
@@ -241,7 +210,7 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
 
     public void doCommit() throws SQLException {
         try {
-            if (!autoCommit) {
+            if (!jdbcConfig.isAutoCommit()) {
                 dbConn.commit();
             }
             snapshotWriteCounter.add(rowsOfCurrentTransaction);
@@ -267,7 +236,7 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
                     String[] strings = sql.split(";");
                     for (String s : strings) {
                         if (StringUtils.isNotBlank(s)) {
-                            LOG.info("add sql to batch, sql = {}", s);
+                            log.info("add sql to batch, sql = {}", s);
                             stmt.addBatch(s);
                         }
                     }
@@ -282,35 +251,35 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
 
     protected String prepareTemplates() {
         String singleSql;
-        if (EWriteMode.INSERT.name().equalsIgnoreCase(jdbcConf.getMode())) {
+        if (EWriteMode.INSERT.name().equalsIgnoreCase(jdbcConfig.getMode())) {
             singleSql =
                     jdbcDialect.getInsertIntoStatement(
-                            jdbcConf.getSchema(),
-                            jdbcConf.getTable(),
+                            jdbcConfig.getSchema(),
+                            jdbcConfig.getTable(),
                             columnNameList.toArray(new String[0]));
-        } else if (EWriteMode.REPLACE.name().equalsIgnoreCase(jdbcConf.getMode())) {
+        } else if (EWriteMode.REPLACE.name().equalsIgnoreCase(jdbcConfig.getMode())) {
             singleSql =
                     jdbcDialect
                             .getReplaceStatement(
-                                    jdbcConf.getSchema(),
-                                    jdbcConf.getTable(),
+                                    jdbcConfig.getSchema(),
+                                    jdbcConfig.getTable(),
                                     columnNameList.toArray(new String[0]))
                             .get();
-        } else if (EWriteMode.UPDATE.name().equalsIgnoreCase(jdbcConf.getMode())) {
+        } else if (EWriteMode.UPDATE.name().equalsIgnoreCase(jdbcConfig.getMode())) {
             singleSql =
                     jdbcDialect
                             .getUpsertStatement(
-                                    jdbcConf.getSchema(),
-                                    jdbcConf.getTable(),
+                                    jdbcConfig.getSchema(),
+                                    jdbcConfig.getTable(),
                                     columnNameList.toArray(new String[0]),
-                                    jdbcConf.getUniqueKey().toArray(new String[0]),
-                                    jdbcConf.isAllReplace())
+                                    jdbcConfig.getUniqueKey().toArray(new String[0]),
+                                    jdbcConfig.isAllReplace())
                             .get();
         } else {
-            throw new IllegalArgumentException("Unknown write mode:" + jdbcConf.getMode());
+            throw new IllegalArgumentException("Unknown write mode:" + jdbcConfig.getMode());
         }
 
-        LOG.info("write sql:{}", singleSql);
+        log.info("write sql:{}", singleSql);
         return singleSql;
     }
 
@@ -369,13 +338,13 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
         String schema = ddlRowData.getTableIdentifier().getSchema();
         if (ddlRowData instanceof DdlRowDataConvented) {
             sql = ((DdlRowDataConvented) ddlRowData).getConventInfo();
-            LOG.info(
+            log.info(
                     "receive a convented ddlSql {} for table:{} and origin sql is {}",
                     ((DdlRowDataConvented) ddlRowData).getConventInfo(),
                     ddlRowData.getTableIdentifier().toString(),
                     ddlRowData.getSql());
         } else {
-            LOG.info(
+            log.info(
                     "receive a ddlSql {}  for table:{}",
                     ddlRowData.getSql(),
                     ddlRowData.getTableIdentifier().toString());
@@ -403,7 +372,7 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
                                 2,
                                 null);
                     } catch (Throwable e) {
-                        LOG.warn("execute sql {} error", finalSql, e);
+                        log.warn("execute sql {} error", finalSql, e);
                         ddlHandler.updateDDLChange(
                                 ddlRowData.getTableIdentifier(),
                                 ddlRowData.getLsn(),
@@ -422,7 +391,7 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
                 stmtProxy.close();
             }
         } catch (SQLException e) {
-            LOG.error(ExceptionUtil.getErrorMessage(e));
+            log.error(ExceptionUtil.getErrorMessage(e));
         }
         JdbcUtil.closeDbResources(null, null, dbConn, true);
     }
@@ -433,7 +402,7 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
      * @return connection
      */
     protected Connection getConnection() throws SQLException {
-        return JdbcUtil.getConnection(jdbcConf, jdbcDialect);
+        return JdbcUtil.getConnection(jdbcConfig, jdbcDialect);
     }
 
     protected void switchSchema(String schema, Statement statement) throws Exception {}
@@ -445,12 +414,12 @@ public class JdbcOutputFormat extends BaseRichOutputFormat {
                 .next();
     }
 
-    public JdbcConf getJdbcConf() {
-        return jdbcConf;
+    public JdbcConfig getJdbcConfig() {
+        return jdbcConfig;
     }
 
-    public void setJdbcConf(JdbcConf jdbcConf) {
-        this.jdbcConf = jdbcConf;
+    public void setJdbcConf(JdbcConfig jdbcConfig) {
+        this.jdbcConfig = jdbcConfig;
     }
 
     public void setJdbcDialect(JdbcDialect jdbcDialect) {

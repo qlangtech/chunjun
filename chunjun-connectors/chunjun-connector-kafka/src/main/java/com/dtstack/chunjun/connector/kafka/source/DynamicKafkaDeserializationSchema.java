@@ -19,23 +19,26 @@
 package com.dtstack.chunjun.connector.kafka.source;
 
 import com.dtstack.chunjun.constants.Metrics;
-import com.dtstack.chunjun.dirty.DirtyConf;
+import com.dtstack.chunjun.dirty.DirtyConfig;
 import com.dtstack.chunjun.dirty.manager.DirtyManager;
 import com.dtstack.chunjun.dirty.utils.DirtyConfUtil;
 import com.dtstack.chunjun.metrics.AccumulatorCollector;
 import com.dtstack.chunjun.metrics.BaseMetric;
+import com.dtstack.chunjun.metrics.RowSizeCalculator;
 import com.dtstack.chunjun.restore.FormatState;
+import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
 import com.dtstack.chunjun.util.JsonUtil;
+import com.dtstack.chunjun.util.ReflectionUtils;
 
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.accumulators.LongCounter;
+import org.apache.flink.api.common.accumulators.LongMaximum;
 import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.api.common.serialization.DeserializationSchema;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.streaming.connectors.kafka.KafkaDeserializationSchema;
 import org.apache.flink.streaming.connectors.kafka.KafkaSerializationSchema;
-import org.apache.flink.streaming.connectors.kafka.table.KafkaDynamicSource;
 import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.types.DeserializationException;
@@ -43,7 +46,6 @@ import org.apache.flink.types.RowKind;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.Preconditions;
 
-import jdk.nashorn.internal.ir.debug.ObjectSizeCalculator;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,9 +53,9 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -68,8 +70,8 @@ public class DynamicKafkaDeserializationSchema implements KafkaDeserializationSc
     private final @Nullable DeserializationSchema<RowData> keyDeserialization;
     private final DeserializationSchema<RowData> valueDeserialization;
     private final boolean hasMetadata;
-    private final DynamicKafkaDeserializationSchema.BufferingCollector keyCollector;
-    private final DynamicKafkaDeserializationSchema.OutputProjectionCollector outputCollector;
+    private final BufferingCollector keyCollector;
+    private final OutputProjectionCollector outputCollector;
     private final TypeInformation<RowData> producedTypeInfo;
     private final boolean upsertMode;
     /** 任务名称 */
@@ -84,6 +86,8 @@ public class DynamicKafkaDeserializationSchema implements KafkaDeserializationSc
     protected long startTime;
     /** 累加器收集器 */
     protected AccumulatorCollector accumulatorCollector;
+    /** 对象大小计算器 */
+    protected RowSizeCalculator rowSizeCalculator;
     /** 输入指标组 */
     protected transient BaseMetric inputMetric;
     /** checkpoint状态缓存map */
@@ -92,7 +96,8 @@ public class DynamicKafkaDeserializationSchema implements KafkaDeserializationSc
     protected LongCounter numReadCounter;
 
     protected LongCounter bytesReadCounter;
-    protected LongCounter durationCounter;
+    protected LongMaximum durationCounter;
+    protected LongCounter nReadErrors;
 
     private transient RuntimeContext runtimeContext;
 
@@ -105,7 +110,7 @@ public class DynamicKafkaDeserializationSchema implements KafkaDeserializationSc
             DeserializationSchema<RowData> valueDeserialization,
             int[] valueProjection,
             boolean hasMetadata,
-            DynamicKafkaDeserializationSchema.MetadataConverter[] metadataConverters,
+            MetadataConverter[] metadataConverters,
             TypeInformation<RowData> producedTypeInfo,
             boolean upsertMode) {
         if (upsertMode) {
@@ -116,9 +121,9 @@ public class DynamicKafkaDeserializationSchema implements KafkaDeserializationSc
         this.keyDeserialization = keyDeserialization;
         this.valueDeserialization = valueDeserialization;
         this.hasMetadata = hasMetadata;
-        this.keyCollector = new DynamicKafkaDeserializationSchema.BufferingCollector();
+        this.keyCollector = new BufferingCollector();
         this.outputCollector =
-                new DynamicKafkaDeserializationSchema.OutputProjectionCollector(
+                new OutputProjectionCollector(
                         physicalArity,
                         keyProjection,
                         valueProjection,
@@ -129,6 +134,7 @@ public class DynamicKafkaDeserializationSchema implements KafkaDeserializationSc
     }
 
     protected void beforeOpen() {
+        initRowSizeCalculator();
         initDirtyManager();
         initAccumulatorCollector();
         initStatisticsAccumulator();
@@ -141,7 +147,7 @@ public class DynamicKafkaDeserializationSchema implements KafkaDeserializationSc
 
         ExecutionConfig.GlobalJobParameters params =
                 context.getExecutionConfig().getGlobalJobParameters();
-        DirtyConf dc = DirtyConfUtil.parseFromMap(params.toMap());
+        DirtyConfig dc = DirtyConfUtil.parseFromMap(params.toMap());
         this.dirtyManager = new DirtyManager(dc, context);
     }
 
@@ -172,16 +178,22 @@ public class DynamicKafkaDeserializationSchema implements KafkaDeserializationSc
 
     protected void beforeDeserialize(ConsumerRecord<byte[], byte[]> record) {
         if (numReadCounter.getLocalValue() % dataPrintFrequency == 0) {
-            LOG.info("receive source data:" + new String(record.value(), StandardCharsets.UTF_8));
+            if (record != null && record.value() != null) {
+                LOG.info(
+                        "receive source data:"
+                                + new String(record.value(), StandardCharsets.UTF_8));
+            } else {
+                LOG.info("receive source data, but data is null");
+            }
         }
 
-        if (record != null) {
+        if (record != null && record.value() != null) {
             updateDuration();
             if (numReadCounter != null) {
                 numReadCounter.add(1);
             }
             if (bytesReadCounter != null) {
-                bytesReadCounter.add(ObjectSizeCalculator.getObjectSize(record));
+                bytesReadCounter.add(rowSizeCalculator.getObjectSize(record));
             }
         }
     }
@@ -215,7 +227,11 @@ public class DynamicKafkaDeserializationSchema implements KafkaDeserializationSc
             }
             keyCollector.buffer.clear();
         } catch (Exception e) {
-            dirtyManager.collect(new String(record.value(), StandardCharsets.UTF_8), e, null);
+            String data = null;
+            if (record.value() != null) {
+                data = new String(record.value(), StandardCharsets.UTF_8);
+            }
+            dirtyManager.collect(data, e, null);
         }
     }
 
@@ -262,39 +278,40 @@ public class DynamicKafkaDeserializationSchema implements KafkaDeserializationSc
 
     /** 初始化累加器收集器 */
     private void initAccumulatorCollector() {
-        String lastWriteLocation =
-                String.format(
-                        "%s_%s",
-                        Metrics.LAST_WRITE_LOCATION_PREFIX, runtimeContext.getIndexOfThisSubtask());
-        String lastWriteNum =
-                String.format(
-                        "%s_%s",
-                        Metrics.LAST_WRITE_NUM__PREFIX, runtimeContext.getIndexOfThisSubtask());
-
         accumulatorCollector =
                 new AccumulatorCollector(
-                        (StreamingRuntimeContext) runtimeContext,
-                        Arrays.asList(
-                                Metrics.NUM_READS,
-                                Metrics.READ_BYTES,
-                                Metrics.READ_DURATION,
-                                Metrics.WRITE_BYTES,
-                                Metrics.NUM_WRITES,
-                                lastWriteLocation,
-                                lastWriteNum));
+                        (StreamingRuntimeContext) runtimeContext, Metrics.METRIC_SINK_LIST);
         accumulatorCollector.start();
+    }
+
+    /** 初始化对象大小计算器 */
+    private void initRowSizeCalculator() {
+        rowSizeCalculator = RowSizeCalculator.getRowSizeCalculator();
     }
 
     /** 初始化累加器指标 */
     private void initStatisticsAccumulator() {
         numReadCounter = getRuntimeContext().getLongCounter(Metrics.NUM_READS);
         bytesReadCounter = getRuntimeContext().getLongCounter(Metrics.READ_BYTES);
-        durationCounter = getRuntimeContext().getLongCounter(Metrics.READ_DURATION);
+        try {
+            durationCounter =
+                    (LongMaximum)
+                            ReflectionUtils.getDeclaredMethod(
+                                            runtimeContext,
+                                            "getAccumulator",
+                                            String.class,
+                                            Class.class)
+                                    .invoke(
+                                            runtimeContext,
+                                            Metrics.READ_DURATION,
+                                            LongMaximum.class);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new ChunJunRuntimeException(e);
+        }
 
         inputMetric = new BaseMetric(getRuntimeContext());
         inputMetric.addMetric(Metrics.NUM_READS, numReadCounter, true);
         inputMetric.addMetric(Metrics.READ_BYTES, bytesReadCounter, true);
-        inputMetric.addMetric(Metrics.READ_DURATION, durationCounter);
         inputMetric.addDirtyMetric(Metrics.DIRTY_DATA_COUNT, this.dirtyManager.getConsumedMetric());
         inputMetric.addDirtyMetric(
                 Metrics.DIRTY_DATA_COLLECT_FAILED_COUNT,
@@ -390,7 +407,7 @@ public class DynamicKafkaDeserializationSchema implements KafkaDeserializationSc
 
         private final int[] valueProjection;
 
-        private final DynamicKafkaDeserializationSchema.MetadataConverter[] metadataConverters;
+        private final MetadataConverter[] metadataConverters;
 
         private final boolean upsertMode;
 
@@ -404,7 +421,7 @@ public class DynamicKafkaDeserializationSchema implements KafkaDeserializationSc
                 int physicalArity,
                 int[] keyProjection,
                 int[] valueProjection,
-                DynamicKafkaDeserializationSchema.MetadataConverter[] metadataConverters,
+                MetadataConverter[] metadataConverters,
                 boolean upsertMode) {
             this.physicalArity = physicalArity;
             this.keyProjection = keyProjection;

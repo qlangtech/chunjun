@@ -18,10 +18,9 @@
 
 package com.dtstack.chunjun.connector.ftp.client;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.mortbay.log.Log;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,12 +29,12 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 
 /** zip文件流 如果fileNameList不为空 只会读取fileNameList里的文件* */
+@Slf4j
 public class ZipInputStream extends InputStream {
-    private static final Logger LOG = LoggerFactory.getLogger(ZipInputStream.class);
 
-    private java.util.zip.ZipInputStream zipInputStream;
+    private final java.util.zip.ZipInputStream zipInputStream;
+    private final List<String> fileNameList;
     private ZipEntry currentZipEntry;
-    private List<String> fileNameList;
 
     public ZipInputStream(InputStream in) {
         this.zipInputStream = new java.util.zip.ZipInputStream(in);
@@ -54,7 +53,7 @@ public class ZipInputStream extends InputStream {
 
         // 不支持zip下的嵌套, 对于目录跳过
         if (this.currentZipEntry.isDirectory()) {
-            LOG.warn(
+            log.warn(
                     String.format(
                             "meet a directory %s, ignore...", this.currentZipEntry.getName()));
             this.currentZipEntry = null;
@@ -64,7 +63,7 @@ public class ZipInputStream extends InputStream {
         if (CollectionUtils.isNotEmpty(fileNameList)
                 && !fileNameList.contains(currentZipEntry.getName())) {
             if (Log.isDebugEnabled()) {
-                LOG.debug(
+                log.debug(
                         String.format(
                                 "zipEntry with name: %s skip", this.currentZipEntry.getName()));
             }

@@ -28,6 +28,8 @@ import com.dtstack.chunjun.element.AbstractBaseColumn;
 import com.dtstack.chunjun.element.column.BigDecimalColumn;
 import com.dtstack.chunjun.element.column.BooleanColumn;
 import com.dtstack.chunjun.element.column.BytesColumn;
+import com.dtstack.chunjun.element.column.DoubleColumn;
+import com.dtstack.chunjun.element.column.FloatColumn;
 import com.dtstack.chunjun.element.column.NullColumn;
 import com.dtstack.chunjun.element.column.StringColumn;
 import com.dtstack.chunjun.element.column.TimestampColumn;
@@ -37,7 +39,7 @@ import com.dtstack.chunjun.util.GsonUtil;
 import org.apache.flink.api.common.cache.DistributedCache;
 
 import com.google.common.reflect.TypeToken;
-import org.apache.commons.collections.MapUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,11 +59,6 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Date: 2021/06/22 Company: www.dtstack.com
- *
- * @author tudou
- */
 public class HiveUtil {
     public static final String TABLE_COLUMN_KEY = "key";
     public static final String TABLE_COLUMN_TYPE = "type";
@@ -125,12 +122,6 @@ public class HiveUtil {
         }
     }
 
-    /**
-     * 表如果存在不要删除之前的表因为可能是用户的表，所以也不需要再创建，也不用 throw exception，暂时只有日志
-     *
-     * @param connection
-     * @param tableInfo
-     */
     private static void createTable(
             Connection connection, TableInfo tableInfo, ConnectionInfo connectionInfo) {
         try {
@@ -415,9 +406,9 @@ public class HiveUtil {
         } else if (data instanceof BigInteger) {
             return new BigDecimalColumn((BigInteger) data);
         } else if (data instanceof Float) {
-            return new BigDecimalColumn((Float) data);
+            return new FloatColumn((Float) data);
         } else if (data instanceof Double) {
-            return new BigDecimalColumn((Double) data);
+            return new DoubleColumn((Double) data);
         } else if (data instanceof BigDecimal) {
             return new BigDecimalColumn((BigDecimal) data);
         } else if (data instanceof Timestamp) {

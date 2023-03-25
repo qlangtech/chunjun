@@ -41,11 +41,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-/**
- * @author chuixue
- * @create 2021-05-08 10:01
- * @description
- */
 public class KafkaProducer extends FlinkKafkaProducer<RowData> {
 
     protected static final String LOCATION_STATE_NAME = "data-sync-location-states";
@@ -59,7 +54,7 @@ public class KafkaProducer extends FlinkKafkaProducer<RowData> {
             String defaultTopic,
             KafkaSerializationSchema<RowData> serializationSchema,
             Properties producerConfig,
-            FlinkKafkaProducer.Semantic semantic,
+            Semantic semantic,
             int kafkaProducersPoolSize) {
         super(defaultTopic, serializationSchema, producerConfig, semantic, kafkaProducersPoolSize);
         this.serializationSchema = serializationSchema;

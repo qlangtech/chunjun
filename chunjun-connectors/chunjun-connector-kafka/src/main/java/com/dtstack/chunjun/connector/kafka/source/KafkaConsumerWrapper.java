@@ -48,11 +48,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
-/**
- * @author chuixue
- * @create 2021-05-07 14:46
- * @description
- */
 public class KafkaConsumerWrapper extends RichParallelSourceFunction<RowData>
         implements CheckpointListener, ResultTypeQueryable<RowData>, CheckpointedFunction {
 

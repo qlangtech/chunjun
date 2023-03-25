@@ -30,14 +30,15 @@ import org.apache.flink.core.io.GenericInputSplit;
 import org.apache.flink.core.io.InputSplit;
 import org.apache.flink.table.data.RowData;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.util.List;
 
-/**
- * @author : shifang
- * @date : 2020/3/12
- */
+@Slf4j
 public class HttpInputFormat extends BaseRichInputFormat {
+
+    private static final long serialVersionUID = -3012281045092016363L;
 
     /** 是否读取结束 */
     protected boolean reachEnd;
@@ -48,7 +49,7 @@ public class HttpInputFormat extends BaseRichInputFormat {
     protected HttpRestConfig httpRestConfig;
 
     /** 原始请求参数body */
-    protected List<MetaParam> metaBodys;
+    protected List<MetaParam> metaBodies;
 
     /** 原始请求参数param */
     protected List<MetaParam> metaParams;
@@ -67,9 +68,9 @@ public class HttpInputFormat extends BaseRichInputFormat {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     protected void openInternal(InputSplit inputSplit) {
-        myHttpClient = new HttpClient(httpRestConfig, metaBodys, metaParams, metaHeaders);
+        myHttpClient =
+                new HttpClient(httpRestConfig, metaBodies, metaParams, metaHeaders, rowConverter);
         if (state != null) {
             myHttpClient.initPosition(state.getRequestParam(), state.getOriginResponseValue());
         }
@@ -96,14 +97,20 @@ public class HttpInputFormat extends BaseRichInputFormat {
                                 + value.getOriginResponseValue()
                                 + " job end");
             }
+            // finished 任务正常结束
+            if (value.getStatus() == 2) {
+                reachEnd = true;
+                return null;
+            }
+
             // todo 离线任务后期需要加上一个finished策略 这样就是代表任务正常结束 而不是异常stop
             state =
                     new ResponseValue(
-                            "",
+                            null,
                             HttpRequestParam.copy(value.getRequestParam()),
                             value.getOriginResponseValue());
             try {
-                return rowConverter.toInternal(value.getData());
+                return value.getData();
             } catch (Exception e) {
                 throw new ReadRecordException(e.getMessage(), e);
             }

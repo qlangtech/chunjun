@@ -18,8 +18,8 @@
 
 package com.dtstack.chunjun.connector.starrocks.converter;
 
-import com.dtstack.chunjun.conf.ChunJunCommonConf;
-import com.dtstack.chunjun.conf.FieldConf;
+import com.dtstack.chunjun.config.CommonConfig;
+import com.dtstack.chunjun.config.FieldConfig;
 import com.dtstack.chunjun.connector.starrocks.streamload.StarRocksSinkOP;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
@@ -29,6 +29,9 @@ import com.dtstack.chunjun.element.ColumnRowData;
 import com.dtstack.chunjun.element.column.BigDecimalColumn;
 import com.dtstack.chunjun.element.column.BooleanColumn;
 import com.dtstack.chunjun.element.column.ByteColumn;
+import com.dtstack.chunjun.element.column.DoubleColumn;
+import com.dtstack.chunjun.element.column.FloatColumn;
+import com.dtstack.chunjun.element.column.IntColumn;
 import com.dtstack.chunjun.element.column.SqlDateColumn;
 import com.dtstack.chunjun.element.column.StringColumn;
 import com.dtstack.chunjun.element.column.TimestampColumn;
@@ -51,17 +54,18 @@ import java.util.stream.Collectors;
 
 import static com.dtstack.chunjun.connector.starrocks.util.StarRocksUtil.addStrForNum;
 
-/** @author liuliu 2022/7/12 */
 public class StarRocksColumnConverter
         extends AbstractRowConverter<Object[], Object[], Map<String, Object>, LogicalType> {
+
+    private static final long serialVersionUID = 1073658828047131297L;
 
     private final List<String> columnList;
     public static final String DATETIME_FORMAT_SHORT = "yyyy-MM-dd HH:mm:ss";
 
-    public StarRocksColumnConverter(RowType rowType, ChunJunCommonConf conf) {
+    public StarRocksColumnConverter(RowType rowType, CommonConfig conf) {
         super(rowType, conf);
         this.columnList =
-                conf.getColumn().stream().map(FieldConf::getName).collect(Collectors.toList());
+                conf.getColumn().stream().map(FieldConfig::getName).collect(Collectors.toList());
         for (int i = 0; i < rowType.getFieldCount(); i++) {
             toInternalConverters.add(
                     wrapIntoNullableInternalConverter(
@@ -77,14 +81,14 @@ public class StarRocksColumnConverter
         ColumnRowData columnRowData = new ColumnRowData(rowType.getFieldCount());
         int index = 0;
         for (int pos = 0; pos < rowType.getFieldCount(); pos++) {
-            FieldConf fieldConf = commonConf.getColumn().get(pos);
+            FieldConfig fieldConfig = commonConfig.getColumn().get(pos);
             AbstractBaseColumn val = null;
-            if (StringUtils.isBlank(fieldConf.getValue())) {
+            if (StringUtils.isBlank(fieldConfig.getValue())) {
                 val =
                         (AbstractBaseColumn)
                                 toInternalConverters.get(pos).deserialize(input[index++]);
             }
-            columnRowData.addField(assembleFieldProps(fieldConf, val));
+            columnRowData.addField(assembleFieldProps(fieldConfig, val));
         }
         return columnRowData;
     }
@@ -133,13 +137,13 @@ public class StarRocksColumnConverter
             case SMALLINT:
                 return val -> new BigDecimalColumn((short) val);
             case INTEGER:
-                return val -> new BigDecimalColumn((int) val);
+                return val -> new IntColumn((int) val);
             case BIGINT:
                 return val -> new BigDecimalColumn((long) val);
             case FLOAT:
-                return val -> new BigDecimalColumn((float) val);
+                return val -> new FloatColumn((float) val);
             case DOUBLE:
-                return val -> new BigDecimalColumn((double) val);
+                return val -> new DoubleColumn((double) val);
             case DECIMAL:
                 return val -> new BigDecimalColumn((BigDecimal) val);
             case CHAR:

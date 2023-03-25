@@ -18,16 +18,19 @@
 
 package com.dtstack.chunjun.connector.mongodb.converter;
 
-import com.dtstack.chunjun.conf.ChunJunCommonConf;
-import com.dtstack.chunjun.conf.FieldConf;
+import com.dtstack.chunjun.config.CommonConfig;
+import com.dtstack.chunjun.config.FieldConfig;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.element.AbstractBaseColumn;
 import com.dtstack.chunjun.element.ColumnRowData;
 import com.dtstack.chunjun.element.column.BigDecimalColumn;
 import com.dtstack.chunjun.element.column.BooleanColumn;
 import com.dtstack.chunjun.element.column.BytesColumn;
+import com.dtstack.chunjun.element.column.DoubleColumn;
+import com.dtstack.chunjun.element.column.FloatColumn;
 import com.dtstack.chunjun.element.column.StringColumn;
 import com.dtstack.chunjun.element.column.TimestampColumn;
+import com.dtstack.chunjun.util.GsonUtil;
 
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.logical.LogicalType;
@@ -43,21 +46,19 @@ import java.sql.Date;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
-/**
- * @author Ada Wong
- * @program chunjun
- * @create 2021/06/21
- */
 public class MongodbColumnConverter
         extends AbstractRowConverter<Document, Document, Document, LogicalType> {
+
+    private static final long serialVersionUID = -7644004277309401498L;
 
     private final List<MongoDeserializationConverter> toInternalConverters;
     private final List<MongoSerializationConverter> toExternalConverters;
     private final String[] fieldNames;
 
-    public MongodbColumnConverter(RowType rowType, ChunJunCommonConf commonConf) {
-        super(rowType, commonConf);
+    public MongodbColumnConverter(RowType rowType, CommonConfig commonConfig) {
+        super(rowType, commonConfig);
         this.fieldNames = rowType.getFieldNames().toArray(new String[0]);
         toInternalConverters = new ArrayList<>();
         toExternalConverters = new ArrayList<>();
@@ -97,26 +98,22 @@ public class MongodbColumnConverter
 
     @Override
     public RowData toInternal(Document document) {
-        List<FieldConf> fieldList = commonConf.getColumn();
+        List<FieldConfig> fieldList = commonConfig.getColumn();
         ColumnRowData result = new ColumnRowData(fieldList.size());
-        int convertIndex = 0;
-        for (FieldConf fieldConf : fieldList) {
+        for (int i = 0; i < fieldList.size(); i++) {
             AbstractBaseColumn baseColumn = null;
-            if (StringUtils.isNullOrWhitespaceOnly(fieldConf.getValue())) {
-                Object field = document.get(fieldConf.getName());
-                baseColumn =
-                        (AbstractBaseColumn)
-                                toInternalConverters.get(convertIndex).deserialize(field);
-                convertIndex++;
+            if (StringUtils.isNullOrWhitespaceOnly(fieldList.get(i).getValue())) {
+                Object field = document.get(fieldList.get(i).getName());
+                baseColumn = (AbstractBaseColumn) toInternalConverters.get(i).deserialize(field);
             }
-            result.addField(assembleFieldProps(fieldConf, baseColumn));
+            result.addField(assembleFieldProps(fieldList.get(i), baseColumn));
         }
         return result;
     }
 
     @Override
     public Document toExternal(RowData rowData, Document document) {
-        for (int pos = 0; pos < rowData.getArity(); pos++) {
+        for (int pos = 0; pos < fieldTypes.length; pos++) {
             toExternalConverters.get(pos).serialize(rowData, pos, fieldNames[pos], document);
         }
         return document;
@@ -132,16 +129,22 @@ public class MongodbColumnConverter
             case INTEGER:
                 return val -> new BigDecimalColumn((Integer) val);
             case FLOAT:
-                return val -> new BigDecimalColumn((Float) val);
+                return val -> new FloatColumn((Float) val);
             case DOUBLE:
-                return val -> new BigDecimalColumn((Double) val);
+                return val -> new DoubleColumn((Double) val);
             case BIGINT:
                 return val -> new BigDecimalColumn((Long) val);
             case DECIMAL:
                 return val -> new BigDecimalColumn(((Decimal128) val).bigDecimalValue());
             case CHAR:
             case VARCHAR:
-                return val -> new StringColumn((String) val);
+                return val -> {
+                    if (val instanceof List || val instanceof Map) {
+                        return new StringColumn(GsonUtil.GSON.toJson(val));
+                    } else {
+                        return new StringColumn(val.toString());
+                    }
+                };
             case INTERVAL_YEAR_MONTH:
             case DATE:
             case TIME_WITHOUT_TIME_ZONE:

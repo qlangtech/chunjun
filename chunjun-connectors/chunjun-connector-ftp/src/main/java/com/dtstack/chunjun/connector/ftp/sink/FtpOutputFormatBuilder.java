@@ -18,19 +18,12 @@
 
 package com.dtstack.chunjun.connector.ftp.sink;
 
-import com.dtstack.chunjun.connector.ftp.conf.FtpConfig;
+import com.dtstack.chunjun.connector.ftp.config.FtpConfig;
 import com.dtstack.chunjun.sink.format.FileOutputFormatBuilder;
 import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
 
 import org.apache.commons.lang3.StringUtils;
 
-/**
- * The builder of FtpOutputFormat
- *
- * <p>Company: www.dtstack.com
- *
- * @author huyifan.zju@163.com
- */
 public class FtpOutputFormatBuilder extends FileOutputFormatBuilder<FtpOutputFormat> {
 
     public FtpOutputFormatBuilder() {
@@ -38,7 +31,7 @@ public class FtpOutputFormatBuilder extends FileOutputFormatBuilder<FtpOutputFor
     }
 
     public void setFtpConfig(FtpConfig ftpConfig) {
-        super.setBaseFileConf(ftpConfig);
+        super.setBaseFileConfig(ftpConfig);
         format.setFtpConfig(ftpConfig);
     }
 
@@ -49,7 +42,7 @@ public class FtpOutputFormatBuilder extends FileOutputFormatBuilder<FtpOutputFor
             throw new ChunJunRuntimeException("Please Set protocol");
         }
         if (StringUtils.isBlank(ftpConfig.getHost())) {
-            throw new ChunJunRuntimeException("Please Set gost");
+            throw new ChunJunRuntimeException("Please Set host");
         }
         if (StringUtils.isBlank(ftpConfig.getPath())) {
             throw new ChunJunRuntimeException("Please Set path");

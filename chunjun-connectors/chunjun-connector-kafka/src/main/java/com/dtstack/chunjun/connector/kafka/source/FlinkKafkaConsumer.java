@@ -34,11 +34,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
-/**
- * Date: 2021/09/01 Company: www.dtstack.com
- *
- * @author tudou
- */
 public class FlinkKafkaConsumer<T>
         extends org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer<T> {
 
@@ -47,12 +42,10 @@ public class FlinkKafkaConsumer<T>
     /**
      * Creates a new Kafka streaming source consumer.
      *
-     * @param topic The name of the topic that should be consumed.
-     * @param valueDeserializer The de-/serializer used to convert between Kafka's byte messages and
-     *     Flink's objects.
+     * <p>Flink's objects.
+     *
      * @param props will be modified props
      * @param originalProps original props
-     * @param DynamicKafkaDeserializationSchema deserializationSchema
      */
     public FlinkKafkaConsumer(
             List<String> topics,
@@ -75,12 +68,9 @@ public class FlinkKafkaConsumer<T>
      * are created on the fly.
      *
      * @param subscriptionPattern The regular expression for a pattern of topic names to subscribe
-     *     to.
-     * @param valueDeserializer The de-/serializer used to convert between Kafka's byte messages and
-     *     Flink's objects.
+     *     to. Flink's objects.
      * @param props will be modified props
      * @param originalProps original props
-     * @param DynamicKafkaDeserializationSchema deserializationSchema
      */
     public FlinkKafkaConsumer(
             Pattern subscriptionPattern,

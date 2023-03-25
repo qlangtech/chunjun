@@ -18,42 +18,23 @@
 
 package com.dtstack.chunjun.connector.ftp.handler;
 
-import com.dtstack.chunjun.connector.ftp.source.FtpFileSplit;
+import com.dtstack.chunjun.connector.ftp.extend.ftp.concurrent.FtpFileSplit;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.ToString;
 
 import java.io.Serializable;
-import java.util.StringJoiner;
 
+@AllArgsConstructor
+@Getter
+@ToString
 public class Position implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /** 第几条数据* */
+    /** 当前的文件偏移量 */
     private final Long currentReadPosition;
-    /** 读取的数据文件* */
+    /** 读取的数据文件 */
     private final FtpFileSplit fileSplit;
-
-    public Position(Long currentReadPosition, FtpFileSplit fileSplit) {
-        this.currentReadPosition = currentReadPosition;
-        this.fileSplit = fileSplit;
-    }
-
-    public static long getSerialVersionUID() {
-        return serialVersionUID;
-    }
-
-    public Long getCurrentReadPosition() {
-        return currentReadPosition;
-    }
-
-    public FtpFileSplit getFileSplit() {
-        return fileSplit;
-    }
-
-    @Override
-    public String toString() {
-        return new StringJoiner(", ", Position.class.getSimpleName() + "[", "]")
-                .add("currentReadPosition=" + currentReadPosition)
-                .add("fileSplit=" + fileSplit)
-                .toString();
-    }
 }

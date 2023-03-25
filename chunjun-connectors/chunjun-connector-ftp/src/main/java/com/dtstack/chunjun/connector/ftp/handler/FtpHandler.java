@@ -18,11 +18,12 @@
 
 package com.dtstack.chunjun.connector.ftp.handler;
 
-import com.dtstack.chunjun.connector.ftp.conf.FtpConfig;
+import com.dtstack.chunjun.connector.ftp.config.FtpConfig;
 import com.dtstack.chunjun.connector.ftp.enums.EFtpMode;
 import com.dtstack.chunjun.constants.ConstantValue;
 import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -30,8 +31,6 @@ import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPReply;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,10 +39,8 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
-/** The concrete Ftp Utility class used for standard ftp */
-public class FtpHandler implements IFtpHandler {
-
-    private static final Logger LOG = LoggerFactory.getLogger(FtpHandler.class);
+@Slf4j
+public class FtpHandler implements DTFtpHandler {
 
     private static final String SP = "/";
     private FTPClient ftpClient = null;
@@ -87,7 +84,7 @@ public class FtpHandler implements IFtpHandler {
                                         + ftpConfig.getUsername()
                                         + ",port ="
                                         + ftpConfig.getPort());
-                LOG.error(message);
+                log.error(message);
                 throw new RuntimeException(message);
             }
             ftpClient.setControlEncoding(ftpConfig.getControlEncoding());
@@ -136,14 +133,14 @@ public class FtpHandler implements IFtpHandler {
 
         } catch (IOException e) {
             String message = String.format("进入目录：[%s]时发生I/O异常,请确认与ftp服务器的连接正常", directoryPath);
-            LOG.error(message);
+            log.error(message);
             throw new RuntimeException(message, e);
         } finally {
             if (originDir != null) {
                 try {
                     ftpClient.changeWorkingDirectory(originDir);
                 } catch (IOException e) {
-                    LOG.error(e.getMessage());
+                    log.error(e.getMessage());
                 }
             }
         }
@@ -152,58 +149,49 @@ public class FtpHandler implements IFtpHandler {
     @Override
     public boolean isFileExist(String filePath) throws IOException {
         ftpClient.enterLocalPassiveMode();
-        InputStream inputStream = null;
-        try {
-            inputStream = ftpClient.retrieveFileStream(encodePath(filePath));
+        try (InputStream inputStream = ftpClient.retrieveFileStream(encodePath(filePath))) {
             return inputStream != null && ftpClient.getReplyCode() != 550;
         } catch (IOException e) {
             throw new ChunJunRuntimeException(
                     "An exception occurred when judging whether the file exists. filepath: "
                             + filePath);
         } finally {
-            if (inputStream != null) {
-                inputStream.close();
-                ftpClient.completePendingCommand();
-            }
+            ftpClient.completePendingCommand();
         }
     }
 
     @Override
-    public List<String> getFiles(String path) throws IOException {
+    public List<String> getFiles(String path) {
         List<String> sources = new ArrayList<>();
         ftpClient.enterLocalPassiveMode();
 
         if (!isExist(path)) {
             return sources;
         }
-        if (isFileExist(path)) {
-            sources.add(path);
-            return sources;
-        } else {
-            path = path + SP;
-        }
         try {
-            listFiles(path, sources);
+            if (isFileExist(path)) {
+                sources.add(path);
+                return sources;
+            } else {
+                path = path + SP;
+            }
+            FTPFile[] ftpFiles = ftpClient.listFiles(encodePath(path));
+            if (ftpFiles != null) {
+                for (FTPFile ftpFile : ftpFiles) {
+                    // .和..是特殊文件
+                    if (StringUtils.endsWith(ftpFile.getName(), ConstantValue.POINT_SYMBOL)
+                            || StringUtils.endsWith(
+                                    ftpFile.getName(), ConstantValue.TWO_POINT_SYMBOL)) {
+                        continue;
+                    }
+                    sources.addAll(getFiles(path + ftpFile.getName(), ftpFile));
+                }
+            }
         } catch (IOException e) {
-            LOG.error("", e);
+            log.error("", e);
             throw new RuntimeException(e);
         }
         return sources;
-    }
-
-    private void listFiles(String path, List<String> sources) throws IOException {
-        FTPFile[] ftpFiles = ftpClient.listFiles(encodePath(path));
-        if (ftpFiles != null) {
-            for (FTPFile ftpFile : ftpFiles) {
-                // .和..是特殊文件
-                if (StringUtils.endsWith(ftpFile.getName(), ConstantValue.POINT_SYMBOL)
-                        || StringUtils.endsWith(
-                                ftpFile.getName(), ConstantValue.TWO_POINT_SYMBOL)) {
-                    continue;
-                }
-                sources.addAll(getFiles(path + ftpFile.getName(), ftpFile));
-            }
-        }
     }
 
     /**
@@ -221,11 +209,21 @@ public class FtpHandler implements IFtpHandler {
                 path = path + SP;
             }
             ftpClient.enterLocalPassiveMode();
-            listFiles(path, sources);
+            FTPFile[] ftpFiles = ftpClient.listFiles(encodePath(path));
+            if (ftpFiles != null) {
+                for (FTPFile ftpFile : ftpFiles) {
+                    if (StringUtils.endsWith(ftpFile.getName(), ConstantValue.POINT_SYMBOL)
+                            || StringUtils.endsWith(
+                                    ftpFile.getName(), ConstantValue.TWO_POINT_SYMBOL)) {
+                        continue;
+                    }
+                    sources.addAll(getFiles(path + ftpFile.getName(), ftpFile));
+                }
+            }
         } else {
             sources.add(path);
         }
-        LOG.info("path = {}, FTPFile is directory = {}", path, file.isDirectory());
+        log.info("path = {}, FTPFile is directory = {}", path, file.isDirectory());
         return sources;
     }
 
@@ -247,7 +245,7 @@ public class FtpHandler implements IFtpHandler {
             }
         } catch (IOException e) {
             message = String.format("%s, errorMessage:%s", message, e.getMessage());
-            LOG.error(message);
+            log.error(message);
             throw new RuntimeException(message, e);
         }
     }
@@ -260,7 +258,7 @@ public class FtpHandler implements IFtpHandler {
             if (replayCode != FTPReply.COMMAND_OK
                     && replayCode != FTPReply.PATHNAME_CREATED
                     && replayCode != FTPReply.FILE_ACTION_OK) {
-                LOG.warn(
+                log.warn(
                         "create path [{}] failed ,replayCode is {} and reply is  {} ",
                         directoryPath,
                         replayCode,
@@ -293,19 +291,19 @@ public class FtpHandler implements IFtpHandler {
                     String.format(
                             "写出文件 : [%s] 时出错,请确认文件:[%s]存在且配置的用户有权限写, errorMessage:%s",
                             filePath, filePath, e.getMessage());
-            LOG.error(message);
+            log.error(message);
             throw new RuntimeException(message, e);
         }
     }
 
     private void printWorkingDirectory() {
         try {
-            LOG.info(
+            log.info(
                     String.format(
                             "current working directory:%s",
                             this.ftpClient.printWorkingDirectory()));
         } catch (Exception e) {
-            LOG.warn(String.format("printWorkingDirectory error:%s", e.getMessage()));
+            log.warn(String.format("printWorkingDirectory error:%s", e.getMessage()));
         }
     }
 
@@ -337,14 +335,14 @@ public class FtpHandler implements IFtpHandler {
                     ftpClient.rmd(encodePath(dir));
                 }
             } catch (IOException e) {
-                LOG.error("", e);
+                log.error("", e);
                 throw new RuntimeException(e);
             }
         } else if (isFileExist(dir)) {
             try {
                 ftpClient.deleteFile(encodePath(dir));
             } catch (IOException e) {
-                LOG.error("", e);
+                log.error("", e);
                 throw new RuntimeException(e);
             }
         }
@@ -369,22 +367,26 @@ public class FtpHandler implements IFtpHandler {
         } catch (IOException e) {
             String message =
                     String.format("读取文件 : [%s] 时出错,请确认文件：[%s]存在且配置的用户有权限读取", filePath, filePath);
-            LOG.error(message);
+            log.error(message);
             throw new RuntimeException(message, e);
         }
     }
 
     @Override
     public InputStream getInputStreamByPosition(String filePath, long startPosition) {
-        throw new RuntimeException("ftp协议，暂不支持从指定位置读取文件");
+        if (startPosition != 0) {
+            throw new RuntimeException("ftp协议，暂不支持从指定位置读取文件");
+        }
+
+        return getInputStream(filePath);
     }
 
     @Override
     public void rename(String oldPath, String newPath) throws IOException {
         /* 兼容windows, 如果目标文件存在, rename会报错 */
         if (this.isFileExist(newPath)) {
-            LOG.info(String.format("[%s] exist, delete it before rename", newPath));
-            deleteFile(newPath);
+            log.info(String.format("[%s] exist, delete it before rename", newPath));
+            this.deleteFile(newPath);
         }
 
         ftpClient.rename(encodePath(oldPath), encodePath(newPath));
@@ -422,7 +424,7 @@ public class FtpHandler implements IFtpHandler {
                 try {
                     ftpClient.changeWorkingDirectory(originDir);
                 } catch (IOException e) {
-                    LOG.error(e.getMessage());
+                    log.error(e.getMessage());
                 }
             }
         }
@@ -443,6 +445,6 @@ public class FtpHandler implements IFtpHandler {
 
     @Override
     public void close() throws Exception {
-        logoutFtpServer();
+        this.logoutFtpServer();
     }
 }

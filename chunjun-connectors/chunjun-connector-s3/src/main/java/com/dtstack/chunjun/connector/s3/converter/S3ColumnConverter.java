@@ -18,13 +18,15 @@
 
 package com.dtstack.chunjun.connector.s3.converter;
 
-import com.dtstack.chunjun.conf.ChunJunCommonConf;
-import com.dtstack.chunjun.conf.FieldConf;
+import com.dtstack.chunjun.config.CommonConfig;
+import com.dtstack.chunjun.config.FieldConfig;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
 import com.dtstack.chunjun.converter.ISerializationConverter;
 import com.dtstack.chunjun.element.ColumnRowData;
 import com.dtstack.chunjun.element.column.BigDecimalColumn;
+import com.dtstack.chunjun.element.column.DoubleColumn;
+import com.dtstack.chunjun.element.column.FloatColumn;
 import com.dtstack.chunjun.element.column.SqlDateColumn;
 import com.dtstack.chunjun.element.column.StringColumn;
 import com.dtstack.chunjun.element.column.TimestampColumn;
@@ -43,11 +45,12 @@ import java.util.List;
 public class S3ColumnConverter
         extends AbstractRowConverter<String[], RowData, String[], LogicalType> {
 
-    public S3ColumnConverter(RowType rowType, ChunJunCommonConf conf) {
-        super(rowType, conf);
-        super.commonConf = conf;
-        for (int i = 0; i < fieldTypes.length; i++) {
-            LogicalType type = fieldTypes[i];
+    private static final long serialVersionUID = -3778159110420581423L;
+
+    public S3ColumnConverter(RowType rowType, CommonConfig config) {
+        super(rowType, config);
+        super.commonConfig = config;
+        for (LogicalType type : fieldTypes) {
             toInternalConverters.add(
                     wrapIntoNullableInternalConverter(createInternalConverter(type)));
             toExternalConverters.add(
@@ -57,14 +60,14 @@ public class S3ColumnConverter
 
     @Override
     public RowData toInternal(String[] input) {
-        List<FieldConf> fieldConfList = commonConf.getColumn();
+        List<FieldConfig> fieldConfList = commonConfig.getColumn();
         ColumnRowData rowData = new ColumnRowData(fieldConfList.size());
-        for (int i = 0; i < fieldConfList.size(); i++) {
+        for (FieldConfig fieldConfig : fieldConfList) {
             StringColumn stringColumn = null;
-            if (StringUtils.isBlank(fieldConfList.get(i).getValue())) {
-                stringColumn = new StringColumn(input[fieldConfList.get(i).getIndex()]);
+            if (StringUtils.isBlank(fieldConfig.getValue())) {
+                stringColumn = new StringColumn(input[fieldConfig.getIndex()]);
             }
-            rowData.addField(assembleFieldProps(fieldConfList.get(i), stringColumn));
+            rowData.addField(assembleFieldProps(fieldConfig, stringColumn));
         }
         return rowData;
     }
@@ -87,9 +90,9 @@ public class S3ColumnConverter
             case BIGINT:
                 return val -> new BigDecimalColumn((Long) val);
             case FLOAT:
-                return val -> new BigDecimalColumn((Float) val);
+                return val -> new FloatColumn((Float) val);
             case DOUBLE:
-                return val -> new BigDecimalColumn((Double) val);
+                return val -> new DoubleColumn((Double) val);
             case VARCHAR:
                 return val -> new StringColumn((String) val);
             case DATE:
@@ -131,6 +134,6 @@ public class S3ColumnConverter
     @Override
     protected ISerializationConverter<String[]> wrapIntoNullableExternalConverter(
             ISerializationConverter<String[]> ISerializationConverter, LogicalType type) {
-        return (val, index, output) -> ISerializationConverter.serialize(val, index, output);
+        return ISerializationConverter;
     }
 }

@@ -60,11 +60,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-/**
- * @author chuixue
- * @create 2021-04-06 19:31
- * @description A version-agnostic Kafka {@link ScanTableSource}.
- */
 public class KafkaDynamicSource
         implements ScanTableSource, SupportsReadingMetadata, SupportsWatermarkPushDown {
     // --------------------------------------------------------------------------------------------
@@ -209,7 +204,7 @@ public class KafkaDynamicSource
                 .forEach((key, value) -> metadataMap.put(VALUE_METADATA_PREFIX + key, value));
 
         // add connector metadata
-        Stream.of(KafkaDynamicSource.ReadableMetadata.values())
+        Stream.of(ReadableMetadata.values())
                 .forEachOrdered(m -> metadataMap.putIfAbsent(m.key, m.dataType));
 
         return metadataMap;
@@ -332,7 +327,7 @@ public class KafkaDynamicSource
                 metadataKeys.stream()
                         .map(
                                 k ->
-                                        Stream.of(KafkaDynamicSource.ReadableMetadata.values())
+                                        Stream.of(ReadableMetadata.values())
                                                 .filter(rm -> rm.key.equals(k))
                                                 .findFirst()
                                                 .orElseThrow(IllegalStateException::new))
@@ -399,7 +394,7 @@ public class KafkaDynamicSource
     }
 
     private @Nullable DeserializationSchema<RowData> createDeserialization(
-            DynamicTableSource.Context context,
+            Context context,
             @Nullable DecodingFormat<DeserializationSchema<RowData>> format,
             int[] projection,
             @Nullable String prefix) {

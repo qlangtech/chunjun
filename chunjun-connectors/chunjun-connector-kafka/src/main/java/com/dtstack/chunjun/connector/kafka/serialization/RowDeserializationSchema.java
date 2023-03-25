@@ -17,7 +17,7 @@
  */
 package com.dtstack.chunjun.connector.kafka.serialization;
 
-import com.dtstack.chunjun.connector.kafka.conf.KafkaConf;
+import com.dtstack.chunjun.connector.kafka.conf.KafkaConfig;
 import com.dtstack.chunjun.connector.kafka.source.DynamicKafkaDeserializationSchema;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.util.JsonUtil;
@@ -39,14 +39,17 @@ public class RowDeserializationSchema extends DynamicKafkaDeserializationSchema 
 
     private static final long serialVersionUID = 1L;
     /** kafka converter */
-    private final AbstractRowConverter<String, Object, byte[], String> converter;
+    private final AbstractRowConverter<ConsumerRecord<byte[], byte[]>, Object, byte[], String>
+            converter;
     /** kafka conf */
-    private final KafkaConf kafkaConf;
+    private final KafkaConfig kafkaConfig;
 
     public RowDeserializationSchema(
-            KafkaConf kafkaConf, AbstractRowConverter<String, Object, byte[], String> converter) {
+            KafkaConfig kafkaConfig,
+            AbstractRowConverter<ConsumerRecord<byte[], byte[]>, Object, byte[], String>
+                    converter) {
         super(1, null, null, null, null, false, null, null, false);
-        this.kafkaConf = kafkaConf;
+        this.kafkaConfig = kafkaConfig;
         this.converter = converter;
     }
 
@@ -57,18 +60,21 @@ public class RowDeserializationSchema extends DynamicKafkaDeserializationSchema 
                 "[{}] open successfully, \ninputSplit = {}, \n[{}]: \n{} ",
                 this.getClass().getSimpleName(),
                 "see other log",
-                kafkaConf.getClass().getSimpleName(),
-                JsonUtil.toPrintJson(kafkaConf));
+                kafkaConfig.getClass().getSimpleName(),
+                JsonUtil.toPrintJson(kafkaConfig));
     }
 
     @Override
     public void deserialize(ConsumerRecord<byte[], byte[]> record, Collector<RowData> collector) {
         try {
             beforeDeserialize(record);
-            collector.collect(
-                    converter.toInternal(new String(record.value(), StandardCharsets.UTF_8)));
+            collector.collect(converter.toInternal(record));
         } catch (Exception e) {
-            dirtyManager.collect(new String(record.value(), StandardCharsets.UTF_8), e, null);
+            String data = null;
+            if (record.value() != null) {
+                data = new String(record.value(), StandardCharsets.UTF_8);
+            }
+            dirtyManager.collect(data, e, null);
         }
     }
 }

@@ -51,13 +51,13 @@ public class NullColumn extends AbstractBaseColumn {
     }
 
     @Override
-    public Boolean asBoolean() {
-        return null;
+    public String type() {
+        return "NULL";
     }
 
     @Override
-    public String type() {
-        return "BIGDECIMAL";
+    public Boolean asBoolean() {
+        return null;
     }
 
     @Override
@@ -87,6 +87,46 @@ public class NullColumn extends AbstractBaseColumn {
 
     @Override
     public String asTimestampStr() {
+        return null;
+    }
+
+    @Override
+    public Boolean asBooleanInternal() {
+        return null;
+    }
+
+    @Override
+    public byte[] asBytesInternal() {
+        return null;
+    }
+
+    @Override
+    public String asStringInternal() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal asBigDecimalInternal() {
+        return null;
+    }
+
+    @Override
+    public Timestamp asTimestampInternal() {
+        return null;
+    }
+
+    @Override
+    public Time asTimeInternal() {
+        return null;
+    }
+
+    @Override
+    public java.sql.Date asSqlDateInternal() {
+        return null;
+    }
+
+    @Override
+    public String asTimestampStrInternal() {
         return null;
     }
 }

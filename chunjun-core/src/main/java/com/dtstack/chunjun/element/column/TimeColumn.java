@@ -34,7 +34,7 @@ public class TimeColumn extends AbstractBaseColumn {
         super(data, 8);
     }
 
-    public TimeColumn(Time data, int byteSize) {
+    private TimeColumn(Time data, int byteSize) {
         super(data, byteSize);
     }
 
@@ -52,7 +52,7 @@ public class TimeColumn extends AbstractBaseColumn {
     }
 
     @Override
-    public Boolean asBoolean() {
+    public Boolean asBooleanInternal() {
         if (null == data) {
             return null;
         }
@@ -60,7 +60,7 @@ public class TimeColumn extends AbstractBaseColumn {
     }
 
     @Override
-    public byte[] asBytes() {
+    public byte[] asBytesInternal() {
         if (null == data) {
             return null;
         }
@@ -68,7 +68,7 @@ public class TimeColumn extends AbstractBaseColumn {
     }
 
     @Override
-    public String asString() {
+    public String asStringInternal() {
         if (null == data) {
             return null;
         }
@@ -76,7 +76,7 @@ public class TimeColumn extends AbstractBaseColumn {
     }
 
     @Override
-    public BigDecimal asBigDecimal() {
+    public BigDecimal asBigDecimalInternal() {
         if (null == data) {
             return null;
         }
@@ -84,7 +84,7 @@ public class TimeColumn extends AbstractBaseColumn {
     }
 
     @Override
-    public Timestamp asTimestamp() {
+    public Timestamp asTimestampInternal() {
         if (null == data) {
             return null;
         }
@@ -92,7 +92,7 @@ public class TimeColumn extends AbstractBaseColumn {
     }
 
     @Override
-    public Time asTime() {
+    public Time asTimeInternal() {
         if (null == data) {
             return null;
         }
@@ -100,7 +100,7 @@ public class TimeColumn extends AbstractBaseColumn {
     }
 
     @Override
-    public Date asSqlDate() {
+    public Date asSqlDateInternal() {
         if (null == data) {
             return null;
         }
@@ -108,20 +108,10 @@ public class TimeColumn extends AbstractBaseColumn {
     }
 
     @Override
-    public String asTimestampStr() {
+    public String asTimestampStrInternal() {
         if (null == data) {
             return null;
         }
         return data.toString();
-    }
-
-    @Override
-    public Integer asInt() {
-        throw new CastException("java.sql.Time", "Integer", this.asString());
-    }
-
-    @Override
-    public Short asShort() {
-        throw new CastException("java.sql.Time", "Short", this.asString());
     }
 }

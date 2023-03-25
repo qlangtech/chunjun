@@ -18,12 +18,10 @@
 
 package com.dtstack.chunjun.connector.http.converter;
 
-import com.dtstack.chunjun.connector.http.client.DefaultRestHandler;
 import com.dtstack.chunjun.connector.http.common.HttpRestConfig;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
 import com.dtstack.chunjun.converter.ISerializationConverter;
-import com.dtstack.chunjun.util.GsonUtil;
 import com.dtstack.chunjun.util.MapUtil;
 
 import org.apache.flink.table.data.DecimalData;
@@ -45,7 +43,10 @@ import java.util.List;
 import java.util.Map;
 
 /** Base class for all converters that convert between restapi body and Flink internal object. */
-public class HttpRowConverter extends AbstractRowConverter<String, RowData, RowData, LogicalType> {
+public class HttpRowConverter
+        extends AbstractRowConverter<Map<String, Object>, RowData, RowData, LogicalType> {
+
+    private static final long serialVersionUID = -9145005567073875082L;
 
     private HttpRestConfig httpRestConfig;
 
@@ -69,15 +70,11 @@ public class HttpRowConverter extends AbstractRowConverter<String, RowData, RowD
     }
 
     @Override
-    public RowData toInternal(String input) throws Exception {
-        Map<String, Object> result =
-                DefaultRestHandler.gson.fromJson(input, GsonUtil.gsonMapTypeToken);
+    public RowData toInternal(Map<String, Object> result) throws Exception {
         GenericRowData genericRowData = new GenericRowData(rowType.getFieldCount());
         List<String> columns = rowType.getFieldNames();
         for (int pos = 0; pos < columns.size(); pos++) {
-            Object value =
-                    MapUtil.getValueByKey(
-                            result, columns.get(pos), httpRestConfig.getFieldDelimiter());
+            Object value = MapUtil.getValueByKey(result, columns.get(pos), "");
             if (value instanceof LinkedTreeMap) {
                 value = value.toString();
             }
@@ -168,7 +165,7 @@ public class HttpRowConverter extends AbstractRowConverter<String, RowData, RowD
 
     @Override
     public RowData toExternal(RowData rowData, RowData output) throws Exception {
-        for (int index = 0; index < rowData.getArity(); index++) {
+        for (int index = 0; index < fieldTypes.length; index++) {
             toExternalConverters.get(index).serialize(rowData, index, output);
         }
         return output;

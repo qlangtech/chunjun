@@ -17,15 +17,23 @@
  */
 package com.dtstack.chunjun.connector.kafka.serialization;
 
-import com.dtstack.chunjun.connector.kafka.conf.KafkaConf;
+import com.dtstack.chunjun.cdc.DdlRowData;
+import com.dtstack.chunjun.connector.kafka.conf.KafkaConfig;
 import com.dtstack.chunjun.connector.kafka.sink.DynamicKafkaSerializationSchema;
+import com.dtstack.chunjun.constants.CDCConstantValue;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
+import com.dtstack.chunjun.element.AbstractBaseColumn;
+import com.dtstack.chunjun.element.ColumnRowData;
+import com.dtstack.chunjun.element.column.NullColumn;
+import com.dtstack.chunjun.util.GsonUtil;
 import com.dtstack.chunjun.util.JsonUtil;
 
 import org.apache.flink.api.common.serialization.SerializationSchema;
 import org.apache.flink.streaming.connectors.kafka.partitioner.FlinkKafkaPartitioner;
 import org.apache.flink.table.data.RowData;
 
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,17 +54,20 @@ public class RowSerializationSchema extends DynamicKafkaSerializationSchema {
     /** kafka value converter */
     private final AbstractRowConverter<String, Object, byte[], String> valueConverter;
     /** kafka converter */
-    private final KafkaConf kafkaConf;
+    private final KafkaConfig kafkaConfig;
+
+    private String currentTopic;
 
     public RowSerializationSchema(
-            KafkaConf kafkaConf,
+            KafkaConfig kafkaConfig,
             @Nullable FlinkKafkaPartitioner<RowData> partitioner,
             AbstractRowConverter keyConverter,
             AbstractRowConverter valueConverter) {
-        super(kafkaConf.getTopic(), partitioner, null, null, null, null, false, null, false);
+        super(kafkaConfig.getTopic(), partitioner, null, null, null, null, false, null, false);
         this.keyConverter = keyConverter;
         this.valueConverter = valueConverter;
-        this.kafkaConf = kafkaConf;
+        this.kafkaConfig = kafkaConfig;
+        this.currentTopic = kafkaConfig.getTopic();
     }
 
     @Override
@@ -69,8 +80,8 @@ public class RowSerializationSchema extends DynamicKafkaSerializationSchema {
                 checkpointEnabled,
                 0,
                 1,
-                kafkaConf.getClass().getSimpleName(),
-                JsonUtil.toPrintJson(kafkaConf));
+                kafkaConfig.getClass().getSimpleName(),
+                JsonUtil.toPrintJson(kafkaConfig));
     }
 
     @Override
@@ -83,7 +94,7 @@ public class RowSerializationSchema extends DynamicKafkaSerializationSchema {
             }
             byte[] valueSerialized = valueConverter.toExternal(element, null);
             return new ProducerRecord<>(
-                    this.topic,
+                    this.currentTopic,
                     extractPartition(element, keySerialized, null),
                     null,
                     valueSerialized);
@@ -91,5 +102,50 @@ public class RowSerializationSchema extends DynamicKafkaSerializationSchema {
             dirtyManager.collect(element, e, null);
         }
         return null;
+    }
+
+    @Override
+    public String getTargetTopic(RowData element) {
+        if (CollectionUtils.isNotEmpty(kafkaConfig.getTopics())
+                && kafkaConfig.getTopics().size() > 1) {
+            if (element instanceof ColumnRowData) {
+                ColumnRowData columnRowData = (ColumnRowData) element;
+                if (CollectionUtils.isNotEmpty(columnRowData.getExtHeader())
+                        && columnRowData
+                                .getExtHeader()
+                                .contains("org/apache/flink/streaming/connectors/kafka/table")) {
+                    AbstractBaseColumn database = columnRowData.getField(CDCConstantValue.DATABASE);
+                    AbstractBaseColumn schema = columnRowData.getField(CDCConstantValue.SCHEMA);
+                    AbstractBaseColumn table = columnRowData.getField(CDCConstantValue.TABLE);
+                    columnRowData.removeExtHeaderInfo();
+                    if (database != null && !(database instanceof NullColumn)) {
+                        currentTopic = database.asString();
+                        return currentTopic;
+                    }
+                    if (schema != null && !(schema instanceof NullColumn)) {
+                        currentTopic = schema.asString();
+                        return currentTopic;
+                    }
+                    if (table != null && !(table instanceof NullColumn)) {
+                        currentTopic = table.asString();
+                        return currentTopic;
+                    }
+                }
+            } else if (element instanceof DdlRowData) {
+                DdlRowData ddlRowData = (DdlRowData) element;
+                String table = ddlRowData.getTableIdentifier().tableIdentifier("");
+                if (StringUtils.isNotEmpty(table)) {
+                    currentTopic = table;
+                    return currentTopic;
+                }
+            }
+            throw new RuntimeException(
+                    "getTopic failed when kafkaConf.getTopics() is not empty and have more one topic, topics { "
+                            + GsonUtil.GSON.toJson(kafkaConfig.getTopics())
+                            + " } and data is "
+                            + element);
+        }
+
+        return super.getTargetTopic(element);
     }
 }

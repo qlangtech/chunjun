@@ -18,18 +18,41 @@
 
 package com.dtstack.chunjun.connector.greenplum.sink;
 
-import com.dtstack.chunjun.conf.SyncConf;
+import com.dtstack.chunjun.config.SyncConfig;
 import com.dtstack.chunjun.connector.greenplum.dialect.GreenplumDialect;
-import com.dtstack.chunjun.connector.postgresql.sink.PostgresqlSinkFactory;
+import com.dtstack.chunjun.connector.jdbc.sink.JdbcOutputFormatBuilder;
+import com.dtstack.chunjun.connector.jdbc.sink.JdbcSinkFactory;
+import com.dtstack.chunjun.connector.postgresql.dialect.PostgresqlDialect;
 
-/**
- * company www.dtstack.com
- *
- * @author jier
- */
-public class GreenplumSinkFactory extends PostgresqlSinkFactory {
+import org.apache.commons.lang.StringUtils;
 
-    public GreenplumSinkFactory(SyncConf syncConf) {
-        super(syncConf, new GreenplumDialect());
+import static com.dtstack.chunjun.connector.greenplum.sink.GreenplumOutputFormat.INSERT_SQL_MODE_TYPE;
+
+public class GreenplumSinkFactory extends JdbcSinkFactory {
+
+    public GreenplumSinkFactory(SyncConfig syncConfig) {
+        super(syncConfig, null);
+        if (syncConfig.getWriter().getParameter().get("insertSqlMode") != null
+                && INSERT_SQL_MODE_TYPE.equalsIgnoreCase(
+                        syncConfig.getWriter().getParameter().get("insertSqlMode").toString())) {
+            this.jdbcDialect = new PostgresqlDialect();
+            String pgUrl = changeToPostgresqlUrl(this.jdbcConfig.getJdbcUrl());
+            this.jdbcConfig.setJdbcUrl(pgUrl);
+        } else {
+            this.jdbcDialect = new GreenplumDialect();
+        }
+    }
+
+    @Override
+    protected JdbcOutputFormatBuilder getBuilder() {
+        return new JdbcOutputFormatBuilder(new GreenplumOutputFormat());
+    }
+
+    private String changeToPostgresqlUrl(String gpUrl) {
+        String pgUrl =
+                StringUtils.replaceOnce(
+                        gpUrl, GreenplumDialect.URL_START, PostgresqlDialect.URL_START);
+        pgUrl = StringUtils.replaceOnce(pgUrl, GreenplumDialect.DATABASE_NAME, "/");
+        return pgUrl;
     }
 }

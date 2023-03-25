@@ -17,7 +17,7 @@
  */
 package com.dtstack.chunjun.connector.http.table;
 
-import com.dtstack.chunjun.conf.FieldConf;
+import com.dtstack.chunjun.config.FieldConfig;
 import com.dtstack.chunjun.connector.http.common.HttpRestConfig;
 import com.dtstack.chunjun.connector.http.common.HttpWriterConfig;
 import com.dtstack.chunjun.connector.http.common.MetaParam;
@@ -41,11 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Date: 2021/04/27 Company: www.dtstack.com
- *
- * @author shifang
- */
 public class HttpDynamicTableFactory implements DynamicTableSourceFactory, DynamicTableSinkFactory {
     public static final String IDENTIFIER = "http-x";
 
@@ -72,6 +67,8 @@ public class HttpDynamicTableFactory implements DynamicTableSourceFactory, Dynam
         options.add(HttpOptions.INTERVALTIME);
         options.add(HttpOptions.COLUMN);
         options.add(HttpOptions.DELAY);
+        options.add(HttpOptions.DATA_SUBJECT);
+        options.add(HttpOptions.CYCLES);
 
         return options;
     }
@@ -124,7 +121,7 @@ public class HttpDynamicTableFactory implements DynamicTableSourceFactory, Dynam
         httpWriterConfig.setColumn(
                 gson.fromJson(
                         config.get(HttpOptions.COLUMN),
-                        new TypeToken<List<FieldConf>>() {}.getType()));
+                        new TypeToken<List<FieldConfig>>() {}.getType()));
         httpWriterConfig.setDelay(config.get(HttpOptions.DELAY));
         return httpWriterConfig;
     }
@@ -142,6 +139,8 @@ public class HttpDynamicTableFactory implements DynamicTableSourceFactory, Dynam
         httpRestConfig.setUrl(config.get(HttpOptions.URL));
         httpRestConfig.setDecode(config.get(HttpOptions.DECODE));
         httpRestConfig.setRequestMode(config.get(HttpOptions.METHOD));
+        httpRestConfig.setDataSubject(config.get(HttpOptions.DATA_SUBJECT));
+        httpRestConfig.setCycles(config.get(HttpOptions.CYCLES));
         httpRestConfig.setParam(
                 gson.fromJson(
                         config.get(HttpOptions.PARAMS),
@@ -157,7 +156,7 @@ public class HttpDynamicTableFactory implements DynamicTableSourceFactory, Dynam
         httpRestConfig.setColumn(
                 gson.fromJson(
                         config.get(HttpOptions.COLUMN),
-                        new TypeToken<List<FieldConf>>() {}.getType()));
+                        new TypeToken<List<FieldConfig>>() {}.getType()));
         return httpRestConfig;
     }
 }
