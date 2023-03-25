@@ -32,6 +32,7 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSink;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
 import org.apache.flink.table.data.RowData;
+import org.apache.flink.types.RowKind;
 import org.apache.flink.util.CollectionUtil;
 import org.apache.flink.util.Preconditions;
 
@@ -148,7 +149,7 @@ public class KafkaSinkFactory extends SinkFactory {
                 keyConverter,
                 KafkaColumnConverter.create(this.syncConf, kafkaConf, serializationConverterFactory)) {
             @Override
-            public Map<String, Object> createRowVals(String tableName, Map<String, Object> data) {
+            public Map<String, Object> createRowVals(String tableName, RowKind rowKind, Map<String, Object> data) {
                 throw new UnsupportedOperationException();
             }
         };

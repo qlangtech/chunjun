@@ -26,6 +26,7 @@ import com.dtstack.chunjun.util.MapUtil;
 import org.apache.flink.api.common.serialization.SerializationSchema;
 import org.apache.flink.streaming.connectors.kafka.partitioner.FlinkKafkaPartitioner;
 import org.apache.flink.table.data.RowData;
+import org.apache.flink.types.RowKind;
 
 import org.apache.kafka.clients.producer.ProducerRecord;
 
@@ -57,7 +58,7 @@ public abstract class RowSerializationSchema extends DynamicKafkaSerializationSc
     private final KafkaConf kafkaConf;
 
 
-    public abstract Map<String, Object> createRowVals(String tableName, Map<String, Object> data);
+    public abstract Map<String, Object> createRowVals(String tableName, RowKind rowKind, Map<String, Object> data);
 
 
     //  private final org.apache.kafka.connect.json.JsonSerializer serializer = new org.apache.kafka.connect.json.JsonSerializer();
@@ -97,8 +98,10 @@ public abstract class RowSerializationSchema extends DynamicKafkaSerializationSc
                 keySerialized = keyConverter.toExternal(element, null);
                 key = MapUtil.writeValueAsString(keySerialized).getBytes(StandardCharsets.UTF_8);
             }
+
+
             String valueSerialized = MapUtil.writeValueAsString(
-                    createRowVals(kafkaConf.getTableName(), valueConverter.toExternal(element, null)));
+                    createRowVals(kafkaConf.getTableName(), element.getRowKind(), valueConverter.toExternal(element, null)));
 
             return new ProducerRecord<>(
                     this.topic,
