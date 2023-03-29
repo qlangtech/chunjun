@@ -42,7 +42,6 @@ import org.apache.flink.core.io.InputSplit;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.logical.RowType;
 
-import com.qlangtech.tis.plugin.ds.ColMeta;
 import com.qlangtech.tis.plugin.ds.DataType;
 import com.qlangtech.tis.plugin.ds.DataXReaderColType;
 import com.qlangtech.tis.plugin.ds.IColMetaGetter;
@@ -732,28 +731,32 @@ public class JdbcInputFormat extends BaseRichInputFormat {
             LOG.debug("polling startLocation = {}", startLocation);
         }
 
-        boolean isNumber = StringUtils.isNumeric(startLocation);
-        DataXReaderColType ctype = type.t.getCollapse();
-        if (ctype == DataXReaderColType.Date) {
-            if (type.t.type == Types.DATE) {
-                Date date =
-                        isNumber
-                                ? new Date(Long.parseLong(startLocation))
-                                : Date.valueOf(startLocation);
-                ps.setDate(1, date);
+        try {
+            boolean isNumber = StringUtils.isNumeric(startLocation);
+            DataXReaderColType ctype = type.t.getCollapse();
+            if (ctype == DataXReaderColType.Date) {
+                if (type.t.type == Types.DATE) {
+                    Date date =
+                            isNumber
+                                    ? new Date(Long.parseLong(startLocation))
+                                    : Date.valueOf(startLocation);
+                    ps.setDate(1, date);
+                } else {
+                    Timestamp ts =
+                            isNumber
+                                    ? new Timestamp(Long.parseLong(startLocation))
+                                    : Timestamp.valueOf(startLocation);
+                    ps.setTimestamp(1, ts);
+                }
             } else {
-                Timestamp ts =
-                        isNumber
-                                ? new Timestamp(Long.parseLong(startLocation))
-                                : Timestamp.valueOf(startLocation);
-                ps.setTimestamp(1, ts);
+                if (isNumber) {
+                    ps.setLong(1, Long.parseLong(startLocation));
+                } else {
+                    ps.setString(1, startLocation);
+                }
             }
-        } else {
-            if (isNumber) {
-                ps.setLong(1, Long.parseLong(startLocation));
-            } else {
-                ps.setString(1, startLocation);
-            }
+        } catch (Exception e) {
+            throw new RuntimeException("startLocation:" + startLocation + ",colType:" + type.t.getS());
         }
 
 //        switch (type) {

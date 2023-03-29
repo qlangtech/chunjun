@@ -117,7 +117,16 @@ public class OracleColumnConverter extends JdbcColumnConverter {
                 return val -> new TimestampColumn((Timestamp) val, 0);
             case TIMESTAMP_WITH_TIME_ZONE:
             case TIMESTAMP_WITHOUT_TIME_ZONE:
-                return (val) -> new TimestampColumn(((TIMESTAMP) val).timestampValue());
+                // return (val) -> new TimestampColumn(((TIMESTAMP) val).timestampValue());
+                return (val) -> {
+                    if (val instanceof TIMESTAMP) {
+                        return new TimestampColumn(((TIMESTAMP) val).timestampValue());
+                    } else if (val instanceof Timestamp) {
+                        return new TimestampColumn((Timestamp) val);
+                    } else {
+                        throw new IllegalStateException("illegal class type:" + val.getClass() + ",val:" + val);
+                    }
+                };
             case BINARY:
             case VARBINARY:
                 return val -> {

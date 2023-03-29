@@ -137,7 +137,7 @@ public class RabbitmqDynamicTableFactory implements DynamicTableSourceFactory {
             builder.setRequestedHeartbeat(config.get(REQUESTED_HEARTBEAT));
         }
         if (config.get(DELIVERY_TIMEOUT) != null) {
-            builder.setDeliveryTimeout(config.get(DELIVERY_TIMEOUT));
+           // builder.setDeliveryTimeout(config.get(DELIVERY_TIMEOUT));
         }
         if (config.get(PREFETCH_COUNT) != null) {
             builder.setPrefetchCount(config.get(PREFETCH_COUNT));

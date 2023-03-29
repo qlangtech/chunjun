@@ -24,6 +24,7 @@
 
 		<!--MQ-->
 		<module>chunjun-connector-kafka</module>
+		<module>chunjun-connector-rabbitmq</module>
 <!--		<module>chunjun-connector-emqx</module>-->
 
 		<!--RDB-->

@@ -24,7 +24,7 @@
 	<parent>
 		<artifactId>chunjun-connectors</artifactId>
 		<groupId>com.dtstack.chunjun</groupId>
-		<version>${revision}</version>
+		<version>1.12.5</version>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 
@@ -37,16 +37,16 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-connector-rabbitmq</artifactId>
+			<artifactId>flink-connector-rabbitmq_${scala.binary.version}</artifactId>
 			<version>${flink.version}</version>
 		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-antrun-plugin</artifactId>
-			</plugin>
+<!--			<plugin>-->
+<!--				<groupId>org.apache.maven.plugins</groupId>-->
+<!--				<artifactId>maven-antrun-plugin</artifactId>-->
+<!--			</plugin>-->
 		</plugins>
 	</build>
 </project>
