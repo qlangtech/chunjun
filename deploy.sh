@@ -7,5 +7,6 @@
 ,chunjun-connectors/chunjun-connector-oracle\
 ,chunjun-connectors/chunjun-connector-starrocks\
 ,chunjun-connectors/chunjun-connector-kafka\
+,chunjun-connectors/chunjun-connector-rabbitmq\
  -am \
  -Dmaven.test.skip=true -Dspotless.check.skip=true -DaltDeploymentRepository=base::default::http://localhost:8080/release
