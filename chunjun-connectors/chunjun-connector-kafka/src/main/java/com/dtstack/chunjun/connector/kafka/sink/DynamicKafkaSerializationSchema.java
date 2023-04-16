@@ -69,7 +69,7 @@ public class DynamicKafkaSerializationSchema
 
     private final @Nullable SerializationSchema<RowData> keySerialization;
 
-    private final SerializationSchema<RowData> valueSerialization;
+    protected final SerializationSchema<RowData> valueSerialization;
 
     private final RowData.FieldGetter[] keyFieldGetters;
 

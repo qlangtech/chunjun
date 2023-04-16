@@ -138,6 +138,14 @@ public class KafkaColumnConverter extends AbstractRowConverter<String, Object, M
         this.kafkaConf = kafkaConf;
     }
 
+    public <T extends ISerializationConverter> List<T> getExternalConverters() {
+        List<T> result = Lists.newArrayList();
+        for (ISerializationConverter c : this.toExternalConverters) {
+            result.add((T) c);
+        }
+        return result;
+    }
+
     // Object Mapper is thread-safe
     //  private static final ObjectMapper OBJECT_MAPPER = initMapper();
 
@@ -155,7 +163,7 @@ public class KafkaColumnConverter extends AbstractRowConverter<String, Object, M
 //            toExternalConverters.get(index).serialize(rowData, index, result);
 //        }
 
-        for(ISerializationConverter serConverter : toExternalConverters){
+        for (ISerializationConverter serConverter : toExternalConverters) {
             serConverter.serialize(rowData, -1, result);
         }
 

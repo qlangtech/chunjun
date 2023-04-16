@@ -53,12 +53,12 @@ public abstract class RowSerializationSchema extends DynamicKafkaSerializationSc
     /** kafka key converter */
     private final KafkaColumnConverter keyConverter;
     /** kafka value converter */
-    private final KafkaColumnConverter valueConverter;
+   // private final KafkaColumnConverter valueConverter;
     /** kafka converter */
     private final KafkaConf kafkaConf;
 
 
-    public abstract Map<String, Object> createRowVals(String tableName, RowKind rowKind, Map<String, Object> data);
+   // public abstract Map<String, Object> createRowVals(String tableName, RowKind rowKind, Map<String, Object> data);
 
 
     //  private final org.apache.kafka.connect.json.JsonSerializer serializer = new org.apache.kafka.connect.json.JsonSerializer();
@@ -67,16 +67,17 @@ public abstract class RowSerializationSchema extends DynamicKafkaSerializationSc
             KafkaConf kafkaConf,
             @Nullable FlinkKafkaPartitioner<RowData> partitioner,
             KafkaColumnConverter keyConverter,
-            KafkaColumnConverter valueConverter) {
-        super(kafkaConf.getTopic(), partitioner, null, null, null, null, false, null, false);
+            SerializationSchema<RowData> valueSerialization) {
+        super(kafkaConf.getTopic(), partitioner, null, valueSerialization, null, null, false, null, false);
         this.keyConverter = keyConverter;
-        this.valueConverter = valueConverter;
+      //  this.valueConverter = valueConverter;
         this.kafkaConf = kafkaConf;
     }
 
     @Override
     public void open(SerializationSchema.InitializationContext context) throws Exception {
         beforeOpen();
+        this.valueSerialization.open(context);
         LOG.info(
                 "[{}] open successfully, \ncheckpointMode = {}, \ncheckpointEnabled = {}, \nflushIntervalMills = {}, \nbatchSize = {}, \n[{}]: \n{} ",
                 this.getClass().getSimpleName(),
@@ -99,15 +100,14 @@ public abstract class RowSerializationSchema extends DynamicKafkaSerializationSc
                 key = MapUtil.writeValueAsString(keySerialized).getBytes(StandardCharsets.UTF_8);
             }
 
-
-            String valueSerialized = MapUtil.writeValueAsString(
-                    createRowVals(kafkaConf.getTableName(), element.getRowKind(), valueConverter.toExternal(element, null)));
+//            String valueSerialized = MapUtil.writeValueAsString(
+//                    createRowVals(kafkaConf.getTableName(), element.getRowKind(), valueConverter.toExternal(element, null)));
 
             return new ProducerRecord<>(
                     this.topic,
                     extractPartition(element, key, null),
                     key,
-                    valueSerialized.getBytes(StandardCharsets.UTF_8));
+                    this.valueSerialization.serialize(element));
         } catch (Exception e) {
             dirtyManager.collect(element, e, null);
         }

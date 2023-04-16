@@ -28,17 +28,16 @@ import com.dtstack.chunjun.converter.RawTypeConverter;
 import com.dtstack.chunjun.sink.SinkFactory;
 
 import org.apache.flink.api.common.io.OutputFormat;
+import org.apache.flink.api.common.serialization.SerializationSchema;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSink;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
 import org.apache.flink.table.data.RowData;
-import org.apache.flink.types.RowKind;
 import org.apache.flink.util.CollectionUtil;
 import org.apache.flink.util.Preconditions;
 
 import java.util.Map;
 import java.util.Properties;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -132,27 +131,30 @@ public class KafkaSinkFactory extends SinkFactory {
 
     protected KafkaProducer createKafkaProducer(Properties props, RowSerializationSchema rowSerializationSchema) {
         return new KafkaProducer(
-               kafkaConf.getTopic(),
-               rowSerializationSchema,
-               props,
-               FlinkKafkaProducer.Semantic.AT_LEAST_ONCE,
-               FlinkKafkaProducer.DEFAULT_KAFKA_PRODUCERS_POOL_SIZE);
+                kafkaConf.getTopic(),
+                rowSerializationSchema,
+                props,
+                FlinkKafkaProducer.Semantic.AT_LEAST_ONCE,
+                FlinkKafkaProducer.DEFAULT_KAFKA_PRODUCERS_POOL_SIZE);
     }
 
-    protected RowSerializationSchema createRowSerializationSchema(KafkaColumnConverter keyConverter) {
+    protected final RowSerializationSchema createRowSerializationSchema(KafkaColumnConverter keyConverter) {
 
-        Function<FieldConf, ISerializationConverter<Map<String, Object>>> serializationConverterFactory = getSerializationConverterFactory();
-        Preconditions.checkNotNull(serializationConverterFactory, "serializationConverterFactory can not be null");
+        // Function<FieldConf, ISerializationConverter<Map<String, Object>>> serializationConverterFactory = getSerializationConverterFactory();
+        SerializationSchema<RowData> valueSerialization = getValSerializationSchema();
+        // Preconditions.checkNotNull(serializationConverterFactory, "serializationConverterFactory can not be null");
         return new RowSerializationSchema(
                 kafkaConf,
                 new CustomerFlinkPartition<>(),
-                keyConverter,
-                KafkaColumnConverter.create(this.syncConf, kafkaConf, serializationConverterFactory)) {
-            @Override
-            public Map<String, Object> createRowVals(String tableName, RowKind rowKind, Map<String, Object> data) {
-                throw new UnsupportedOperationException();
-            }
+                keyConverter
+                // KafkaColumnConverter.create(this.syncConf, kafkaConf, serializationConverterFactory)
+                , valueSerialization) {
+
         };
+    }
+
+    protected SerializationSchema<RowData> getValSerializationSchema() {
+        throw new UnsupportedOperationException();
     }
 
     protected Function<FieldConf, ISerializationConverter<Map<String, Object>>> getSerializationConverterFactory() {
