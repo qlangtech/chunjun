@@ -18,6 +18,8 @@
 
 package com.dtstack.chunjun.connector.starrocks.streamload;
 
+import com.alibaba.fastjson.serializer.SerializerFeature;
+
 import com.dtstack.chunjun.connector.starrocks.conf.StarRocksConf;
 
 import com.alibaba.fastjson.JSON;
@@ -78,7 +80,7 @@ public class StreamLoadManager {
                                 return starRocksSinkBufferEntity;
                             });
             bufferEntity.addToBuffer(
-                    JSON.toJSONString(data).getBytes(StandardCharsets.UTF_8), data.size());
+                    JSON.toJSONString(data, SerializerFeature.WriteDateUseDateFormat).getBytes(StandardCharsets.UTF_8), data.size());
             if (bufferEntity.getBatchCount() >= starRocksConf.getLoadConf().getBatchMaxRows()
                     || bufferEntity.getBatchSize()
                             >= starRocksConf.getLoadConf().getBatchMaxSize()) {
