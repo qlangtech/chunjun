@@ -26,7 +26,6 @@ import com.dtstack.chunjun.connector.doris.options.DorisConf;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.converter.AbstractRowConverter.ColVal;
 import com.dtstack.chunjun.element.ColumnRowData;
-import com.dtstack.chunjun.sink.WriteMode;
 import com.dtstack.chunjun.throwable.WriteRecordException;
 
 import org.apache.flink.table.data.GenericRowData;
@@ -163,7 +162,7 @@ public class DorisLoadClient implements Serializable {
 //        String schema = conf.getDatabase();
 //        String table = conf.getTable();
 
-        boolean updateBefore = false;
+        // boolean updateBefore = false;
         switch (value.getRowKind()) {
             case UPDATE_AFTER:
             case INSERT: {
@@ -173,7 +172,7 @@ public class DorisLoadClient implements Serializable {
                 return Pair.of(joiner, null);
             }
             case UPDATE_BEFORE:
-                updateBefore = true;
+                //  updateBefore = true;
             case DELETE: {
 //                WriteMode writeMode = conf.getDorisWriteMode();
 //                if (!(WriteMode.UPDATE == writeMode || WriteMode.REPLACE == writeMode)) {
@@ -183,7 +182,9 @@ public class DorisLoadClient implements Serializable {
                 if (CollectionUtils.isEmpty(pkVals)) {
                     throw new IllegalArgumentException("deletePks can not be empty");
                 }
-                return Pair.of(updateBefore ? createInsertVals(value, converter) : null, pkVals);
+                // return Pair.of(updateBefore ? createInsertVals(value, converter) : null, pkVals);
+
+                return Pair.of(createInsertVals(value, converter), pkVals);
 
             }
             default:
