@@ -49,13 +49,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * @author tiezhu@dtstack.com
@@ -112,13 +110,19 @@ public class DorisStreamLoad implements Serializable {
         httpPut.setHeader("Content-Type", "text/plain; charset=UTF-8");
         httpPut.setHeader("label", label);
         httpPut.setHeader("format", "json");
+
+        // 2023/05/21 百岁 add for sequencde update
+        if (org.apache.commons.lang3.StringUtils.isNotEmpty(this.options.getSequenceColName())) {
+            httpPut.setHeader("function_column.sequence_col", this.options.getSequenceColName());
+        }
+
         // if body is list type ,strip_outer_array should be true
         httpPut.setHeader("strip_outer_array", "true");
-        List<String> columns =
-                columnNames.stream()
-                        .map(this::quoteColumn)
-                        .collect(Collectors.toCollection(LinkedList::new));
-        httpPut.setHeader("columns", StringUtils.join(columns, ","));
+//        List<String> columns =
+//                columnNames.stream()
+//                        .map(this::quoteColumn)
+//                        .collect(Collectors.toCollection(LinkedList::new));
+        // httpPut.setHeader("columns", StringUtils.join(columns, ","));
         if (StringUtils.isNotBlank(mergeConditions)) {
             httpPut.setHeader("merge_type", "MERGE");
             httpPut.setHeader("delete", mergeConditions);

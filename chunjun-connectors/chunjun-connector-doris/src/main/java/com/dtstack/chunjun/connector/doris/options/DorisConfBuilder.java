@@ -109,6 +109,11 @@ public class DorisConfBuilder {
         return this;
     }
 
+    public DorisConfBuilder setSequenceCol(String colName) {
+        this.dorisConf.setSequenceColName(colName);
+        return this;
+    }
+
     public DorisConf build() {
         StringJoiner errorMessage = new StringJoiner("\n");
 
@@ -126,4 +131,6 @@ public class DorisConfBuilder {
 
         return dorisConf;
     }
+
+
 }

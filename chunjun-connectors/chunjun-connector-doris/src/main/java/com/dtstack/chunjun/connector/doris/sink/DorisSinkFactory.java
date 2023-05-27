@@ -20,9 +20,9 @@ package com.dtstack.chunjun.connector.doris.sink;
 
 import com.dtstack.chunjun.conf.OperatorConf;
 import com.dtstack.chunjun.conf.SyncConf;
-import com.dtstack.chunjun.connector.doris.converter.DorisRowTypeConverter;
 import com.dtstack.chunjun.connector.doris.options.DorisConf;
 import com.dtstack.chunjun.connector.doris.options.DorisConfBuilder;
+import com.dtstack.chunjun.connector.doris.options.DorisKeys;
 import com.dtstack.chunjun.connector.doris.options.LoadConf;
 import com.dtstack.chunjun.connector.doris.options.LoadConfBuilder;
 import com.dtstack.chunjun.converter.RawTypeConverter;
@@ -160,6 +160,7 @@ public class DorisSinkFactory extends SinkFactory {
         DorisConfBuilder dorisConfBuilder = new DorisConfBuilder();
 
         dorisConfBuilder
+                .setSequenceCol(parameter.getStringVal(DorisKeys.COL_SEQUENCE_NAME))
                 .setDatabase(parameter.getStringVal(DATABASE_KEY))
                 .setTable(parameter.getStringVal(TABLE_KEY))
                 .setFeNodes((List<String>) parameter.getVal(FE_NODES_KEY))

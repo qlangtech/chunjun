@@ -24,6 +24,11 @@ package com.dtstack.chunjun.connector.doris.options;
  */
 public final class DorisKeys {
 
+    /**
+     * baisui add: https://doris.apache.org/zh-CN/docs/dev/data-operate/update-delete/sequence-column-manual
+     */
+    public static final String COL_SEQUENCE_NAME = "sequence_col_name";
+
     public static final String FIELD_DELIMITER_KEY = "fieldDelimiter";
 
     public static final String LINE_DELIMITER_KEY = "lineDelimiter";

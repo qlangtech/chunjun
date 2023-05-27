@@ -37,6 +37,8 @@ import java.util.Properties;
  */
 public class DorisConf extends JdbcConf {
 
+    private String sequenceColName;
+
     private String database;
 
     private String table;
@@ -62,6 +64,14 @@ public class DorisConf extends JdbcConf {
     private LoadConf loadConf;
 
     private Properties loadProperties;
+
+    public String getSequenceColName() {
+        return this.sequenceColName;
+    }
+
+    public void setSequenceColName(String sequenceColName) {
+        this.sequenceColName = sequenceColName;
+    }
 
     public long getWaitRetryMills() {
         return waitRetryMills;
