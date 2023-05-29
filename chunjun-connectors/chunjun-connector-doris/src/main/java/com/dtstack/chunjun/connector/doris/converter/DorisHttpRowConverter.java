@@ -77,7 +77,7 @@ public class DorisHttpRowConverter
     @Override
     public StringJoiner toExternal(RowData rowData, StringJoiner joiner) throws Exception {
         for (int index = 0; index < this.getFieldCount(); index++) {
-            toExternalConverters.get(index).serialize(rowData, index, joiner);
+            toExternalConverters.get(index).serialize(rowData, index, joiner, -1);
         }
         return joiner;
     }
@@ -85,20 +85,20 @@ public class DorisHttpRowConverter
     @Override
     protected ISerializationConverter<StringJoiner> wrapIntoNullableExternalConverter(
             ISerializationConverter<StringJoiner> ISerializationConverter, LogicalType type) {
-        return ((rowData, index, joiner) -> {
+        return ((rowData, index, joiner, statPos) -> {
             if (rowData == null
                     || rowData.isNullAt(index)
                     || LogicalTypeRoot.NULL.equals(type.getTypeRoot())) {
                 joiner.add(NULL_VALUE);
             } else {
-                ISerializationConverter.serialize(rowData, index, joiner);
+                ISerializationConverter.serialize(rowData, index, joiner, statPos);
             }
         });
     }
 
     // @Override
     public static ISerializationConverter<StringJoiner> createExternalConverter(LogicalType type, Function<RowData, Object> valGetter) {
-        return (rowData, index, joiner) -> {
+        return (rowData, index, joiner, statPos) -> {
             // Object value = ((GenericRowData) rowData).getField(index);
             Object value = valGetter.apply(rowData);
             joiner.add("".equals(value.toString()) ? NULL_VALUE : value.toString());

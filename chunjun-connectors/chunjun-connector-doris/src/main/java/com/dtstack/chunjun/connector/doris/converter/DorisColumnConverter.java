@@ -73,13 +73,13 @@ public class DorisColumnConverter
     public StringJoiner toExternal(RowData rowData, StringJoiner joiner) throws Exception {
         if (fullColumn.size() == options.getColumn().size()) {
             for (int index = 0; index < rowData.getArity(); index++) {
-                toExternalConverters.get(index).serialize(rowData, index, joiner);
+                toExternalConverters.get(index).serialize(rowData, index, joiner, -1);
             }
         } else {
             for (String columnName : fullColumn) {
                 if (columnNames.contains(columnName)) {
                     int index = columnNames.indexOf(columnName);
-                    toExternalConverters.get(index).serialize(rowData, index, joiner);
+                    toExternalConverters.get(index).serialize(rowData, index, joiner, -1);
                 } else {
                     joiner.add(NULL_VALUE);
                 }
@@ -91,18 +91,18 @@ public class DorisColumnConverter
     @Override
     protected ISerializationConverter<StringJoiner> wrapIntoNullableExternalConverter(
             ISerializationConverter<StringJoiner> ISerializationConverter, String type) {
-        return ((rowData, index, joiner) -> {
+        return ((rowData, index, joiner, statPos) -> {
             if (rowData == null || rowData.isNullAt(index)) {
                 joiner.add(NULL_VALUE);
             } else {
-                ISerializationConverter.serialize(rowData, index, joiner);
+                ISerializationConverter.serialize(rowData, index, joiner, statPos);
             }
         });
     }
 
     // @Override
     public static ISerializationConverter<StringJoiner> createExternalConverter(String type) {
-        return (rowData, index, joiner) -> {
+        return (rowData, index, joiner, statPos) -> {
 
             AbstractBaseColumn value = ((ColumnRowData) rowData).getField(index);
             joiner.add(

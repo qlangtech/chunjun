@@ -164,7 +164,7 @@ public class KafkaColumnConverter extends AbstractRowConverter<String, Object, M
 //        }
 
         for (ISerializationConverter serConverter : toExternalConverters) {
-            serConverter.serialize(rowData, -1, result);
+            serConverter.serialize(rowData, -1, result,-1);
         }
 
         return result;

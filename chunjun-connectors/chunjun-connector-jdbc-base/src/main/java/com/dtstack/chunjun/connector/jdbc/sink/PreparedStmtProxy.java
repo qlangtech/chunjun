@@ -68,7 +68,7 @@ import java.util.concurrent.TimeUnit;
  * @author xuchao
  * @date 2021-12-20
  */
-public class PreparedStmtProxy implements FieldNamedPreparedStatement {
+public class PreparedStmtProxy implements FieldNamedPreparedStatement, IFieldNamesAttachedStatement {
 
     private static final Logger LOG = LoggerFactory.getLogger(PreparedStmtProxy.class);
 
@@ -81,6 +81,7 @@ public class PreparedStmtProxy implements FieldNamedPreparedStatement {
 
     /** 当前的执行sql的preparestatement */
     protected transient FieldNamedPreparedStatement currentFieldNamedPstmt;
+    protected transient List<String> currentFieldNamedPstmtFields;
 
     /** 当前执行sql的数据类型转换器 */
     protected AbstractRowConverter currentRowConverter;
@@ -109,18 +110,34 @@ public class PreparedStmtProxy implements FieldNamedPreparedStatement {
             JdbcConf jdbcConf,
             JdbcDialect jdbcDialect) {
         this.currentFieldNamedPstmt = currentFieldNamedPstmt;
+
         this.currentRowConverter = currentRowConverter;
         this.connection = connection;
         this.jdbcConf = jdbcConf;
         this.jdbcDialect = jdbcDialect;
         initCache(false);
+
+        DynamicPreparedStmt stmt = DynamicPreparedStmt.buildStmt(
+                jdbcConf,
+                jdbcDialect,
+                jdbcConf.getColumn(),
+                currentRowConverter,
+                currentFieldNamedPstmt);
+
         this.pstmtCache.put(
                 getPstmtCacheKey(jdbcConf.getSchema(), jdbcConf.getTable(), RowKind.INSERT),
-                Optional.of(DynamicPreparedStmt.buildStmt(
-                        jdbcDialect,
-                        jdbcConf.getColumn(),
-                        currentRowConverter,
-                        currentFieldNamedPstmt)));
+                Optional.of(stmt));
+        this.currentFieldNamedPstmtFields = stmt.columnNameList;
+    }
+
+    @Override
+    public FieldNamedPreparedStatement getFieldNamedPstmt() {
+        return this.currentFieldNamedPstmt;
+    }
+
+    @Override
+    public List<String> getFieldNamedPstmtFields() {
+        return this.currentFieldNamedPstmtFields;
     }
 
     public boolean convertToExternal(RowData row) throws Exception {
@@ -136,9 +153,13 @@ public class PreparedStmtProxy implements FieldNamedPreparedStatement {
             }
         }
 
-        currentFieldNamedPstmt =
-                (FieldNamedPreparedStatement)
-                        currentRowConverter.toExternal(row, this.currentFieldNamedPstmt);
+//        currentFieldNamedPstmt =
+//                (FieldNamedPreparedStatement)
+//                        currentRowConverter.toExternal(row, this.currentFieldNamedPstmt);
+
+
+        currentRowConverter.toExternal(row, this);
+
         return true;
     }
 
@@ -199,6 +220,7 @@ public class PreparedStmtProxy implements FieldNamedPreparedStatement {
                             () -> {
                                 try {
                                     return DynamicPreparedStmt.buildStmt(
+                                            jdbcConf,
                                             jdbcConf.getSchema(),
                                             jdbcConf.getTable(),
                                             row.getRowKind(),
@@ -214,7 +236,8 @@ public class PreparedStmtProxy implements FieldNamedPreparedStatement {
 
             if (fieldNamedPreparedStatement.isPresent()) {
                 statement = fieldNamedPreparedStatement.get();
-                currentFieldNamedPstmt = statement.getFieldNamedPreparedStatement();
+                this.currentFieldNamedPstmt = statement.getFieldNamedPreparedStatement();
+                this.currentFieldNamedPstmtFields = statement.columnNameList;
                 return true;
             }
 
@@ -225,9 +248,9 @@ public class PreparedStmtProxy implements FieldNamedPreparedStatement {
 
     public void writeSingleRecordInternal(RowData row) throws Exception {
         getOrCreateFieldNamedPstmt(row);
-        currentFieldNamedPstmt =
-                (FieldNamedPreparedStatement)
-                        currentRowConverter.toExternal(row, this.currentFieldNamedPstmt);
+//        currentFieldNamedPstmt =
+//                (FieldNamedPreparedStatement)
+        currentRowConverter.toExternal(row, this);
         this.getInnerStatement(currentFieldNamedPstmt).execute();
     }
 

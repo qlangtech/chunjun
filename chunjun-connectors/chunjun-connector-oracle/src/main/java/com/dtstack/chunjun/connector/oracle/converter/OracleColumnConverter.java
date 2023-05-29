@@ -20,6 +20,7 @@ package com.dtstack.chunjun.connector.oracle.converter;
 
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
 import com.dtstack.chunjun.connector.jdbc.converter.JdbcColumnConverter;
+import com.dtstack.chunjun.connector.jdbc.sink.IFieldNamesAttachedStatement;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
 import com.dtstack.chunjun.converter.ISerializationConverter;
 import com.dtstack.chunjun.element.column.BigDecimalColumn;
@@ -48,10 +49,11 @@ import java.util.List;
  */
 public class OracleColumnConverter extends JdbcColumnConverter {
 
+
     public OracleColumnConverter(
             ChunJunCommonConf commonConf, int fieldCount
             , List<IDeserializationConverter> toInternalConverters
-            , List<Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType>> toExternalConverters) {
+            , List<Pair<ISerializationConverter<IFieldNamesAttachedStatement>, LogicalType>> toExternalConverters) {
         super(commonConf, fieldCount, toInternalConverters, toExternalConverters);
     }
 
@@ -153,27 +155,27 @@ public class OracleColumnConverter extends JdbcColumnConverter {
         }
     }
 
-    @Override
-    protected ISerializationConverter<FieldNamedPreparedStatement>
-    wrapIntoNullableExternalConverter(
-            ISerializationConverter serializationConverter, LogicalType type) {
-        return (val, index, statement) -> {
-            if (val.isNullAt(index)) {
-                //if (((ColumnRowData) val).getField(index) == null) {
-                try {
-                    final int sqlType =
-                            JdbcTypeUtil.typeInformationToSqlType(
-                                    TypeConversions.fromDataTypeToLegacyInfo(
-                                            TypeConversions.fromLogicalToDataType(type)));
-                    statement.setNull(index, sqlType);
-                } catch (Exception e) {
-                    statement.setObject(index, null);
-                }
-            } else {
-                serializationConverter.serialize(val, index, statement);
-            }
-        };
-    }
+//    @Override
+//    protected ISerializationConverter<FieldNamedPreparedStatement>
+//    wrapIntoNullableExternalConverter(
+//            ISerializationConverter serializationConverter, LogicalType type) {
+//        return (val, index, statement, statPos) -> {
+//            if (val.isNullAt(index)) {
+//                //if (((ColumnRowData) val).getField(index) == null) {
+//                try {
+//                    final int sqlType =
+//                            JdbcTypeUtil.typeInformationToSqlType(
+//                                    TypeConversions.fromDataTypeToLegacyInfo(
+//                                            TypeConversions.fromLogicalToDataType(type)));
+//                    statement.setNull(index, sqlType);
+//                } catch (Exception e) {
+//                    statement.setObject(index, null);
+//                }
+//            } else {
+//                serializationConverter.serialize(val, index, statement, statPos);
+//            }
+//        };
+//    }
 
 //    @Override
 //    protected ISerializationConverter<FieldNamedPreparedStatement> createExternalConverter(

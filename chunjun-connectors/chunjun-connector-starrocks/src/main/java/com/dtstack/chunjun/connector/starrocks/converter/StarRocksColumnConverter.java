@@ -88,13 +88,13 @@ public class StarRocksColumnConverter
     protected ISerializationConverter<Map<String, Object>> wrapIntoNullableExternalConverter(
             ISerializationConverter<Map<String, Object>> ISerializationConverter,
             LogicalType type) {
-        return (rowData, index, output) -> {
+        return (rowData, index, output, statPos) -> {
             if (rowData == null
                     || rowData.isNullAt(index)
                     || LogicalTypeRoot.NULL.equals(type.getTypeRoot())) {
                 output.put(columnList.get(index), null);
             } else {
-                ISerializationConverter.serialize(rowData, index, output);
+                ISerializationConverter.serialize(rowData, index, output, statPos);
             }
         };
     }

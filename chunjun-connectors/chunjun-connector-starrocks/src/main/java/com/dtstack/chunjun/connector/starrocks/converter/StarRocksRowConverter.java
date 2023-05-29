@@ -18,31 +18,16 @@
 
 package com.dtstack.chunjun.connector.starrocks.converter;
 
-import com.dtstack.chunjun.connector.starrocks.streamload.StarRocksSinkOP;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
-import com.dtstack.chunjun.converter.IDeserializationConverter;
 import com.dtstack.chunjun.converter.ISerializationConverter;
 
-import org.apache.flink.table.data.DecimalData;
-import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
-import org.apache.flink.table.data.StringData;
-import org.apache.flink.table.data.TimestampData;
-import org.apache.flink.table.types.logical.DecimalType;
 import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.table.types.logical.LogicalTypeRoot;
 import org.apache.flink.table.types.logical.RowType;
-import org.apache.flink.table.types.logical.TimestampType;
 
-import java.math.BigDecimal;
-import java.sql.Date;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
-
-import static com.dtstack.chunjun.connector.starrocks.util.StarRocksUtil.addStrForNum;
 
 /** @author liuliu 2022/7/12 */
 public class StarRocksRowConverter
@@ -53,7 +38,7 @@ public class StarRocksRowConverter
 
     public StarRocksRowConverter(RowType rowType, List<String> columnList) {
         //super(rowType);
-        super(0,null,null);
+        super(0, null, null);
         this.columnList = columnList;
 //        for (int i = 0; i < rowType.getFieldCount(); i++) {
 //            toInternalConverters.add(
@@ -85,13 +70,13 @@ public class StarRocksRowConverter
     protected ISerializationConverter<Map<String, Object>> wrapIntoNullableExternalConverter(
             ISerializationConverter<Map<String, Object>> ISerializationConverter,
             LogicalType type) {
-        return (rowData, index, output) -> {
+        return (rowData, index, output, statPos) -> {
             if (rowData == null
                     || rowData.isNullAt(index)
                     || LogicalTypeRoot.NULL.equals(type.getTypeRoot())) {
                 output.put(columnList.get(index), null);
             } else {
-                ISerializationConverter.serialize(rowData, index, output);
+                ISerializationConverter.serialize(rowData, index, output, statPos);
             }
         };
     }

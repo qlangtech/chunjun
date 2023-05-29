@@ -59,7 +59,7 @@ public abstract class AbstractRowConverter<SourceT, LookupT, SinkT, T> implement
     private static final long serialVersionUID = 1L;
     // protected RowType rowType;
     protected final List<IDeserializationConverter> toInternalConverters;
-    protected final List<ISerializationConverter> toExternalConverters;
+    protected final List<ISerializationConverter<SinkT>> toExternalConverters;
     private final int fieldCount;
     // protected LogicalType[] fieldTypes;
     protected ChunJunCommonConf commonConf;
@@ -203,7 +203,7 @@ public abstract class AbstractRowConverter<SourceT, LookupT, SinkT, T> implement
     }
 
     protected ISerializationConverter<SinkT> wrapIntoNullableExternalConverter(
-            ISerializationConverter<SinkT> ISerializationConverter, T type) {
+            ISerializationConverter<SinkT> serializationConverter, T type) {
         return null;
     }
 

@@ -26,6 +26,9 @@ import org.apache.flink.connector.jdbc.statement.FieldNamedPreparedStatement;
 import org.apache.flink.connector.jdbc.statement.FieldNamedPreparedStatementImpl;
 import org.apache.flink.types.RowKind;
 
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.tuple.Pair;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +37,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -50,48 +54,23 @@ public class DynamicPreparedStmt {
 
     private static final Logger LOG = LoggerFactory.getLogger(DynamicPreparedStmt.class);
 
-    protected List<String> columnNameList = new ArrayList<>();
+    protected List<String> columnNameList;
 //
 //    protected List<String> columnTypeList = new ArrayList<>();
 
     protected transient FieldNamedPreparedStatement fieldNamedPreparedStatement;
-    protected JdbcConf jdbcConf;
+    protected final JdbcConf jdbcConf;
     private boolean writeExtInfo;
     private JdbcDialect jdbcDialect;
     private AbstractRowConverter<?, ?, ?, ?> rowConverter;
 
-    public static Optional<DynamicPreparedStmt> buildStmt(
-            Map<String, Integer> header,
-            Set<String> extHeader,
-            String schemaName,
-            String tableName,
-            RowKind rowKind,
-            Connection connection,
-            JdbcDialect jdbcDialect,
-            boolean writeExtInfo)
-            throws SQLException {
-        throw new UnsupportedOperationException();
-//        DynamicPreparedStmt dynamicPreparedStmt = new DynamicPreparedStmt();
-//
-//        dynamicPreparedStmt.writeExtInfo = writeExtInfo;
-//        dynamicPreparedStmt.jdbcDialect = jdbcDialect;
-//        dynamicPreparedStmt.getColumnNameList(header, extHeader);
-//        dynamicPreparedStmt.getColumnMeta(schemaName, tableName, connection);
-//        dynamicPreparedStmt.buildRowConvert();
-//
-//        Optional<String> sql = prepareTemplatesSQL(schemaName, tableName, rowKind, dynamicPreparedStmt);
-//
-//        if (!sql.isPresent()) {
-//            return Optional.empty();
-//        }
-//        String[] fieldNames = new String[dynamicPreparedStmt.columnNameList.size()];
-//        dynamicPreparedStmt.columnNameList.toArray(fieldNames);
-//        dynamicPreparedStmt.fieldNamedPreparedStatement =
-//                FieldNamedPreparedStatementImpl.prepareStatement(connection, sql.get(), fieldNames);
-//        return Optional.of(dynamicPreparedStmt);
+    public DynamicPreparedStmt(JdbcConf jdbcConf) {
+        this.jdbcConf = Objects.requireNonNull(jdbcConf, "jdbcConf can not be null");
     }
 
+
     public static Optional<DynamicPreparedStmt> buildStmt(
+            JdbcConf jdbcConf,
             String schemaName,
             String tableName,
             RowKind rowKind,
@@ -100,78 +79,98 @@ public class DynamicPreparedStmt {
             List<FieldConf> fieldConfList,
             AbstractRowConverter<?, ?, ?, ?> rowConverter)
             throws SQLException {
-        //throw new UnsupportedOperationException();
-        DynamicPreparedStmt dynamicPreparedStmt = new DynamicPreparedStmt();
+
+        DynamicPreparedStmt dynamicPreparedStmt = new DynamicPreparedStmt(jdbcConf);
         dynamicPreparedStmt.jdbcDialect = jdbcDialect;
         dynamicPreparedStmt.rowConverter = rowConverter;
-        String[] fieldNames = new String[fieldConfList.size()];
-        for (int i = 0; i < fieldConfList.size(); i++) {
-            FieldConf fieldConf = fieldConfList.get(i);
-            fieldNames[i] = fieldConf.getName();
-            dynamicPreparedStmt.columnNameList.add(fieldConf.getName());
-            // dynamicPreparedStmt.columnTypeList.add(fieldConf.getType());
-        }
-        Optional<String> sql = prepareTemplatesSQL(schemaName, tableName, rowKind, dynamicPreparedStmt);
+        //  String[] fieldNames = new String[fieldConfList.size()];
+        //  FieldConf fieldConf = null;
+//        List<String> columnNameList = Lists.newArrayList();
+//        for (int i = 0; i < fieldConfList.size(); i++) {
+//             fieldConf = fieldConfList.get(i);
+//           // fieldNames[i] = fieldConf.getName();
+//            columnNameList.add(fieldConf.getName());
+//            // dynamicPreparedStmt.columnTypeList.add(fieldConf.getType());
+//        }
+
+        Optional<Pair<String, List<String>>> sql = prepareTemplatesSQL(schemaName, tableName, rowKind, dynamicPreparedStmt, jdbcConf.getFullColumn());
 
         if (!sql.isPresent()) {
             return Optional.empty();
         }
+        Pair<String, List<String>> s = sql.get();
+        List<String> cols = s.getRight();
+
+        dynamicPreparedStmt.columnNameList = cols;
         dynamicPreparedStmt.fieldNamedPreparedStatement =
-                FieldNamedPreparedStatementImpl.prepareStatement(connection, sql.get(), fieldNames);
+                FieldNamedPreparedStatementImpl.prepareStatement(connection, s.getKey(), cols.toArray(new String[cols.size()]));
         return Optional.of(dynamicPreparedStmt);
     }
 
-    private static Optional<String> prepareTemplatesSQL(String schemaName, String tableName, RowKind rowKind, DynamicPreparedStmt dynamicPreparedStmt) {
-        Optional<String> sql = dynamicPreparedStmt.prepareTemplates(rowKind, schemaName, tableName);
+    /**
+     * @return key: SQL , val: colList
+     */
+    private static Optional<Pair<String, List<String>>> prepareTemplatesSQL(
+            String schemaName, String tableName, RowKind rowKind, DynamicPreparedStmt dynamicPreparedStmt, List<String> fullCols) {
+        Optional<Pair<String, List<String>>> sql = dynamicPreparedStmt.prepareTemplates(rowKind, schemaName, tableName, fullCols);
         if (LOG.isDebugEnabled()) {
-            LOG.debug("db:{},tab:{},sql:{}", schemaName, tableName, sql.isPresent() ? sql.get() : "none");
+            LOG.debug("db:{},tab:{},sql:{}", schemaName, tableName, sql.isPresent() ? sql.get().getKey() : "none");
         }
         return sql;
     }
 
     public static DynamicPreparedStmt buildStmt(
+            JdbcConf jdbcConf,
             JdbcDialect jdbcDialect,
             List<FieldConf> fieldConfList,
             AbstractRowConverter<?, ?, ?, ?> rowConverter,
             FieldNamedPreparedStatement fieldNamedPreparedStatement) {
 
-        DynamicPreparedStmt dynamicPreparedStmt = new DynamicPreparedStmt();
+        DynamicPreparedStmt dynamicPreparedStmt = new DynamicPreparedStmt(jdbcConf);
         dynamicPreparedStmt.jdbcDialect = jdbcDialect;
         dynamicPreparedStmt.rowConverter = rowConverter;
         dynamicPreparedStmt.fieldNamedPreparedStatement = fieldNamedPreparedStatement;
+        List<String> fullCols = new ArrayList<>();
         for (int i = 0; i < fieldConfList.size(); i++) {
             FieldConf fieldConf = fieldConfList.get(i);
-            dynamicPreparedStmt.columnNameList.add(fieldConf.getName());
+            fullCols.add(fieldConf.getName());
             // dynamicPreparedStmt.columnTypeList.add(fieldConf.getType());
         }
+
+        dynamicPreparedStmt.columnNameList = fullCols;
         return dynamicPreparedStmt;
     }
 
-    private String createInsertIntoStatement(String schemaName, String tableName) {
-        return jdbcDialect.getInsertIntoStatement(schemaName, tableName, columnNameList);
+    private String createInsertIntoStatement(String schemaName, String tableName, List<String> fullCols) {
+        return jdbcDialect.getInsertIntoStatement(schemaName, tableName, fullCols);
     }
 
-    protected Optional<String> prepareTemplates(RowKind rowKind, String schemaName, String tableName) {
+    protected Optional<Pair<String, List<String>>> prepareTemplates(
+            RowKind rowKind, String schemaName, String tableName, List<String> fullCols) {
+        if (CollectionUtils.isEmpty(fullCols)) {
+            throw new IllegalArgumentException("fullCols can not be empty");
+        }
         String singleSql = null;
         switch (rowKind) {
             case INSERT:
-                // case UPDATE_AFTER:
             {
-                singleSql = createInsertIntoStatement(schemaName, tableName);
-//                        jdbcDialect.getInsertIntoStatement(
-//                                schemaName, tableName, columnNameList.toArray(new String[0]));
-                return Optional.of(singleSql);
+                singleSql = createInsertIntoStatement(schemaName, tableName, fullCols);
+                return Optional.of(Pair.of(singleSql, fullCols));
             }
             case UPDATE_AFTER: {
-                Optional<String> replaceSql = jdbcDialect.getReplaceStatement(schemaName, tableName, columnNameList);
-                return replaceSql.isPresent() ? replaceSql : Optional.of(createInsertIntoStatement(schemaName, tableName));
+                Optional<String> replaceSql = jdbcDialect.getReplaceStatement(schemaName, tableName, fullCols);
+                return replaceSql.isPresent()
+                        ? Optional.of(Pair.of(replaceSql.get(), fullCols))
+                        : Optional.of(Pair.of(createInsertIntoStatement(schemaName, tableName, fullCols), fullCols));
             }
             case DELETE:
-                //String[] columnNames = new String[columnNameList.size()];
-                singleSql = jdbcDialect.getDeleteStatement(schemaName, tableName, columnNameList);
-                return Optional.of(singleSql);
+                singleSql = jdbcDialect.getDeleteStatement(schemaName, tableName, this.jdbcConf.getUniqueKey());
+                return Optional.of(Pair.of(singleSql, this.jdbcConf.getUniqueKey()));
             case UPDATE_BEFORE: {
-                return jdbcDialect.getUpdateBeforeStatement(schemaName, tableName, columnNameList);
+                Optional<String> updateBeforeStatement = jdbcDialect.getUpdateBeforeStatement(schemaName, tableName, fullCols);
+                return updateBeforeStatement.isPresent()
+                        ? Optional.of(Pair.of(updateBeforeStatement.get(), fullCols))
+                        : Optional.empty();
             }
             default: {
                 // TODO 异常如何处理

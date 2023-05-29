@@ -30,11 +30,11 @@ public interface ISerializationConverter<T> extends Serializable {
 
     /**
      * 类型T一般是 Object，HBase这种特殊的就是byte[]
-     *
      * @param rowData
-     * @param pos
+     * @param rowDataPos
      * @param output
+     * @param outputPos 输出对象的位置
      * @throws Exception
      */
-    void serialize(RowData rowData, int pos, T output) throws Exception;
+    void serialize(RowData rowData, int rowDataPos, T output, int outputPos) throws Exception;
 }

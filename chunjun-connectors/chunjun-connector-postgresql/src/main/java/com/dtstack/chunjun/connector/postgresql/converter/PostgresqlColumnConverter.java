@@ -24,6 +24,7 @@ package com.dtstack.chunjun.connector.postgresql.converter;
 
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
 import com.dtstack.chunjun.connector.jdbc.converter.JdbcColumnConverter;
+import com.dtstack.chunjun.connector.jdbc.sink.IFieldNamesAttachedStatement;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
 import com.dtstack.chunjun.converter.ISerializationConverter;
 import com.dtstack.chunjun.element.AbstractBaseColumn;
@@ -70,7 +71,7 @@ public class PostgresqlColumnConverter extends JdbcColumnConverter {
     public PostgresqlColumnConverter(
             ChunJunCommonConf commonConf
             , int fieldCount, List<IDeserializationConverter> toInternalConverters
-            , List<Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType>> toExternalConverters) {
+            , List<Pair<ISerializationConverter<IFieldNamesAttachedStatement>, LogicalType>> toExternalConverters) {
         super(commonConf, fieldCount, toInternalConverters, toExternalConverters);
     }
 
@@ -85,10 +86,12 @@ public class PostgresqlColumnConverter extends JdbcColumnConverter {
         arrayType.put("_text", Oid.TEXT_ARRAY);
     }
 
-    @Override
-    public FieldNamedPreparedStatement toExternal(
-            RowData rowData, FieldNamedPreparedStatement statement) throws Exception {
-        for (int index = 0; index < rowData.getArity(); index++) {
+//    @Override
+//    public IFieldNamesAttachedStatement toExternal(RowData rowData, IFieldNamesAttachedStatement fieldNamesAttachedStatement) throws Exception {
+//
+//
+//        FieldNamedPreparedStatement statement = fieldNamesAttachedStatement.getFieldNamedPstmt();
+//        for (int index = 0; index < rowData.getArity(); index++) {
 //            if (arrayType.containsKey(fieldTypeList.get(index))) {
 //                // eg: {1000,1000,10001}、{{1000,1000,10001},{1,2,3}}
 //                String field = ((ColumnRowData) rowData).getField(index).asString();
@@ -97,10 +100,10 @@ public class PostgresqlColumnConverter extends JdbcColumnConverter {
 //                AbstractBaseColumn arrayColumn = new ArrayColumn(array);
 //                ((ColumnRowData) rowData).setField(index, arrayColumn);
 //            }
-            toExternalConverters.get(index).serialize(rowData, index, statement);
-        }
-        return statement;
-    }
+//            toExternalConverters.get(index).serialize(rowData, index, statement);
+//        }
+//        return fieldNamesAttachedStatement;
+//    }
 
     // @Override
     public static IDeserializationConverter createInternalConverter(LogicalType type) {

@@ -20,6 +20,7 @@ package com.dtstack.chunjun.connector.jdbc.converter;
 
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
 import com.dtstack.chunjun.conf.FieldConf;
+import com.dtstack.chunjun.connector.jdbc.sink.IFieldNamesAttachedStatement;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
 import com.dtstack.chunjun.converter.ISerializationConverter;
@@ -40,6 +41,7 @@ import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.table.types.logical.TimestampType;
 import org.apache.flink.table.types.logical.YearMonthIntervalType;
+import org.apache.flink.types.RowKind;
 
 import io.vertx.core.json.JsonArray;
 
@@ -55,8 +57,7 @@ import java.util.List;
 
 /** Base class for all converters that convert between JDBC object and Flink internal object. */
 public class JdbcColumnConverter
-        extends AbstractRowConverter<
-        ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType> {
+        extends AbstractRowConverter<ResultSet, JsonArray, IFieldNamesAttachedStatement, LogicalType> {
 
 
 //    public JdbcColumnConverter(RowType rowType) {
@@ -66,44 +67,36 @@ public class JdbcColumnConverter
 
     public JdbcColumnConverter(
             ChunJunCommonConf commonConf, int fieldCount, List<IDeserializationConverter> toInternalConverters
-            , List<Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType>> toExternalConverters) {
+            , List<Pair<ISerializationConverter<IFieldNamesAttachedStatement>, LogicalType>> toExternalConverters) {
         super(fieldCount, toInternalConverters, toExternalConverters);
         this.setCommonConf(commonConf);
     }
 
-//    public JdbcColumnConverter(RowType rowType, ChunJunCommonConf commonConf) {
-//        super(rowType, commonConf);
-//        for (int i = 0; i < rowType.getFieldCount(); i++) {
-//            toInternalConverters.add(
-//                    wrapIntoNullableInternalConverter(
-//                            createInternalConverter(rowType.getTypeAt(i))));
-//            toExternalConverters.add(
-//                    wrapIntoNullableExternalConverter(
-//                            createExternalConverter(fieldTypes[i]), fieldTypes[i]));
-//        }
-//    }
-
     @Override
-    protected ISerializationConverter<FieldNamedPreparedStatement>
-    wrapIntoNullableExternalConverter(
-            ISerializationConverter serializationConverter, LogicalType type) {
-
-        return (val, index, statement) -> {
+    protected final ISerializationConverter<IFieldNamesAttachedStatement> wrapIntoNullableExternalConverter(
+            ISerializationConverter<IFieldNamesAttachedStatement> serializationConverter, LogicalType type) {
+        return (val, index, statement, statPos) -> {
             if (val.isNullAt(index)) {
                 statement.setObject(index, null);
             } else {
-                serializationConverter.serialize(val, index, statement);
+                serializationConverter.serialize(val, index, statement, statPos);
             }
         };
+    }
 
-//        return (val, index, statement) -> {
-//            if (((ColumnRowData) val).getField(index) == null) {
+//    @Override
+//    protected ISerializationConverter<FieldNamedPreparedStatement>
+//    wrapIntoNullableExternalConverter(
+//            ISerializationConverter serializationConverter, LogicalType type) {
+//
+//        return (val, index, statement, statPos) -> {
+//            if (val.isNullAt(index)) {
 //                statement.setObject(index, null);
 //            } else {
-//                serializationConverter.serialize(val, index, statement);
+//                serializationConverter.serialize(val, index, statement, statPos);
 //            }
 //        };
-    }
+//    }
 
     @Override
     @SuppressWarnings("unchecked")
@@ -143,19 +136,38 @@ public class JdbcColumnConverter
     }
 
     @Override
-    public FieldNamedPreparedStatement toExternal(
-            RowData rowData, FieldNamedPreparedStatement statement) throws Exception {
-        for (int index = 0; index < rowData.getArity(); index++) {
-            try {
-                toExternalConverters.get(index).serialize(rowData, index, statement);
-            } catch (Throwable e) {
-                if (rowData instanceof GenericRowData) {
-                    throw new IllegalStateException("index:" + index + " val:" + ((GenericRowData) rowData).getField(index), e);
+    public final IFieldNamesAttachedStatement toExternal(
+            RowData rowData, IFieldNamesAttachedStatement fieldNamesAttachedStatement) throws Exception {
+
+       // FieldNamedPreparedStatement statement = fieldNamesAttachedStatement.getFieldNamedPstmt();
+
+
+        if (rowData.getRowKind() == RowKind.DELETE) {
+            // 当执行删除时只where 部分只出现 主键部分
+            List<String> stmtFields = fieldNamesAttachedStatement.getFieldNamedPstmtFields();
+            int indexOf;
+            List<FieldConf> fields = this.commonConf.getColumn();
+            FieldConf field = null;
+            for (int index = 0; index < fields.size(); index++) {
+                field = fields.get(index);
+
+                if ((indexOf = stmtFields.indexOf(field.getName())) > -1) {
+                    toExternalConverters.get(index).serialize(rowData, index, fieldNamesAttachedStatement, indexOf);
                 }
-                throw e;
+            }
+        } else {
+            for (int index = 0; index < rowData.getArity(); index++) {
+                try {
+                    toExternalConverters.get(index).serialize(rowData, index, fieldNamesAttachedStatement, index);
+                } catch (Throwable e) {
+                    if (rowData instanceof GenericRowData) {
+                        throw new IllegalStateException("index:" + index + " val:" + ((GenericRowData) rowData).getField(index), e);
+                    }
+                    throw e;
+                }
             }
         }
-        return statement;
+        return fieldNamesAttachedStatement;
     }
 
 //    @Override
@@ -236,114 +248,111 @@ public class JdbcColumnConverter
 //        throw new UnsupportedOperationException();
 //    }
 
-    public static ISerializationConverter<FieldNamedPreparedStatement> createJdbcStatementValConverter(LogicalType type, RowData.FieldGetter valGetter) {
+    public static ISerializationConverter<IFieldNamesAttachedStatement> createJdbcStatementValConverter(LogicalType type, RowData.FieldGetter valGetter) {
         switch (type.getTypeRoot()) {
             case BOOLEAN:
-                return (val, index, statement) -> {
+                return (val, index, statement, statPos) -> {
 //                    statement.setBoolean(
 //                            index, ((ColumnRowData) val).getField(index).asBoolean());
-                    statement.setBoolean(index, (Boolean) valGetter.getFieldOrNull(val) //val.getBoolean(index)
+                    statement.setBoolean(statPos, (Boolean) valGetter.getFieldOrNull(val) //val.getBoolean(index)
                     );
                 };
             case TINYINT:
-                return (val, index, statement) -> statement.setByte(index, (Byte) valGetter.getFieldOrNull(val) //val.getByte(index)
+                return (val, index, statement, statPos) -> statement.setByte(statPos, (Byte) valGetter.getFieldOrNull(val) //val.getByte(index)
                 );
             case SMALLINT: {
-                return (val, index, statement) -> {
+                return (val, index, statement, statPos) -> {
                     short a = 0;
                     a = val.getShort(index);
-                    statement.setShort(index, (Short) valGetter.getFieldOrNull(val) //a
+                    statement.setShort(statPos, (Short) valGetter.getFieldOrNull(val) //a
                     );
                 };
             }
             case INTEGER:
             case INTERVAL_YEAR_MONTH:
-                return (val, index, statement) -> {
-                    int a = 0;
+                return (val, index, statement, statPos) -> {
+                    // int a = 0;
 //                    try {
 //                        a = ((ColumnRowData) val).getField(index).asYearInt();
 //                    } catch (Exception e) {
 //                        LOG.error("val {}, index{}", val, index, e);
 //                    }
-                    a = val.getInt(index);
-                    statement.setInt(index, (Integer) valGetter.getFieldOrNull(val));
+                    // a = val.getInt(index);
+                    statement.setInt(statPos, (Integer) valGetter.getFieldOrNull(val));
                 };
             case FLOAT:
-                return (val, index, statement) -> {
+                return (val, index, statement, statPos) -> {
                     // statement.setFloat(index, ((ColumnRowData) val).getField(index).asFloat());
-                    statement.setFloat(index, (Float) valGetter.getFieldOrNull(val) //val.getFloat(index)
+                    statement.setFloat(statPos, (Float) valGetter.getFieldOrNull(val) //val.getFloat(index)
                     );
                 };
             case DOUBLE:
-                return (val, index, statement) -> {
+                return (val, index, statement, statPos) -> {
 //                    statement.setDouble(
 //                            index, ((ColumnRowData) val).getField(index).asDouble());
                     statement.setDouble(
-                            index, (Double) valGetter.getFieldOrNull(val) //val.getDouble(index)
+                            statPos, (Double) valGetter.getFieldOrNull(val) //val.getDouble(index)
                     );
                 };
             case BIGINT:
-                return (val, index, statement) -> {
+                return (val, index, statement, statPos) -> {
                     // statement.setLong(index, ((ColumnRowData) val).getField(index).asLong());
-                    statement.setLong(index, (Long) valGetter.getFieldOrNull(val) //val.getLong(index)
+                    statement.setLong(statPos, (Long) valGetter.getFieldOrNull(val) //val.getLong(index)
                     );
                 };
             case DECIMAL:
-                return (val, index, statement) -> {
-//                    statement.setBigDecimal(
-//                            index, ((ColumnRowData) val).getField(index).asBigDecimal());
-
+                return (val, index, statement, statPos) -> {
                     statement.setBigDecimal(
-                            index, ((DecimalData) valGetter.getFieldOrNull(val)).toBigDecimal()
+                            statPos, ((DecimalData) valGetter.getFieldOrNull(val)).toBigDecimal()
                             //  val.getDecimal(index, -1, -1).toBigDecimal()
                     );
                 };
             case CHAR:
             case VARCHAR:
-                return (val, index, statement) -> {
+                return (val, index, statement, statPos) -> {
 //                    statement.setString(
 //                            index, ((ColumnRowData) val).getField(index).asString());
                     statement.setString(
-                            index, (String) valGetter.getFieldOrNull(val) //val.getString(index).toString()
+                            statPos, (String) valGetter.getFieldOrNull(val) //val.getString(index).toString()
                     );
                 };
             case DATE:
-                return (val, index, statement) -> {
+                return (val, index, statement, statPos) -> {
                     //  statement.setDate(index, ((ColumnRowData) val).getField(index).asSqlDate());
-                    statement.setDate(index, (java.sql.Date) valGetter.getFieldOrNull(val));
+                    statement.setDate(statPos, (java.sql.Date) valGetter.getFieldOrNull(val));
                     // statement.setDate(index, Date.valueOf(LocalDate.ofEpochDay((Integer) valGetter.apply(val))) //  Date.valueOf(LocalDate.ofEpochDay(val.getInt(index)))
                     // );
                 };
             case TIME_WITHOUT_TIME_ZONE:
-                return (val, index, statement) -> {
+                return (val, index, statement, statPos) -> {
                     // statement.setTime(index, ((ColumnRowData) val).getField(index).asTime());
                     // val.getTimestamp(index, -1).toLocalDateTime();
                     // statement.setTime(index, ((ColumnRowData) val).getField(index).asTime());
                     // val.get
                     // throw new UnsupportedOperationException("index:" + index + ",val:" + val.toString());
 //                    java.sql.Time time =
-                    statement.setTime(index, (Time) valGetter.getFieldOrNull(val));
+                    statement.setTime(statPos, (Time) valGetter.getFieldOrNull(val));
 //                    statement.setTime(index, new Time((Integer) valGetter.apply(val)) //   new Time(val.getInt(index))
 //                    );
                 };
             case TIMESTAMP_WITH_TIME_ZONE:
             case TIMESTAMP_WITHOUT_TIME_ZONE:
-                return (val, index, statement) -> {
+                return (val, index, statement, statPos) -> {
 //                    statement.setTimestamp(
 //                            index, ((ColumnRowData) val).getField(index).asTimestamp());
                     statement.setTimestamp(
-                            index, ((Timestamp) valGetter.getFieldOrNull(val))  //val.getTimestamp(index, -1).toTimestamp()
+                            statPos, ((Timestamp) valGetter.getFieldOrNull(val))  //val.getTimestamp(index, -1).toTimestamp()
                     );
                 };
 
             case BINARY:
             case VARBINARY:
-                return (val, index, statement) -> {
+                return (val, index, statement, statPos) -> {
                     Object v = valGetter.getFieldOrNull(val);
                     if (v instanceof Byte) {
-                        statement.setByte(index, (Byte) v);
+                        statement.setByte(statPos, (Byte) v);
                     } else {
-                        statement.setBytes(index, (byte[]) v);
+                        statement.setBytes(statPos, (byte[]) v);
                     }
                 };
 
