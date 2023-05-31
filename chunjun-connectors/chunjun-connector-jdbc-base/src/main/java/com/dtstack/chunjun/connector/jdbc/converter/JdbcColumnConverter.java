@@ -34,7 +34,6 @@ import com.dtstack.chunjun.element.column.StringColumn;
 import com.dtstack.chunjun.element.column.TimeColumn;
 import com.dtstack.chunjun.element.column.TimestampColumn;
 
-import org.apache.flink.connector.jdbc.statement.FieldNamedPreparedStatement;
 import org.apache.flink.table.data.DecimalData;
 import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
@@ -139,12 +138,14 @@ public class JdbcColumnConverter
     public final IFieldNamesAttachedStatement toExternal(
             RowData rowData, IFieldNamesAttachedStatement fieldNamesAttachedStatement) throws Exception {
 
-       // FieldNamedPreparedStatement statement = fieldNamesAttachedStatement.getFieldNamedPstmt();
+        // FieldNamedPreparedStatement statement = fieldNamesAttachedStatement.getFieldNamedPstmt();
 
 
         if (rowData.getRowKind() == RowKind.DELETE) {
             // 当执行删除时只where 部分只出现 主键部分
             List<String> stmtFields = fieldNamesAttachedStatement.getFieldNamedPstmtFields();
+            final int stmtFieldsCount = stmtFields.size();
+            int foundStmtFieldsCount = 0;
             int indexOf;
             List<FieldConf> fields = this.commonConf.getColumn();
             FieldConf field = null;
@@ -153,6 +154,10 @@ public class JdbcColumnConverter
 
                 if ((indexOf = stmtFields.indexOf(field.getName())) > -1) {
                     toExternalConverters.get(index).serialize(rowData, index, fieldNamesAttachedStatement, indexOf);
+                    foundStmtFieldsCount++;
+                }
+                if (foundStmtFieldsCount >= stmtFieldsCount) {
+                    return fieldNamesAttachedStatement;
                 }
             }
         } else {
