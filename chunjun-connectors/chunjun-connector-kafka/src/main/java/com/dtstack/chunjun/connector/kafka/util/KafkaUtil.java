@@ -29,14 +29,14 @@ import org.apache.flink.streaming.connectors.kafka.internals.KafkaConsumerThread
 import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicPartition;
 import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicPartitionState;
 import org.apache.flink.streaming.connectors.kafka.internals.metrics.KafkaConsumerMetricConstants;
-import org.apache.flink.streaming.connectors.kafka.table.KafkaOptions;
-
+import org.apache.flink.streaming.connectors.kafka.table.KafkaConnectorOptions;
+//import org.apache.flink.streaming.connectors.kafka.table.KafkaConnectorOptionsUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.consumer.internals.SubscriptionState;
+//import org.apache.kafka.clients.consumer.internals.SubscriptionState;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.requests.IsolationLevel;
+import org.apache.kafka.common.IsolationLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,137 +99,138 @@ public class KafkaUtil {
         return map;
     }
 
-    public static Properties getKafkaProperties(Map<String, String> tableOptions) {
-        final Properties kafkaProperties = new Properties();
-        boolean hasKafkaClientProperties =
-                tableOptions.keySet().stream()
-                        .anyMatch(k -> k.startsWith(KafkaOptions.PROPERTIES_PREFIX));
-        if (hasKafkaClientProperties) {
-            tableOptions.keySet().stream()
-                    .filter(key -> key.startsWith(KafkaOptions.PROPERTIES_PREFIX))
-                    .forEach(
-                            key -> {
-                                final String value = tableOptions.get(key);
-                                final String subKey =
-                                        key.substring((KafkaOptions.PROPERTIES_PREFIX).length());
-                                kafkaProperties.put(subKey, value);
-                            });
-            String keyDeserializer = tableOptions.get(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG);
-            if (StringUtils.isNotBlank(keyDeserializer)) {
-                kafkaProperties.put(
-                        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
-                        DtKafkaDeserializer.class.getName());
-                kafkaProperties.put("dt.key.deserializer", keyDeserializer);
-            }
-            String valueDeserializer =
-                    tableOptions.get(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG);
-            if (StringUtils.isNotBlank(valueDeserializer)) {
-                kafkaProperties.put(
-                        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
-                        DtKafkaDeserializer.class.getName());
-                kafkaProperties.put("dt.value.deserializer", valueDeserializer);
-            }
-        }
-        return kafkaProperties;
-    }
+//    public static Properties getKafkaProperties(Map<String, String> tableOptions) {
+//        final Properties kafkaProperties = new Properties();
+//        boolean hasKafkaClientProperties =
+//                tableOptions.keySet().stream()
+//                        .anyMatch(k -> k.startsWith(KafkaConnectorOptionsUtil.PROPERTIES_PREFIX));
+//        if (hasKafkaClientProperties) {
+//            tableOptions.keySet().stream()
+//                    .filter(key -> key.startsWith(KafkaOptions.PROPERTIES_PREFIX))
+//                    .forEach(
+//                            key -> {
+//                                final String value = tableOptions.get(key);
+//                                final String subKey =
+//                                        key.substring((KafkaOptions.PROPERTIES_PREFIX).length());
+//                                kafkaProperties.put(subKey, value);
+//                            });
+//            String keyDeserializer = tableOptions.get(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG);
+//            if (StringUtils.isNotBlank(keyDeserializer)) {
+//                kafkaProperties.put(
+//                        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+//                        DtKafkaDeserializer.class.getName());
+//                kafkaProperties.put("dt.key.deserializer", keyDeserializer);
+//            }
+//            String valueDeserializer =
+//                    tableOptions.get(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG);
+//            if (StringUtils.isNotBlank(valueDeserializer)) {
+//                kafkaProperties.put(
+//                        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+//                        DtKafkaDeserializer.class.getName());
+//                kafkaProperties.put("dt.value.deserializer", valueDeserializer);
+//            }
+//        }
+//        return kafkaProperties;
+//    }
 
     @SuppressWarnings("all")
     public static void registerLagMetrics(
             AbstractFetcher kafkaFetcher, MetricGroup chunjunMetricGroup) throws Exception {
-        Field consumerThreadField =
-                ReflectionUtils.getDeclaredField(kafkaFetcher, "consumerThread");
-        consumerThreadField.setAccessible(true);
-        KafkaConsumerThread consumerThread =
-                (KafkaConsumerThread) consumerThreadField.get(kafkaFetcher);
-
-        Field hasAssignedPartitionsField =
-                consumerThread.getClass().getDeclaredField("hasAssignedPartitions");
-        hasAssignedPartitionsField.setAccessible(true);
-
-        // get subtask unassigned kafka topic partition
-        Field subscribedPartitionStatesField =
-                ReflectionUtils.getDeclaredField(kafkaFetcher, "subscribedPartitionStates");
-        subscribedPartitionStatesField.setAccessible(true);
-        List<KafkaTopicPartitionState<?, KafkaTopicPartition>> subscribedPartitionStates =
-                (List<KafkaTopicPartitionState<?, KafkaTopicPartition>>)
-                        subscribedPartitionStatesField.get(kafkaFetcher);
-        // init partition lag metric
-        for (KafkaTopicPartitionState<?, KafkaTopicPartition> kafkaTopicPartitionState :
-                subscribedPartitionStates) {
-            KafkaTopicPartition kafkaTopicPartition =
-                    kafkaTopicPartitionState.getKafkaTopicPartition();
-            MetricGroup kafkaConsumerGroup =
-                    chunjunMetricGroup.addGroup(
-                            KafkaConsumerMetricConstants.KAFKA_CONSUMER_METRICS_GROUP);
-
-            MetricGroup topicMetricGroup =
-                    kafkaConsumerGroup.addGroup(
-                            KafkaConsumerMetricConstants.OFFSETS_BY_TOPIC_METRICS_GROUP,
-                            kafkaTopicPartition.getTopic());
-            MetricGroup finalMetricGroup =
-                    topicMetricGroup.addGroup(
-                            KafkaConsumerMetricConstants.OFFSETS_BY_PARTITION_METRICS_GROUP,
-                            kafkaTopicPartition.getPartition() + "");
-            finalMetricGroup.gauge(
-                    Metrics.LAG_GAUGE,
-                    new Gauge<Long>() {
-                        // tmp variable
-                        boolean initLag = true;
-                        int partitionIndex;
-                        SubscriptionState subscriptionState;
-                        TopicPartition topicPartition;
-
-                        @Override
-                        public Long getValue() {
-                            // first time register metrics
-                            if (initLag) {
-                                partitionIndex = kafkaTopicPartition.getPartition();
-                                initLag = false;
-                                return -1L;
-                            }
-                            // when kafka topic partition assigned calc metrics
-                            if (subscriptionState == null) {
-                                try {
-                                    Field consumerField =
-                                            consumerThread.getClass().getDeclaredField("consumer");
-                                    consumerField.setAccessible(true);
-
-                                    KafkaConsumer kafkaConsumer =
-                                            (KafkaConsumer) consumerField.get(consumerThread);
-                                    Field subscriptionStateField =
-                                            kafkaConsumer
-                                                    .getClass()
-                                                    .getDeclaredField("subscriptions");
-                                    subscriptionStateField.setAccessible(true);
-
-                                    boolean hasAssignedPartitions =
-                                            (boolean)
-                                                    hasAssignedPartitionsField.get(consumerThread);
-
-                                    if (!hasAssignedPartitions) {
-                                        LOG.error("wait 50 secs, but not assignedPartitions");
-                                    }
-
-                                    subscriptionState =
-                                            (SubscriptionState)
-                                                    subscriptionStateField.get(kafkaConsumer);
-
-                                    topicPartition =
-                                            subscriptionState.assignedPartitions().stream()
-                                                    .filter(x -> x.partition() == partitionIndex)
-                                                    .findFirst()
-                                                    .get();
-
-                                } catch (Exception e) {
-                                    LOG.error("", e.getMessage());
-                                }
-                                return -1L;
-                            } else {
-                                return subscriptionState.partitionLag(
-                                        topicPartition, IsolationLevel.READ_UNCOMMITTED);
-                            }
-                        }
-                    });
-        }
+        throw new UnsupportedOperationException();
+//        Field consumerThreadField =
+//                ReflectionUtils.getDeclaredField(kafkaFetcher, "consumerThread");
+//        consumerThreadField.setAccessible(true);
+//        KafkaConsumerThread consumerThread =
+//                (KafkaConsumerThread) consumerThreadField.get(kafkaFetcher);
+//
+//        Field hasAssignedPartitionsField =
+//                consumerThread.getClass().getDeclaredField("hasAssignedPartitions");
+//        hasAssignedPartitionsField.setAccessible(true);
+//
+//        // get subtask unassigned kafka topic partition
+//        Field subscribedPartitionStatesField =
+//                ReflectionUtils.getDeclaredField(kafkaFetcher, "subscribedPartitionStates");
+//        subscribedPartitionStatesField.setAccessible(true);
+//        List<KafkaTopicPartitionState<?, KafkaTopicPartition>> subscribedPartitionStates =
+//                (List<KafkaTopicPartitionState<?, KafkaTopicPartition>>)
+//                        subscribedPartitionStatesField.get(kafkaFetcher);
+//        // init partition lag metric
+//        for (KafkaTopicPartitionState<?, KafkaTopicPartition> kafkaTopicPartitionState :
+//                subscribedPartitionStates) {
+//            KafkaTopicPartition kafkaTopicPartition =
+//                    kafkaTopicPartitionState.getKafkaTopicPartition();
+//            MetricGroup kafkaConsumerGroup =
+//                    chunjunMetricGroup.addGroup(
+//                            KafkaConsumerMetricConstants.KAFKA_CONSUMER_METRICS_GROUP);
+//
+//            MetricGroup topicMetricGroup =
+//                    kafkaConsumerGroup.addGroup(
+//                            KafkaConsumerMetricConstants.OFFSETS_BY_TOPIC_METRICS_GROUP,
+//                            kafkaTopicPartition.getTopic());
+//            MetricGroup finalMetricGroup =
+//                    topicMetricGroup.addGroup(
+//                            KafkaConsumerMetricConstants.OFFSETS_BY_PARTITION_METRICS_GROUP,
+//                            kafkaTopicPartition.getPartition() + "");
+//            finalMetricGroup.gauge(
+//                    Metrics.LAG_GAUGE,
+//                    new Gauge<Long>() {
+//                        // tmp variable
+//                        boolean initLag = true;
+//                        int partitionIndex;
+//                        SubscriptionState subscriptionState;
+//                        TopicPartition topicPartition;
+//
+//                        @Override
+//                        public Long getValue() {
+//                            // first time register metrics
+//                            if (initLag) {
+//                                partitionIndex = kafkaTopicPartition.getPartition();
+//                                initLag = false;
+//                                return -1L;
+//                            }
+//                            // when kafka topic partition assigned calc metrics
+//                            if (subscriptionState == null) {
+//                                try {
+//                                    Field consumerField =
+//                                            consumerThread.getClass().getDeclaredField("consumer");
+//                                    consumerField.setAccessible(true);
+//
+//                                    KafkaConsumer kafkaConsumer =
+//                                            (KafkaConsumer) consumerField.get(consumerThread);
+//                                    Field subscriptionStateField =
+//                                            kafkaConsumer
+//                                                    .getClass()
+//                                                    .getDeclaredField("subscriptions");
+//                                    subscriptionStateField.setAccessible(true);
+//
+//                                    boolean hasAssignedPartitions =
+//                                            (boolean)
+//                                                    hasAssignedPartitionsField.get(consumerThread);
+//
+//                                    if (!hasAssignedPartitions) {
+//                                        LOG.error("wait 50 secs, but not assignedPartitions");
+//                                    }
+//
+//                                    subscriptionState =
+//                                            (SubscriptionState)
+//                                                    subscriptionStateField.get(kafkaConsumer);
+//
+//                                    topicPartition =
+//                                            subscriptionState.assignedPartitions().stream()
+//                                                    .filter(x -> x.partition() == partitionIndex)
+//                                                    .findFirst()
+//                                                    .get();
+//
+//                                } catch (Exception e) {
+//                                    LOG.error("", e.getMessage());
+//                                }
+//                                return -1L;
+//                            } else {
+//                                return subscriptionState.partitionLag(
+//                                        topicPartition, IsolationLevel.READ_UNCOMMITTED);
+//                            }
+//                        }
+//                    });
+//        }
     }
 }

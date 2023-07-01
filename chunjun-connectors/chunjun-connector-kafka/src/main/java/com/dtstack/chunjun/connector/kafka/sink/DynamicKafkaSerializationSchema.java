@@ -245,14 +245,14 @@ public class DynamicKafkaSerializationSchema
             } else {
                 valueSerialized = valueSerialization.serialize(valueRow);
             }
-
-            return new ProducerRecord<>(
-                    topic,
-                    extractPartition(consumedRow, keySerialized, valueSerialized),
-                    readMetadata(consumedRow, KafkaDynamicSink.WritableMetadata.TIMESTAMP),
-                    keySerialized,
-                    valueSerialized,
-                    readMetadata(consumedRow, KafkaDynamicSink.WritableMetadata.HEADERS));
+ throw new UnsupportedOperationException();
+//            return new ProducerRecord<>(
+//                    topic,
+//                    extractPartition(consumedRow, keySerialized, valueSerialized),
+//                    readMetadata(consumedRow, KafkaDynamicSink.WritableMetadata.TIMESTAMP),
+//                    keySerialized,
+//                    valueSerialized,
+//                    readMetadata(consumedRow, KafkaDynamicSink.WritableMetadata.HEADERS));
         } catch (Exception e) {
             dirtyManager.collect(consumedRow, e, null);
         }
@@ -280,13 +280,13 @@ public class DynamicKafkaSerializationSchema
     }
 
     @SuppressWarnings("unchecked")
-    private <T> T readMetadata(RowData consumedRow, KafkaDynamicSink.WritableMetadata metadata) {
-        final int pos = metadataPositions[metadata.ordinal()];
-        if (pos < 0) {
-            return null;
-        }
-        return (T) metadata.converter.read(consumedRow, pos);
-    }
+//    private <T> T readMetadata(RowData consumedRow, KafkaDynamicSink.WritableMetadata metadata) {
+//        final int pos = metadataPositions[metadata.ordinal()];
+//        if (pos < 0) {
+//            return null;
+//        }
+//        return (T) metadata.converter.read(consumedRow, pos);
+//    }
 
     protected Integer extractPartition(
             RowData consumedRow, @Nullable byte[] keySerialized, byte[] valueSerialized) {

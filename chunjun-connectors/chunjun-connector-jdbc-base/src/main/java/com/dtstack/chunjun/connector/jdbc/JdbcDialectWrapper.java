@@ -18,7 +18,9 @@ public class JdbcDialectWrapper implements JdbcDialect {
 
     @Override
     public boolean canHandle(String url) {
-        return dialect.canHandle(url);
+       // return dialect.canHandle(url);
+       // throw new UnsupportedOperationException(url);
+        return true;
     }
 
     @Override

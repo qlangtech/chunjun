@@ -178,7 +178,8 @@ public class JdbcDynamicTableSource
 
     @Override
     public void applyProjection(int[][] projectedFields) {
-        this.physicalSchema = TableSchemaUtils.projectSchema(physicalSchema, projectedFields);
+       // this.physicalSchema = TableSchemaUtils.projectSchema(physicalSchema, projectedFields);
+        throw new UnsupportedOperationException();
     }
 
     @Override

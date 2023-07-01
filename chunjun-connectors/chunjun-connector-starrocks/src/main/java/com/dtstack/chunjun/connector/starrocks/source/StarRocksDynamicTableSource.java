@@ -133,6 +133,7 @@ public class StarRocksDynamicTableSource
 
     @Override
     public void applyProjection(int[][] projectedFields) {
-        this.tableSchema = TableSchemaUtils.projectSchema(tableSchema, projectedFields);
+       // this.tableSchema = TableSchemaUtils.projectSchema(tableSchema, projectedFields);
+        throw new UnsupportedOperationException();
     }
 }
