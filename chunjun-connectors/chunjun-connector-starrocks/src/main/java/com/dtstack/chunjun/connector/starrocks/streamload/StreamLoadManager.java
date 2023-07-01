@@ -18,6 +18,11 @@
 
 package com.dtstack.chunjun.connector.starrocks.streamload;
 
+import org.apache.flink.table.data.DecimalData;
+
+import com.alibaba.fastjson.serializer.JSONSerializer;
+import com.alibaba.fastjson.serializer.ObjectSerializer;
+import com.alibaba.fastjson.serializer.SerializeConfig;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 
 import com.dtstack.chunjun.connector.starrocks.conf.StarRocksConf;
@@ -27,11 +32,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -60,6 +67,24 @@ public class StreamLoadManager {
         String version = starrocksQueryVisitor.getStarRocksVersion();
         __opAutoProjectionInJson = version.length() > 0 && !version.trim().startsWith("1.");
         this.starrocksStreamLoadVisitor = new StarRocksStreamLoadVisitor(starRocksConf);
+    }
+
+    static {
+
+        com.alibaba.fastjson.serializer.ObjectSerializer decimalSerializer = new ObjectSerializer() {
+            @Override
+            public void write(JSONSerializer serializer, Object object, Object fieldName, Type fieldType, int features) throws IOException {
+                try {
+                    DecimalData value = (DecimalData) object;
+                    Objects.requireNonNull(value, "callable of " + fieldName + " can not be null");
+                    serializer.write(value.toString());
+                } catch (Exception e) {
+                    throw new IOException(e);
+                }
+            }
+        };
+
+        SerializeConfig.globalInstance.put(DecimalData.class, decimalSerializer);
     }
 
     public void write(String tableIdentify, List<String> columnList, List<Map<String, Object>> data)
