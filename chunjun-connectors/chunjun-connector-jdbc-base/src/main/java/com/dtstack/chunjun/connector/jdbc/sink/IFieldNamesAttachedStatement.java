@@ -44,7 +44,7 @@ public interface IFieldNamesAttachedStatement {
     }
 
     default void setLong(int pos, Long val) throws SQLException {
-        getFieldNamedPstmt().setDouble(pos, val);
+        getFieldNamedPstmt().setLong(pos, val);
     }
 
     default void setBigDecimal(int pos, BigDecimal val) throws SQLException {
