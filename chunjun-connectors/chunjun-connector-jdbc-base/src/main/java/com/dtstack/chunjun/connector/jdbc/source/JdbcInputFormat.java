@@ -506,7 +506,7 @@ public class JdbcInputFormat extends BaseRichInputFormat {
                 DataType t = this.jdbcConf.getIncreColumnType().t;// type.t;
                 DataXReaderColType type = t.getCollapse();
                 if (type == DataXReaderColType.Date) {
-                    if (t.type == Types.DATE) {
+                    if (t.getType() == Types.DATE) {
                         maxValue = maxValProcess.apply(rs.getDate(keyMaxValue).getTime());
                     } else {
                         maxValue = maxValProcess.apply(rs.getTimestamp(keyMaxValue).getTime());
@@ -676,7 +676,7 @@ public class JdbcInputFormat extends BaseRichInputFormat {
         String endLocationSql;
         ColumnType type = (incrementColType);
         // if (type.t.type == TIMESTAMPTZ) {
-        if (type.t.type == Types.TIMESTAMP) {
+        if (type.t.getType() == Types.TIMESTAMP) {
             return String.valueOf(Timestamp.valueOf(location).getTime());
         }
         DataXReaderColType ctype = incrementColType.t.getCollapse();
@@ -735,7 +735,7 @@ public class JdbcInputFormat extends BaseRichInputFormat {
             boolean isNumber = StringUtils.isNumeric(startLocation);
             DataXReaderColType ctype = type.t.getCollapse();
             if (ctype == DataXReaderColType.Date) {
-                if (type.t.type == Types.DATE) {
+                if (type.t.getType() == Types.DATE) {
                     Date date =
                             isNumber
                                     ? new Date(Long.parseLong(startLocation))

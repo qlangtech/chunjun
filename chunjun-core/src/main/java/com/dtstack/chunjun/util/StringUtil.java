@@ -484,7 +484,7 @@ public class StringUtil {
         try {
             DataXReaderColType collapse = type.t.getCollapse();
             if (collapse == DataXReaderColType.Date) {
-                if (type.t.type == Types.DATE) {
+                if (type.t.getType() == Types.DATE) {
                     return String.valueOf(
                             DateUtils.parseDate(location, DateUtil.getDateFormat(location))
                                     .getTime());
