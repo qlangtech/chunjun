@@ -84,7 +84,7 @@ public class StreamLoadManager {
             }
         };
 
-        SerializeConfig.globalInstance.put(DecimalData.class, decimalSerializer);
+        SerializeConfig.global.put(DecimalData.class, decimalSerializer);
     }
 
     public void write(String tableIdentify, List<String> columnList, List<Map<String, Object>> data)
