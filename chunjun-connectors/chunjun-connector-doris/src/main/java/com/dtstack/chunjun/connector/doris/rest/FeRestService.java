@@ -36,12 +36,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.entity.StringEntity;
+import shade.doris.core.org.apache.http.HttpStatus;
+import shade.doris.core.org.apache.http.client.config.RequestConfig;
+import shade.doris.core.org.apache.http.client.methods.HttpGet;
+import shade.doris.core.org.apache.http.client.methods.HttpPost;
+import shade.doris.core.org.apache.http.client.methods.HttpRequestBase;
+import shade.doris.core.org.apache.http.entity.StringEntity;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
