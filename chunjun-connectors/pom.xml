@@ -41,7 +41,6 @@
 <!--		<module>chunjun-connector-dm</module>-->
 		<module>chunjun-connector-clickhouse</module>
 		<module>chunjun-connector-saphana</module>
-		<module>chunjun-connector-doris-httpclient-dependency-shade</module>
 		<module>chunjun-connector-doris</module>
 		<module>chunjun-connector-influxdb</module>
 		<module>chunjun-connector-starrocks</module>
