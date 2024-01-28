@@ -18,16 +18,16 @@
 
 package com.dtstack.chunjun.connector.starrocks.streamload;
 
+import com.dtstack.chunjun.connector.starrocks.conf.StarRocksConf;
+
 import org.apache.flink.table.data.DecimalData;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.JSONSerializer;
 import com.alibaba.fastjson.serializer.ObjectSerializer;
 import com.alibaba.fastjson.serializer.SerializeConfig;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 
-import com.dtstack.chunjun.connector.starrocks.conf.StarRocksConf;
-
-import com.alibaba.fastjson.JSON;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,6 +85,7 @@ public class StreamLoadManager {
         };
 
         SerializeConfig.globalInstance.put(DecimalData.class, decimalSerializer);
+
     }
 
     public void write(String tableIdentify, List<String> columnList, List<Map<String, Object>> data)
@@ -108,7 +109,7 @@ public class StreamLoadManager {
                     JSON.toJSONString(data, SerializerFeature.WriteDateUseDateFormat).getBytes(StandardCharsets.UTF_8), data.size());
             if (bufferEntity.getBatchCount() >= starRocksConf.getLoadConf().getBatchMaxRows()
                     || bufferEntity.getBatchSize()
-                            >= starRocksConf.getLoadConf().getBatchMaxSize()) {
+                    >= starRocksConf.getLoadConf().getBatchMaxSize()) {
                 LOG.info(
                         String.format(
                                 "StarRocks buffer Sinking triggered: tableIdentify[%s] rows[%d] label[%s].",

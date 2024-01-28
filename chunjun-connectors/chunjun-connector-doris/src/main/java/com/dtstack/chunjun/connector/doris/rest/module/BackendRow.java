@@ -29,13 +29,13 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BackendRow {
 
-    @JsonProperty(value = "HttpPort")
+    @JsonProperty(value = "http_port")
     private String HttpPort;
 
-    @JsonProperty(value = "IP")
+    @JsonProperty(value = "ip")
     private String IP;
 
-    @JsonProperty(value = "Alive")
+    @JsonProperty(value = "is_alive")
     private Boolean Alive;
 
     public String getHttpPort() {

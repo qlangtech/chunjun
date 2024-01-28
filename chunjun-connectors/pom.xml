@@ -31,6 +31,7 @@
 		<module>chunjun-connector-jdbc-base</module>
 		<module>chunjun-connector-mysql</module>
 		<module>chunjun-connector-oracle</module>
+		<module>chunjun-connector-dameng</module>
 		<module>chunjun-connector-sqlserver</module>
 		<module>chunjun-connector-db2</module>
 		<module>chunjun-connector-postgresql</module>

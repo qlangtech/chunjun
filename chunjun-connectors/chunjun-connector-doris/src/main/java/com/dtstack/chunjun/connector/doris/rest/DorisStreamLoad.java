@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.http.Consts;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -63,8 +64,7 @@ public class DorisStreamLoad implements Serializable {
 
     private static final Logger LOG = LoggerFactory.getLogger(DorisStreamLoad.class);
     private static final ObjectMapper OM = new ObjectMapper();
-    private static final List<String> DORIS_SUCCESS_STATUS =
-            new ArrayList<>(Arrays.asList("Success", "Publish Timeout"));
+    private static final List<String> DORIS_SUCCESS_STATUS = new ArrayList<>(Arrays.asList("Success", "Publish Timeout"));
     private static final String LOAD_URL_PATTERN = "http://%s/api/%s/%s/_stream_load?";
     private String authEncoding;
     private Properties streamLoadProp;
@@ -73,11 +73,7 @@ public class DorisStreamLoad implements Serializable {
 
     public DorisStreamLoad(DorisConf options) {
         this.options = options;
-        this.authEncoding =
-                Base64.getEncoder()
-                        .encodeToString(
-                                String.format("%s:%s", options.getUsername(), options.getPassword())
-                                        .getBytes(StandardCharsets.UTF_8));
+        this.authEncoding = Base64.getEncoder().encodeToString(String.format("%s:%s", options.getUsername(), options.getPassword()).getBytes(StandardCharsets.UTF_8));
         this.streamLoadProp = options.getLoadProperties();
     }
 
@@ -118,10 +114,10 @@ public class DorisStreamLoad implements Serializable {
 
         // if body is list type ,strip_outer_array should be true
         httpPut.setHeader("strip_outer_array", "true");
-//        List<String> columns =
-//                columnNames.stream()
-//                        .map(this::quoteColumn)
-//                        .collect(Collectors.toCollection(LinkedList::new));
+        //        List<String> columns =
+        //                columnNames.stream()
+        //                        .map(this::quoteColumn)
+        //                        .collect(Collectors.toCollection(LinkedList::new));
         // httpPut.setHeader("columns", StringUtils.join(columns, ","));
         if (StringUtils.isNotBlank(mergeConditions)) {
             httpPut.setHeader("merge_type", "MERGE");
@@ -157,10 +153,7 @@ public class DorisStreamLoad implements Serializable {
 
         @Override
         public String toString() {
-            return new ToStringBuilder(this)
-                    .append("status", status)
-                    .append("respContent", respContent)
-                    .toString();
+            return new ToStringBuilder(this).append("status", status).append("respContent", respContent).toString();
         }
     }
 
@@ -189,9 +182,7 @@ public class DorisStreamLoad implements Serializable {
      */
     public void load(Carrier carrier) throws IOException {
         List<String> columnNames = carrier.getColumns();
-        String loadUrlStr =
-                String.format(
-                        LOAD_URL_PATTERN, hostPort, carrier.getDatabase(), carrier.getTable());
+        String loadUrlStr = String.format(LOAD_URL_PATTERN, hostPort, carrier.getDatabase(), carrier.getTable());
         String json = null;
         if (CollectionUtils.isNotEmpty(carrier.getInsertContent())) {
             json = OM.writeValueAsString(carrier.getInsertContent());
@@ -214,14 +205,12 @@ public class DorisStreamLoad implements Serializable {
             List<String> columnNames, String value, String mergeConditions, String loadUrlStr) {
         String label = generateLabel();
 
-        final ConnectionConfig connectionConfig =
-                ConnectionConfig.custom().setCharset(Charset.defaultCharset()).build();
-        try (CloseableHttpClient httpclient =
-                     HttpClientBuilder.create().setDefaultConnectionConfig(connectionConfig).build()) {
+        final ConnectionConfig connectionConfig = ConnectionConfig.custom().setCharset(Charset.defaultCharset()).build();
+        try (CloseableHttpClient httpclient = HttpClientBuilder.create().setDefaultConnectionConfig(connectionConfig).build()) {
             // build request and send to new be location
             HttpPut httpPut = generatePut(columnNames, loadUrlStr, label, mergeConditions);
             if (value != null) {
-                httpPut.setEntity(new ByteArrayEntity(value.getBytes()));
+                httpPut.setEntity(new ByteArrayEntity(value.getBytes(Consts.UTF_8)));
             }
 
             HttpResponse response = httpclient.execute(httpPut);
@@ -245,10 +234,7 @@ public class DorisStreamLoad implements Serializable {
         if (StringUtils.isBlank(label)) {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
             String formatDate = sdf.format(new Date());
-            label =
-                    String.format(
-                            "chunjun_connector_%s_%s",
-                            formatDate, UUID.randomUUID().toString().replaceAll("-", ""));
+            label = String.format("chunjun_connector_%s_%s", formatDate, UUID.randomUUID().toString().replaceAll("-", ""));
         }
         return label;
     }

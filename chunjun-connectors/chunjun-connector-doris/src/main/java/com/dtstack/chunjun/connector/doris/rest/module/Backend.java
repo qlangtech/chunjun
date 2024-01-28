@@ -30,14 +30,14 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Backend {
 
-    @JsonProperty(value = "rows")
-    private List<BackendRow> rows;
+    @JsonProperty(value = "backends")
+    private List<BackendRow> backends;
 
     public List<BackendRow> getRows() {
-        return rows;
+        return backends;
     }
 
     public void setRows(List<BackendRow> rows) {
-        this.rows = rows;
+        this.backends = rows;
     }
 }

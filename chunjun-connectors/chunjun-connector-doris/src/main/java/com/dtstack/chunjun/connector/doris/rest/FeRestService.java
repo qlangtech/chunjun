@@ -62,6 +62,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
@@ -89,7 +90,11 @@ public class FeRestService implements Serializable {
     private static final String API_PREFIX = "/api";
     private static final String SCHEMA = "_schema";
     private static final String QUERY_PLAN = "_query_plan";
-    private static final String BACKENDS = "/rest/v1/system?path=//backends";
+    //  private static final String BACKENDS = "/rest/v1/system?path=//backends";
+
+    private static final String BACKENDS = "/api/backends?is_alive=true";
+
+
     private static final String FE_LOGIN = "/rest/v1/login";
 
     /**
@@ -102,38 +107,17 @@ public class FeRestService implements Serializable {
      *
      * @throws DorisConnectFailedException throw when cannot connect to Doris FE
      */
-    private static String send(DorisConf options, HttpRequestBase request)
-            throws DorisConnectFailedException {
+    private static String send(DorisConf options, HttpRequestBase request) throws DorisConnectFailedException {
         LoadConf loadConf = options.getLoadConf();
-        int connectTimeout =
-                loadConf.getRequestConnectTimeoutMs() == null
-                        ? DORIS_REQUEST_CONNECT_TIMEOUT_MS_DEFAULT
-                        : loadConf.getRequestConnectTimeoutMs();
-        int socketTimeout =
-                loadConf.getRequestReadTimeoutMs() == null
-                        ? DORIS_REQUEST_READ_TIMEOUT_MS_DEFAULT
-                        : loadConf.getRequestReadTimeoutMs();
-        int retries =
-                loadConf.getRequestRetries() == null
-                        ? DORIS_REQUEST_RETRIES_DEFAULT
-                        : loadConf.getRequestRetries();
-        LOG.trace(
-                "connect timeout set to '{}'. socket timeout set to '{}'. retries set to '{}'.",
-                connectTimeout,
-                socketTimeout,
-                retries);
+        int connectTimeout = loadConf.getRequestConnectTimeoutMs() == null ? DORIS_REQUEST_CONNECT_TIMEOUT_MS_DEFAULT : loadConf.getRequestConnectTimeoutMs();
+        int socketTimeout = loadConf.getRequestReadTimeoutMs() == null ? DORIS_REQUEST_READ_TIMEOUT_MS_DEFAULT : loadConf.getRequestReadTimeoutMs();
+        int retries = loadConf.getRequestRetries() == null ? DORIS_REQUEST_RETRIES_DEFAULT : loadConf.getRequestRetries();
+        LOG.trace("connect timeout set to '{}'. socket timeout set to '{}'. retries set to '{}'.", connectTimeout, socketTimeout, retries);
 
-        RequestConfig requestConfig =
-                RequestConfig.custom()
-                        .setConnectTimeout(connectTimeout)
-                        .setSocketTimeout(socketTimeout)
-                        .build();
+        RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(connectTimeout).setSocketTimeout(socketTimeout).build();
 
         request.setConfig(requestConfig);
-        LOG.info(
-                "Send request to Doris FE '{}' with user '{}'.",
-                request.getURI(),
-                options.getUsername());
+        LOG.info("Send request to Doris FE '{}' with user '{}'.", request.getURI(), options.getUsername());
         IOException ex = null;
         int statusCode = -1;
 
@@ -142,24 +126,12 @@ public class FeRestService implements Serializable {
             try {
                 String response;
                 if (request instanceof HttpGet) {
-                    response =
-                            get(
-                                    request.getURI().toString(),
-                                    options.getUsername(),
-                                    options.getPassword());
+                    response = get(request.getURI().toString(), options.getUsername(), options.getPassword());
                 } else {
-                    response =
-                            getConnectionPost(
-                                    request, options.getUsername(), options.getPassword());
+                    response = getConnectionPost(request, options.getUsername(), options.getPassword());
                 }
-                LOG.warn(
-                        "Failed to get response from Doris FE {}, http code is {}",
-                        request.getURI(),
-                        statusCode);
-                LOG.debug(
-                        String.format(
-                                "Success get response from Doris FE: %s, response is: %s.",
-                                request.getURI(), response));
+                LOG.warn("Failed to get response from Doris FE {}, http code is {}", request.getURI(), statusCode);
+                LOG.debug(String.format("Success get response from Doris FE: %s, response is: %s.", request.getURI(), response));
                 // Handle the problem of inconsistent data format returned by http v1 and v2
                 ObjectMapper mapper = new ObjectMapper();
                 Map map = mapper.readValue(response, Map.class);
@@ -176,21 +148,15 @@ public class FeRestService implements Serializable {
         }
 
         LOG.error(CONNECT_FAILED_MESSAGE, request.getURI(), ex);
-        throw new DorisConnectFailedException(
-                options.getUsername(), request.getURI().toString(), ex);
+        throw new DorisConnectFailedException(options.getUsername(), request.getURI().toString(), ex);
     }
 
-    private static String getConnectionPost(HttpRequestBase request, String user, String passwd)
-            throws IOException {
+    private static String getConnectionPost(HttpRequestBase request, String user, String passwd) throws IOException {
         URL url = new URL(request.getURI().toString());
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setInstanceFollowRedirects(false);
         conn.setRequestMethod(request.getMethod());
-        String authEncoding =
-                Base64.getEncoder()
-                        .encodeToString(
-                                String.format("%s:%s", user, passwd)
-                                        .getBytes(StandardCharsets.UTF_8));
+        String authEncoding = Base64.getEncoder().encodeToString(String.format("%s:%s", user, passwd).getBytes(StandardCharsets.UTF_8));
         conn.setRequestProperty("Authorization", "Basic " + authEncoding);
         InputStream content = ((HttpPost) request).getEntity().getContent();
         String res = IOUtils.toString(content);
@@ -205,15 +171,11 @@ public class FeRestService implements Serializable {
         return parseResponse(conn);
     }
 
-    private static String get(String request, String user, String passwd) throws IOException {
+    static String get(String request, String user, String passwd) throws IOException {
         URL realUrl = new URL(request);
         // open connection
         HttpURLConnection connection = (HttpURLConnection) realUrl.openConnection();
-        String authEncoding =
-                Base64.getEncoder()
-                        .encodeToString(
-                                String.format("%s:%s", user, passwd)
-                                        .getBytes(StandardCharsets.UTF_8));
+        String authEncoding = Base64.getEncoder().encodeToString(String.format("%s:%s", user, passwd).getBytes(StandardCharsets.UTF_8));
         connection.setRequestProperty("Authorization", "Basic " + authEncoding);
 
         connection.connect();
@@ -222,16 +184,11 @@ public class FeRestService implements Serializable {
 
     private static String parseResponse(HttpURLConnection connection) throws IOException {
         if (connection.getResponseCode() != HttpStatus.SC_OK) {
-            LOG.warn(
-                    "Failed to get response from Doris  {}, http code is {}",
-                    connection.getURL(),
-                    connection.getResponseCode());
+            LOG.warn("Failed to get response from Doris  {}, http code is {}", connection.getURL(), connection.getResponseCode());
             throw new IOException("Failed to get response from Doris");
         }
         StringBuilder result = new StringBuilder();
-        BufferedReader in =
-                new BufferedReader(
-                        new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
+        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
         String line;
         while ((line = in.readLine()) != null) {
             result.append(line);
@@ -333,6 +290,7 @@ public class FeRestService implements Serializable {
         String feNode = randomEndpoint(feNodes);
         String beUrl = "http://" + feNode + BACKENDS;
         HttpGet httpGet = new HttpGet(beUrl);
+        // example: {"msg":"success","code":0,"data":{"backends":[{"ip":"192.168.28.200","http_port":8040,"is_alive":true}]},"count":0}
         String response = send(options, httpGet);
         LOG.info("Backend Info:{}", response);
         return parseBackend(response);
@@ -343,6 +301,7 @@ public class FeRestService implements Serializable {
         Backend backend;
         try {
             backend = mapper.readValue(response, Backend.class);
+            return Objects.requireNonNull(backend, "backend can not be null").getRows();
         } catch (JsonParseException e) {
             String errMsg = "Doris BE's response is not a json. res: " + response;
             LOG.error(errMsg, e);
@@ -357,16 +316,16 @@ public class FeRestService implements Serializable {
             throw new RuntimeException(errMsg, e);
         }
 
-        if (backend == null) {
-            LOG.error(SHOULD_NOT_HAPPEN_MESSAGE);
-            throw new RuntimeException("This exception is unsupported. Check the code.");
-        }
-        List<BackendRow> backendRows =
-                backend.getRows().stream()
-                        .filter(BackendRow::getAlive)
-                        .collect(Collectors.toList());
-        LOG.debug("Parsing schema result is '{}'.", backendRows);
-        return backendRows;
+        //        if (backend == null) {
+        //            LOG.error(SHOULD_NOT_HAPPEN_MESSAGE);
+        //            throw new RuntimeException("This exception is unsupported. Check the code.");
+        //        }
+        //        List<BackendRow> backendRows = backend.getRows();
+        ////                backend.getRows().stream()
+        ////                        .filter(BackendRow::getAlive)
+        ////                        .collect(Collectors.toList());
+        //        LOG.debug("Parsing schema result is '{}'.", backendRows);
+        //        return backendRows;
     }
 
     /**
@@ -380,14 +339,7 @@ public class FeRestService implements Serializable {
      */
     @VisibleForTesting
     static String getUriStr(DorisConf options) throws IllegalArgumentException {
-        return "http://"
-                + randomEndpoint(options.getFeNodes())
-                + API_PREFIX
-                + "/"
-                + options.getDatabase()
-                + "/"
-                + options.getTable()
-                + "/";
+        return "http://" + randomEndpoint(options.getFeNodes()) + API_PREFIX + "/" + options.getDatabase() + "/" + options.getTable() + "/";
     }
 
     /**
@@ -460,19 +412,10 @@ public class FeRestService implements Serializable {
      *
      * @throws RuntimeException throw when find partition failed
      */
-    public static List<PartitionDefinition> findPartitions(DorisConf options)
-            throws RuntimeException {
+    public static List<PartitionDefinition> findPartitions(DorisConf options) throws RuntimeException {
         LoadConf loadConf = options.getLoadConf();
-        String readFields =
-                StringUtils.isBlank(loadConf.getReadFields()) ? "*" : loadConf.getReadFields();
-        String sql =
-                "select "
-                        + readFields
-                        + " from `"
-                        + options.getTable()
-                        + "`.`"
-                        + options.getDatabase()
-                        + "`";
+        String readFields = StringUtils.isBlank(loadConf.getReadFields()) ? "*" : loadConf.getReadFields();
+        String sql = "select " + readFields + " from `" + options.getTable() + "`.`" + options.getDatabase() + "`";
         if (!StringUtils.isEmpty(loadConf.getFilterQuery())) {
             sql += " where " + loadConf.getFilterQuery();
         }
@@ -490,12 +433,7 @@ public class FeRestService implements Serializable {
         LOG.debug("Find partition response is '{}'.", resStr);
         QueryPlan queryPlan = getQueryPlan(resStr);
         Map<String, List<Long>> be2Tablets = selectBeForTablet(queryPlan);
-        return tabletsMapToPartition(
-                options,
-                be2Tablets,
-                queryPlan.getOpaqued_query_plan(),
-                options.getTable(),
-                options.getDatabase());
+        return tabletsMapToPartition(options, be2Tablets, queryPlan.getOpaqued_query_plan(), options.getTable(), options.getDatabase());
     }
 
     /**
@@ -577,11 +515,7 @@ public class FeRestService implements Serializable {
                     if (be2Tablets.get(candidate).size() < tabletCount) {
                         target = candidate;
                         tabletCount = be2Tablets.get(candidate).size();
-                        LOG.debug(
-                                "Current candidate Doris BE to tablet '{}' is '{}' with tablet count {}.",
-                                tabletId,
-                                target,
-                                tabletCount);
+                        LOG.debug("Current candidate Doris BE to tablet '{}' is '{}' with tablet count {}.", tabletId, target, tabletCount);
                     }
                 }
             }
@@ -611,11 +545,7 @@ public class FeRestService implements Serializable {
             tabletsSize = loadConf.getRequestTabletSize();
         }
         if (tabletsSize < DORIS_TABLET_SIZE_MIN) {
-            LOG.warn(
-                    "{} is less than {}, set to default value {}.",
-                    DORIS_TABLET_SIZE,
-                    DORIS_TABLET_SIZE_MIN,
-                    DORIS_TABLET_SIZE_MIN);
+            LOG.warn("{} is less than {}, set to default value {}.", DORIS_TABLET_SIZE, DORIS_TABLET_SIZE_MIN, DORIS_TABLET_SIZE_MIN);
             tabletsSize = DORIS_TABLET_SIZE_MIN;
         }
         LOG.debug("Tablet size is set to {}.", tabletsSize);
@@ -637,12 +567,7 @@ public class FeRestService implements Serializable {
      */
     @VisibleForTesting
     static List<PartitionDefinition> tabletsMapToPartition(
-            DorisConf options,
-            Map<String, List<Long>> be2Tablets,
-            String opaquedQueryPlan,
-            String database,
-            String table)
-            throws IllegalArgumentException {
+            DorisConf options, Map<String, List<Long>> be2Tablets, String opaquedQueryPlan, String database, String table) throws IllegalArgumentException {
         int tabletsSize = tabletCountLimitForOnePartition(options.getLoadConf());
         List<PartitionDefinition> partitions = new ArrayList<>();
         for (Map.Entry<String, List<Long>> beInfo : be2Tablets.entrySet()) {
@@ -652,23 +577,9 @@ public class FeRestService implements Serializable {
             beInfo.getValue().addAll(tabletSet);
             int first = 0;
             while (first < beInfo.getValue().size()) {
-                Set<Long> partitionTablets =
-                        new HashSet<>(
-                                beInfo.getValue()
-                                        .subList(
-                                                first,
-                                                Math.min(
-                                                        beInfo.getValue().size(),
-                                                        first + tabletsSize)));
+                Set<Long> partitionTablets = new HashSet<>(beInfo.getValue().subList(first, Math.min(beInfo.getValue().size(), first + tabletsSize)));
                 first = first + tabletsSize;
-                PartitionDefinition partitionDefinition =
-                        new PartitionDefinition(
-                                database,
-                                table,
-                                options,
-                                beInfo.getKey(),
-                                partitionTablets,
-                                opaquedQueryPlan);
+                PartitionDefinition partitionDefinition = new PartitionDefinition(database, table, options, beInfo.getKey(), partitionTablets, opaquedQueryPlan);
                 LOG.debug("Generate one PartitionDefinition '{}'.", partitionDefinition);
                 partitions.add(partitionDefinition);
             }
