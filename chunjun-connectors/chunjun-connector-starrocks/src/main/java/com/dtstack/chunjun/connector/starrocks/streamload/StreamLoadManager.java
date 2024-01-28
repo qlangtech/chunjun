@@ -84,7 +84,7 @@ public class StreamLoadManager {
             }
         };
 
-        SerializeConfig.globalInstance.put(DecimalData.class, decimalSerializer);
+        SerializeConfig.global.put(DecimalData.class, decimalSerializer);
 
     }
 
