@@ -19,6 +19,7 @@
 package com.dtstack.chunjun.connector.sqlserver.sink;
 
 import com.dtstack.chunjun.connector.jdbc.sink.JdbcOutputFormat;
+import com.dtstack.chunjun.connector.jdbc.sink.SinkColMetas;
 import com.dtstack.chunjun.connector.jdbc.util.JdbcUtil;
 import com.dtstack.chunjun.connector.sqlserver.dialect.SqlserverDialect;
 import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
@@ -33,6 +34,9 @@ import java.sql.Statement;
  * @date 2021/5/19 20:03
  */
 public class SqlserverOutputFormat extends JdbcOutputFormat {
+    public SqlserverOutputFormat(SinkColMetas cols) {
+        super(cols);
+    }
 
     @Override
     protected void openInternal(int taskNumber, int numTasks) {
