@@ -12,7 +12,7 @@
 	<artifactId>chunjun</artifactId>
 	<name>ChunJun</name>
 	<packaging>pom</packaging>
-	<version>1.12.5</version>
+	<version>1.12.5.20240701</version>
 
 	<modules>
 		<module>chunjun-core</module>
@@ -42,7 +42,7 @@
 		<log4j2.version>2.17.0</log4j2.version>
 		<dist.dir>chunjun-dist</dist.dir>
 		<powermock.version>2.0.4</powermock.version>
-		<tis.datax.version>3.8.0</tis.datax.version>
+		<tis.datax.version>4.0.1</tis.datax.version>
 	</properties>
 
 	<dependencies>

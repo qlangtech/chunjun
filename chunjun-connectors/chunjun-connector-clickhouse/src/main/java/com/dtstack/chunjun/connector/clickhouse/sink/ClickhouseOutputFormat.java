@@ -21,6 +21,8 @@ package com.dtstack.chunjun.connector.clickhouse.sink;
 import com.dtstack.chunjun.connector.clickhouse.util.ClickhouseUtil;
 import com.dtstack.chunjun.connector.jdbc.sink.JdbcOutputFormat;
 
+import com.dtstack.chunjun.connector.jdbc.sink.SinkColMetas;
+
 import com.qlangtech.tis.plugin.ds.IColMetaGetter;
 
 import java.sql.Connection;
@@ -33,7 +35,7 @@ import java.util.Map;
  * @create: 2021/05/10
  */
 public abstract class ClickhouseOutputFormat extends JdbcOutputFormat {
-    public ClickhouseOutputFormat(Map<String, IColMetaGetter> cols) {
+    public ClickhouseOutputFormat(SinkColMetas cols) {
         super(cols);
     }
 

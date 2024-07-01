@@ -20,6 +20,7 @@ package com.dtstack.chunjun.connector.postgresql.sink;
 
 import com.dtstack.chunjun.connector.jdbc.converter.JdbcColumnConverter;
 import com.dtstack.chunjun.connector.jdbc.sink.JdbcOutputFormat;
+import com.dtstack.chunjun.connector.jdbc.sink.SinkColMetas;
 import com.dtstack.chunjun.connector.postgresql.converter.PostgresqlColumnConverter;
 import com.dtstack.chunjun.connector.postgresql.dialect.PostgresqlDialect;
 import com.dtstack.chunjun.constants.ConstantValue;
@@ -72,7 +73,7 @@ public abstract class PostgresOutputFormat extends JdbcOutputFormat {
     /** 数据源类型信息 * */
     private final String dbType = DbType.POSTGRESQL.name();
 
-    public PostgresOutputFormat(Map<String, IColMetaGetter> cols) {
+    public PostgresOutputFormat(SinkColMetas cols) {
         super(cols);
     }
 

@@ -23,6 +23,7 @@ import com.dtstack.chunjun.connector.doris.converter.DorisHttpRowConverter;
 import com.dtstack.chunjun.connector.doris.converter.DorisJdbcRowConverter;
 import com.dtstack.chunjun.connector.doris.options.DorisConf;
 import com.dtstack.chunjun.connector.jdbc.sink.JdbcDynamicTableSink;
+import com.dtstack.chunjun.connector.jdbc.sink.SinkColMetas;
 import com.dtstack.chunjun.connector.mysql.dialect.MysqlDialect;
 import com.dtstack.chunjun.enums.EWriteMode;
 import com.dtstack.chunjun.sink.DtOutputFormatSinkFunction;
@@ -59,7 +60,7 @@ public class DorisDynamicTableSink extends JdbcDynamicTableSink {
                 dorisConf.setToJdbcConf(),
                 new MysqlDialect(),
                 physicalSchema,
-                new DorisJdbcOutputFormatBuilder(new DorisJdbcOutputFormat(Collections.emptyMap())));
+                new DorisJdbcOutputFormatBuilder(new DorisJdbcOutputFormat( new SinkColMetas(()-> Collections.emptyList()))));
         this.physicalSchema = physicalSchema;
         this.dorisConf = dorisConf;
     }
@@ -94,7 +95,7 @@ public class DorisDynamicTableSink extends JdbcDynamicTableSink {
 
     private DorisJdbcOutputFormatBuilder jdbcBuilder(RowType rowType, DorisConf dorisConf) {
         DorisJdbcOutputFormatBuilder builder =
-                new DorisJdbcOutputFormatBuilder(new DorisJdbcOutputFormat(Collections.emptyMap()));
+                new DorisJdbcOutputFormatBuilder(new DorisJdbcOutputFormat(new SinkColMetas(()-> Collections.emptyList())));
 
         String[] fieldNames = tableSchema.getFieldNames();
         List<FieldConf> columnList = new ArrayList<>(fieldNames.length);

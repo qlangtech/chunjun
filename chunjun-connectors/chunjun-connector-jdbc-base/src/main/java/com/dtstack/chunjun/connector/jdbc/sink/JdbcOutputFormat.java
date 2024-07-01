@@ -52,6 +52,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -66,7 +67,7 @@ import java.util.Objects;
 public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
 
     protected static final Logger LOG = LoggerFactory.getLogger(JdbcOutputFormat.class);
-    protected final Map<String, IColMetaGetter> cols;
+    protected final SinkColMetas cols;
     protected static final long serialVersionUID = 1L;
 
     protected JdbcConf jdbcConf;
@@ -77,8 +78,8 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
 
     protected transient PreparedStmtProxy stmtProxy;
 
-    public JdbcOutputFormat(Map<String, IColMetaGetter> cols) {
-        if (MapUtils.isEmpty(cols)) {
+    public JdbcOutputFormat(SinkColMetas cols) {
+        if (MapUtils.isEmpty(cols.getName2ColMap())) {
             throw new IllegalArgumentException();
         }
         this.cols = cols;
@@ -170,7 +171,7 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
      * for override. because some databases have case-sensitive metadata。
      */
     private Map<String, IColMetaGetter> getTableMetaData() {
-        return this.cols;
+        return this.cols.getName2ColMap();
     } //{
     // return JdbcUtil.getTableMetaData(null, jdbcConf.getSchema(), jdbcConf.getTable(), dbConn);
     // throw new UnsupportedOperationException();
@@ -192,21 +193,24 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
 //        columnTypeList = fullColumnTypeList;
 //            return;
 //        }
-        this.colsMeta = Lists.newArrayList();
+
+
+
+        this.colsMeta = Collections.unmodifiableList( this.cols.getCols() ); //Lists.newArrayList();
         /**********************************************
          * 这样能够保证'colsMeta'中的字段顺序和fieldList 字段顺序是严格保证一致的
          * 能保证组装RowData 在DTO2RowDataMapper中依赖的 List<FlinkCol> 和 TISDorisColumnConverter toExternalConverters顺序一致
          **********************************************/
-        DataType type = null;
-        IColMetaGetter sinkEndColMeta = null;
-        for (FieldConf field : fieldList) {
-            sinkEndColMeta = Objects.requireNonNull(
-                    colsMeta.get(field.getName()), "field:" + field.getName() + " relevant ColMeta can not be null");
-            type = DataType.ds(field.getType());
-
-            //  this.colsMeta.add(new ColMeta(sinkEndColMeta.getName(), type, sinkEndColMeta.isPk()));
-            this.colsMeta.add(sinkEndColMeta);
-        }
+//        DataType type = null;
+//        IColMetaGetter sinkEndColMeta = null;
+//        for (FieldConf field : fieldList) {
+//            sinkEndColMeta = Objects.requireNonNull(
+//                    colsMeta.get(field.getName()), "field:" + field.getName() + " relevant ColMeta can not be null");
+//            type = DataType.ds(field.getType());
+//
+//            //  this.colsMeta.add(new ColMeta(sinkEndColMeta.getName(), type, sinkEndColMeta.isPk()));
+//            this.colsMeta.add(sinkEndColMeta);
+//        }
 
         // this.colsMeta = colsMeta.stream().filter((meta) -> fields.contains(meta.name)).collect(Collectors.toList());
 

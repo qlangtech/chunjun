@@ -18,6 +18,7 @@
 package com.dtstack.chunjun.connector.doris.sink;
 
 
+import com.dtstack.chunjun.connector.jdbc.sink.SinkColMetas;
 import com.dtstack.chunjun.connector.mysql.sink.MysqlOutputFormat;
 
 
@@ -27,7 +28,7 @@ import java.util.Map;
 
 public class DorisJdbcOutputFormat extends MysqlOutputFormat {
 
-    public DorisJdbcOutputFormat(Map<String, IColMetaGetter> cols) {
+    public DorisJdbcOutputFormat(SinkColMetas cols) {
         super(cols);
     }
 }
