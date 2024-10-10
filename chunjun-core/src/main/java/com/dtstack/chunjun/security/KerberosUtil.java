@@ -33,10 +33,10 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authentication.util.KerberosName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.security.krb5.Config;
-import sun.security.krb5.KrbException;
-import sun.security.krb5.internal.ktab.KeyTab;
-import sun.security.krb5.internal.ktab.KeyTabEntry;
+//import sun.security.krb5.Config;
+//import sun.security.krb5.KrbException;
+//import sun.security.krb5.internal.ktab.KeyTab;
+//import sun.security.krb5.internal.ktab.KeyTabEntry;
 
 import java.io.File;
 import java.io.IOException;
@@ -159,13 +159,13 @@ public class KerberosUtil {
         System.setProperty(KRB5_CONF_KEY, krb5confPath);
         LOG.info("set krb5 file:{}", krb5confPath);
         // 不刷新会读/etc/krb5.conf
-        try {
-            Config.refresh();
-            KerberosName.resetDefaultRealm();
-        } catch (KrbException e) {
-            LOG.warn(
-                    "resetting default realm failed, current default realm will still be used.", e);
-        }
+//        try {
+//            Config.refresh();
+//            KerberosName.resetDefaultRealm();
+//        } catch (KrbException e) {
+//            LOG.warn(
+//                    "resetting default realm failed, current default realm will still be used.", e);
+//        }
     }
 
     public static void loadKrb5Conf(
@@ -280,13 +280,13 @@ public class KerberosUtil {
     }
 
     private static String findPrincipalFromKeytab(String keytabFile) {
-        KeyTab keyTab = KeyTab.getInstance(keytabFile);
-        for (KeyTabEntry entry : keyTab.getEntries()) {
-            String principal = entry.getService().getName();
-
-            LOG.info("parse principal:{} from keytab:{}", principal, keytabFile);
-            return principal;
-        }
+//        KeyTab keyTab = KeyTab.getInstance(keytabFile);
+//        for (KeyTabEntry entry : keyTab.getEntries()) {
+//            String principal = entry.getService().getName();
+//
+//            LOG.info("parse principal:{} from keytab:{}", principal, keytabFile);
+//            return principal;
+//        }
 
         return null;
     }
@@ -333,18 +333,18 @@ public class KerberosUtil {
 
     /** 刷新krb内容信息 */
     public static void refreshConfig() {
-        try {
-            sun.security.krb5.Config.refresh();
-            Field defaultRealmField = KerberosName.class.getDeclaredField("defaultRealm");
-            defaultRealmField.setAccessible(true);
-            defaultRealmField.set(
-                    null,
-                    org.apache.hadoop.security.authentication.util.KerberosUtil.getDefaultRealm());
-            // reload java.security.auth.login.config
-            javax.security.auth.login.Configuration.setConfiguration(null);
-        } catch (Exception e) {
-            LOG.warn(
-                    "resetting default realm failed, current default realm will still be used.", e);
-        }
+//        try {
+//            sun.security.krb5.Config.refresh();
+//            Field defaultRealmField = KerberosName.class.getDeclaredField("defaultRealm");
+//            defaultRealmField.setAccessible(true);
+//            defaultRealmField.set(
+//                    null,
+//                    org.apache.hadoop.security.authentication.util.KerberosUtil.getDefaultRealm());
+//            // reload java.security.auth.login.config
+//            javax.security.auth.login.Configuration.setConfiguration(null);
+//        } catch (Exception e) {
+//            LOG.warn(
+//                    "resetting default realm failed, current default realm will still be used.", e);
+//        }
     }
 }

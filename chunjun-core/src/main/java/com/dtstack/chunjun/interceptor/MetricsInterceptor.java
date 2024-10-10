@@ -12,7 +12,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.table.data.RowData;
 
-import jdk.nashorn.internal.ir.debug.ObjectSizeCalculator;
+//import jdk.nashorn.internal.ir.debug.ObjectSizeCalculator;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -118,8 +118,8 @@ public class MetricsInterceptor implements Interceptor {
                 numReadCounter.add(1);
             }
             if (bytesReadCounter != null) {
-                bytesReadCounter.add(
-                        ObjectSizeCalculator.getObjectSize(context.get("data", RowData.class)));
+//                bytesReadCounter.add(
+//                        ObjectSizeCalculator.getObjectSize(context.get("data", RowData.class)));
             }
         }
     }

@@ -41,7 +41,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.misc.Service;
+//import sun.misc.Service;
 
 import java.lang.reflect.Constructor;
 import java.net.URL;
@@ -182,21 +182,21 @@ public class DataSyncFactoryUtil {
     }
 
     public static DdlConvent discoverDdlConvent(String pluginType) {
-        try {
-            Iterator<DdlConvent> providers = Service.providers(DdlConvent.class);
-            while (providers.hasNext()) {
-                DdlConvent processor = providers.next();
-                if (processor.getDataSourceType().equals(pluginType)) {
-                    return processor;
-                } else {
-                    LOG.info(
-                            "find ddl plugin and support dataSource is {}",
-                            processor.getDataSourceType());
-                }
-            }
-        } catch (Exception e) {
-            throw new NoRestartException("Load ddl convent plugins failed!", e);
-        }
+//        try {
+//            Iterator<DdlConvent> providers = Service.providers(DdlConvent.class);
+//            while (providers.hasNext()) {
+//                DdlConvent processor = providers.next();
+//                if (processor.getDataSourceType().equals(pluginType)) {
+//                    return processor;
+//                } else {
+//                    LOG.info(
+//                            "find ddl plugin and support dataSource is {}",
+//                            processor.getDataSourceType());
+//                }
+//            }
+//        } catch (Exception e) {
+//            throw new NoRestartException("Load ddl convent plugins failed!", e);
+//        }
         throw new NoRestartException("not found ddl convent plugin!,plugin type is " + pluginType);
     }
 }

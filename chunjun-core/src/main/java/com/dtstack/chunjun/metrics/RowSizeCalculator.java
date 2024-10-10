@@ -22,7 +22,7 @@ import com.dtstack.chunjun.element.ColumnRowData;
 import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
 import com.dtstack.chunjun.throwable.UnsupportedTypeException;
 
-import jdk.nashorn.internal.ir.debug.ObjectSizeCalculator;
+//import jdk.nashorn.internal.ir.debug.ObjectSizeCalculator;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -70,7 +70,8 @@ public abstract class RowSizeCalculator<T> {
     static class RowObjectSizeCalculator extends RowSizeCalculator<Object> {
         @Override
         public long getObjectSize(Object object) {
-            return ObjectSizeCalculator.getObjectSize(object);
+         //   return ObjectSizeCalculator.getObjectSize(object);
+            return 0;
         }
     }
 
