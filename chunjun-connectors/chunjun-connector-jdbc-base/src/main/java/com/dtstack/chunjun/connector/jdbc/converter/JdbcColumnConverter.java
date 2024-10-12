@@ -267,8 +267,8 @@ public class JdbcColumnConverter
                 );
             case SMALLINT: {
                 return (val, index, statement, statPos) -> {
-                    short a = 0;
-                    a = val.getShort(index);
+//                    short a = 0;
+//                    a = val.getShort(index);
                     statement.setShort(statPos, (Short) valGetter.getFieldOrNull(val) //a
                     );
                 };
