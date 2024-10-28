@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.dtstack.chunjun</groupId>
+    <artifactId>chunjun-connectors</artifactId>
+    <version>1.12.5-4.1.0-SNAPSHOT</version>
+  </parent>
+  <groupId>com.dtstack.chunjun</groupId>
+  <artifactId>chunjun-connector-jdbc-base</artifactId>
+  <version>1.12.5-4.1.0-SNAPSHOT</version>
+  <name>ChunJun : Connectors : JDBC</name>
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License</name>
+      <url>https://www.gnu.org/licenses/agpl-3.0.en.html</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <properties>
+    <flink.connector-jdbc.version>3.1.1-1.17</flink.connector-jdbc.version>
+    <vertx.version>3.9.7</vertx.version>
+    <druid.version>1.2.6</druid.version>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>com.qlangtech.tis</groupId>
+      <artifactId>datax-config</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-connector-jdbc</artifactId>
+      <version>${flink.connector-jdbc.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-jdbc-client</artifactId>
+      <version>${vertx.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-core</artifactId>
+      <version>${vertx.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.alibaba</groupId>
+      <artifactId>druid</artifactId>
+      <version>${druid.version}</version>
+    </dependency>
+  </dependencies>
+</project>

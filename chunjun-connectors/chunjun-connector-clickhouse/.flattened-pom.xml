@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.dtstack.chunjun</groupId>
+    <artifactId>chunjun-connectors</artifactId>
+    <version>1.12.5-4.1.0-SNAPSHOT</version>
+  </parent>
+  <groupId>com.dtstack.chunjun</groupId>
+  <artifactId>chunjun-connector-clickhouse</artifactId>
+  <version>1.12.5-4.1.0-SNAPSHOT</version>
+  <name>ChunJun : Connectors : ClickHouse</name>
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License</name>
+      <url>https://www.gnu.org/licenses/agpl-3.0.en.html</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <dependencies>
+    <dependency>
+      <groupId>com.dtstack.chunjun</groupId>
+      <artifactId>chunjun-connector-jdbc-base</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>ru.yandex.clickhouse</groupId>
+      <artifactId>clickhouse-jdbc</artifactId>
+      <version>0.3.2</version>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-resources</id>
+            <phase>none</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <tasks>
+                <copy file="${basedir}/target/${artifactId}-${project.version}.jar" todir="${basedir}/../../${dist.dir}/connector/clickhouse/" />
+                <move file="${basedir}/../../${dist.dir}/connector/clickhouse/${artifactId}-${project.version}.jar" tofile="${basedir}/../../${dist.dir}/connector/clickhouse/${artifactId}-${git.branch}.jar" />
+                <delete>
+                  <fileset excludes="${artifactId}-${git.branch}.jar" includes="${artifactId}-*.jar" dir="${basedir}/../../${dist.dir}/connector/clickhouse/" />
+                </delete>
+              </tasks>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>

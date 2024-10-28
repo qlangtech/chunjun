@@ -6,13 +6,13 @@
 	<parent>
 		<groupId>com.qlangtech.tis</groupId>
 		<artifactId>tis-parent</artifactId>
-		<version>2.0.8</version>
+		<version>2.0.9</version>
 	</parent>
 	<groupId>com.dtstack.chunjun</groupId>
 	<artifactId>chunjun</artifactId>
 	<name>ChunJun</name>
 	<packaging>pom</packaging>
-	<version>1.12.5.20240701</version>
+	<version>${revision}</version>
 
 	<modules>
 		<module>chunjun-core</module>
@@ -42,7 +42,8 @@
 		<log4j2.version>2.17.0</log4j2.version>
 		<dist.dir>chunjun-dist</dist.dir>
 		<powermock.version>2.0.4</powermock.version>
-		<tis.datax.version>4.0.1</tis.datax.version>
+		<tis.datax.version>4.1.0-SNAPSHOT</tis.datax.version>
+		<revision>1.12.5-${tis.datax.version}</revision>
 	</properties>
 
 	<dependencies>
@@ -320,6 +321,10 @@
 			<plugin>
 				<groupId>com.diffplug.spotless</groupId>
 				<artifactId>spotless-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>flatten-maven-plugin</artifactId>
 			</plugin>
 		</plugins>
 

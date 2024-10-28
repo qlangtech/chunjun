@@ -19,6 +19,7 @@
 package com.dtstack.chunjun.connector.sqlserver.dialect;
 
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
+import com.dtstack.chunjun.conf.SyncConf;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
 import com.dtstack.chunjun.connector.jdbc.dialect.SupportUpdateMode;
 import com.dtstack.chunjun.connector.jdbc.sink.IFieldNamesAttachedStatement;
@@ -67,7 +68,9 @@ public class SqlserverDialect implements JdbcDialect {
     private boolean withNoLock;
 
     // private boolean useJtdsDriver;
-
+    public SqlserverDialect(SyncConf conf) {
+        this(true);
+    }
 
 
     public SqlserverDialect(boolean withNoLock) {
@@ -82,7 +85,7 @@ public class SqlserverDialect implements JdbcDialect {
 
     @Override
     public boolean canHandle(String url) {
-        return url.startsWith("jdbc:sqlserver") ;// || url.startsWith("jdbc:jtds:sqlserver");
+        return url.startsWith("jdbc:sqlserver");// || url.startsWith("jdbc:jtds:sqlserver");
     }
 
     @Override
