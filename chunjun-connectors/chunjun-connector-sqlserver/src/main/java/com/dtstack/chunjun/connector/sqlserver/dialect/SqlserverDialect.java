@@ -20,23 +20,25 @@ package com.dtstack.chunjun.connector.sqlserver.dialect;
 
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
+import com.dtstack.chunjun.connector.jdbc.dialect.SupportUpdateMode;
+import com.dtstack.chunjun.connector.jdbc.sink.IFieldNamesAttachedStatement;
 import com.dtstack.chunjun.connector.jdbc.source.JdbcInputSplit;
-import com.dtstack.chunjun.connector.jdbc.statement.FieldNamedPreparedStatement;
 import com.dtstack.chunjun.connector.jdbc.util.JdbcUtil;
-import com.dtstack.chunjun.connector.sqlserver.converter.SqlserverJtdsColumnConverter;
-import com.dtstack.chunjun.connector.sqlserver.converter.SqlserverJtdsRawTypeConverter;
 import com.dtstack.chunjun.connector.sqlserver.converter.SqlserverMicroSoftColumnConverter;
-import com.dtstack.chunjun.connector.sqlserver.converter.SqlserverMicroSoftRawTypeConverter;
-import com.dtstack.chunjun.connector.sqlserver.converter.SqlserverMicroSoftRowConverter;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
+import com.dtstack.chunjun.converter.IDeserializationConverter;
+import com.dtstack.chunjun.converter.ISerializationConverter;
 import com.dtstack.chunjun.converter.RawTypeConverter;
 
-import org.apache.flink.table.types.logical.LogicalType;
-import org.apache.flink.table.types.logical.RowType;
+import com.dtstack.chunjun.sink.WriteMode;
 
+import org.apache.flink.table.types.logical.LogicalType;
+
+import com.google.common.collect.Lists;
 import io.vertx.core.json.JsonArray;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
@@ -53,6 +55,7 @@ import java.util.stream.Collectors;
  * @author shitou
  * @date 2021/5/17 11:24
  */
+@SupportUpdateMode(modes = {WriteMode.INSERT, WriteMode.UPSERT, WriteMode.UPDATE})
 public class SqlserverDialect implements JdbcDialect {
 
     private static final String SET_IDENTITY_INSERT_ON_SQL =
@@ -63,13 +66,13 @@ public class SqlserverDialect implements JdbcDialect {
     /** Whether to add with(nolock) after the sql statement, the default is false */
     private boolean withNoLock;
 
-    private boolean useJtdsDriver;
+    // private boolean useJtdsDriver;
 
-    public SqlserverDialect() {}
 
-    public SqlserverDialect(boolean withNoLock, boolean useJtdsDriver) {
+
+    public SqlserverDialect(boolean withNoLock) {
         this.withNoLock = withNoLock;
-        this.useJtdsDriver = useJtdsDriver;
+        //   this.useJtdsDriver = useJtdsDriver;
     }
 
     @Override
@@ -79,46 +82,40 @@ public class SqlserverDialect implements JdbcDialect {
 
     @Override
     public boolean canHandle(String url) {
-        return url.startsWith("jdbc:sqlserver") || url.startsWith("jdbc:jtds:sqlserver");
+        return url.startsWith("jdbc:sqlserver") ;// || url.startsWith("jdbc:jtds:sqlserver");
     }
 
     @Override
     public RawTypeConverter getRawTypeConverter() {
-        if (useJtdsDriver) {
-            return SqlserverJtdsRawTypeConverter::apply;
-        }
-        return SqlserverMicroSoftRawTypeConverter::apply;
+//        if (useJtdsDriver) {
+//            return SqlserverJtdsRawTypeConverter::apply;
+//        }
+        //   return SqlserverMicroSoftRawTypeConverter::apply;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Optional<String> defaultDriverName() {
-        if (useJtdsDriver) {
-            return Optional.of("net.sourceforge.jtds.jdbc.Driver");
-        } else {
-            return Optional.of("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-        }
+        return Optional.of("com.microsoft.sqlserver.jdbc.SQLServerDriver");
     }
 
-    @Override
-    public AbstractRowConverter<ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType>
-            getColumnConverter(RowType rowType) {
-        return getColumnConverter(rowType, null);
-    }
 
     @Override
-    public AbstractRowConverter<ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType>
-            getColumnConverter(RowType rowType, ChunJunCommonConf commonConf) {
-        if (useJtdsDriver) {
-            return new SqlserverJtdsColumnConverter(rowType, commonConf);
-        }
-        return new SqlserverMicroSoftColumnConverter(rowType, commonConf);
+    public AbstractRowConverter<ResultSet, JsonArray, IFieldNamesAttachedStatement, LogicalType>
+    getColumnConverter(
+            ChunJunCommonConf commonConf, int fieldCount
+            , List<IDeserializationConverter> toInternalConverters
+            , List<Pair<ISerializationConverter<IFieldNamesAttachedStatement>, LogicalType>> toExternalConverters) {
+        return new SqlserverMicroSoftColumnConverter(commonConf, fieldCount, toInternalConverters, toExternalConverters);
     }
 
-    @Override
-    public AbstractRowConverter<ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType>
-            getRowConverter(RowType rowType) {
-        return new SqlserverMicroSoftRowConverter(rowType);
-    }
+
+//    @Override
+//    public AbstractRowConverter<ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType>
+//            getRowConverter(RowType rowType) {
+//        return new SqlserverMicroSoftRowConverter(rowType);
+//    }
+
 
     @Override
     public String getSelectFromStatement(
@@ -166,23 +163,28 @@ public class SqlserverDialect implements JdbcDialect {
     }
 
     @Override
-    public Optional<String> getUpsertStatement(
-            String schema,
-            String tableName,
-            String[] fieldNames,
-            String[] uniqueKeyFields,
-            boolean allReplace) {
-        if (uniqueKeyFields == null || uniqueKeyFields.length == 0) {
-            return Optional.of(getInsertIntoStatement(schema, tableName, fieldNames));
+    public Optional<String> getUpsertStatement(String schema, String tableName, List<String> fieldNames, List<String> uniqueKeyFields, boolean allReplace) {
+//        return JdbcDialect.super.getUpsertStatement(schema, tableName, fieldNames, uniqueKeyFields, allReplace);
+//    }
+//
+//    @Override
+//    public Optional<String> getUpsertStatement(
+//            String schema,
+//            String tableName,
+//            String[] fieldNames,
+//            String[] uniqueKeyFields,
+//            boolean allReplace) {
+        if (uniqueKeyFields == null || CollectionUtils.isEmpty(uniqueKeyFields)) {
+            return Optional.of(getInsertIntoStatement(schema, tableName, Lists.newArrayList(fieldNames)));
         }
 
         String columns =
-                Arrays.stream(fieldNames)
+                (fieldNames.stream())
                         .map(this::quoteIdentifier)
                         .collect(Collectors.joining(", "));
 
         String values =
-                Arrays.stream(fieldNames)
+                (fieldNames.stream())
                         .map(i -> "T2." + quoteIdentifier(i))
                         .collect(Collectors.joining(","));
 
@@ -232,10 +234,11 @@ public class SqlserverDialect implements JdbcDialect {
      *
      * @param fieldNames
      * @param uniqueKeyFields
+     *
      * @return
      */
-    public List<String> getUpdateColumns(String[] fieldNames, String[] uniqueKeyFields) {
-        Set<String> uni = new HashSet<>(Arrays.asList(uniqueKeyFields));
+    public List<String> getUpdateColumns(List<String> fieldNames, List<String> uniqueKeyFields) {
+        Set<String> uni = new HashSet<>(uniqueKeyFields);
         List<String> updateColumns = new ArrayList<>();
         for (String col : fieldNames) {
             if (!uni.contains(col)) {
@@ -245,7 +248,7 @@ public class SqlserverDialect implements JdbcDialect {
         return updateColumns;
     }
 
-    public String getUpdateFilterSql(String[] uniqueKeyFields) {
+    public String getUpdateFilterSql(List<String> uniqueKeyFields) {
         List<String> list = new ArrayList<>();
         for (String uniqueKeyField : uniqueKeyFields) {
             String str =
@@ -258,13 +261,13 @@ public class SqlserverDialect implements JdbcDialect {
         return StringUtils.join(list, " AND ");
     }
 
-    public String makeValues(String[] fieldNames) {
+    public String makeValues(List<String> fieldNames) {
         StringBuilder sb = new StringBuilder("SELECT ");
-        for (int i = 0; i < fieldNames.length; ++i) {
+        for (int i = 0; i < fieldNames.size(); ++i) {
             if (i != 0) {
                 sb.append(",");
             }
-            sb.append(":" + fieldNames[i] + " " + quoteIdentifier(fieldNames[i]));
+            sb.append(":" + fieldNames.get(i) + " " + quoteIdentifier(fieldNames.get(i)));
         }
 
         return sb.toString();
@@ -276,6 +279,7 @@ public class SqlserverDialect implements JdbcDialect {
      *
      * @param schema
      * @param table
+     *
      * @return
      */
     public String getIdentityInsertOnSql(String schema, String table) {

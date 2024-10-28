@@ -14,14 +14,12 @@ import java.util.stream.Collectors;
  * @create: 2024-07-01 15:18
  **/
 public class SinkColMetas implements Serializable {
-    //  private final IStreamTableMeta tableMeta;
+
     private final List<IColMetaGetter> cols;
     private transient Map<String, IColMetaGetter> name2ColMap;
 
     public SinkColMetas(IStreamTableMeta tableMeta) {
-        //  this.tableMeta = tableMeta;
         this.cols = tableMeta.getColsMeta();
-        //   this.name2ColMap = tableMeta.getColsMeta().stream().collect(Collectors.toMap((c) -> c.getName(), (c) -> c));
     }
 
     public List<IColMetaGetter> getCols() {

@@ -32,11 +32,11 @@
 			</exclusions>
 		</dependency>
 
-<!--		<dependency>-->
-<!--			<groupId>org.apache.kafka</groupId>-->
-<!--			<artifactId>connect-json</artifactId>-->
-<!--			<version>${kafka.version}</version>-->
-<!--		</dependency>-->
+		<!--		<dependency>-->
+		<!--			<groupId>org.apache.kafka</groupId>-->
+		<!--			<artifactId>connect-json</artifactId>-->
+		<!--			<version>${kafka.version}</version>-->
+		<!--		</dependency>-->
 
 		<!--		<dependency>-->
 		<!--			<groupId>com.pingcap.ticdc.cdc</groupId>-->
@@ -51,11 +51,11 @@
 		<!--		</dependency>-->
 
 
-<!--		<dependency>-->
-<!--			<groupId>com.fasterxml.jackson.datatype</groupId>-->
-<!--			<artifactId>jackson-datatype-jsr310</artifactId>-->
-<!--			<version>${jackson.version}</version>-->
-<!--		</dependency>-->
+		<!--		<dependency>-->
+		<!--			<groupId>com.fasterxml.jackson.datatype</groupId>-->
+		<!--			<artifactId>jackson-datatype-jsr310</artifactId>-->
+		<!--			<version>${jackson.version}</version>-->
+		<!--		</dependency>-->
 
 		<dependency>
 			<groupId>com.alibaba</groupId>

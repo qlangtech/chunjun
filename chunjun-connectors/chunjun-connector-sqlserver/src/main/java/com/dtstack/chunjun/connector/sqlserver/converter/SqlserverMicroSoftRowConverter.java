@@ -20,8 +20,12 @@ package com.dtstack.chunjun.connector.sqlserver.converter;
 
 import com.dtstack.chunjun.connector.jdbc.converter.JdbcRowConverter;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
+import com.dtstack.chunjun.converter.ISerializationConverter;
 import com.dtstack.chunjun.throwable.UnsupportedTypeException;
 
+import org.apache.commons.lang3.tuple.Pair;
+
+import org.apache.flink.connector.jdbc.statement.FieldNamedPreparedStatement;
 import org.apache.flink.table.data.DecimalData;
 import org.apache.flink.table.data.StringData;
 import org.apache.flink.table.data.TimestampData;
@@ -34,6 +38,7 @@ import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.List;
 
 /**
  * Company：www.dtstack.com
@@ -45,54 +50,61 @@ import java.sql.Timestamp;
  */
 public class SqlserverMicroSoftRowConverter extends JdbcRowConverter {
 
-    public SqlserverMicroSoftRowConverter(RowType rowType) {
-        super(rowType);
+//    public SqlserverMicroSoftRowConverter(RowType rowType) {
+//        super(rowType);
+//    }
+
+
+    public SqlserverMicroSoftRowConverter(int fieldCount
+            , List<IDeserializationConverter> toInternalConverters
+            , List<Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType>> toExternalConverters) {
+        super(fieldCount, toInternalConverters, toExternalConverters);
     }
 
-    @Override
-    protected IDeserializationConverter createInternalConverter(LogicalType type) {
-        switch (type.getTypeRoot()) {
-            case NULL:
-                return val -> null;
-            case BOOLEAN:
-            case FLOAT:
-            case DOUBLE:
-            case INTERVAL_YEAR_MONTH:
-            case INTERVAL_DAY_TIME:
-            case INTEGER:
-            case BIGINT:
-                return val -> val;
-            case TINYINT:
-                return val -> val instanceof Short ? ((Short) val).byteValue() : val;
-            case SMALLINT:
-                return val -> val instanceof Short ? ((Short) val).shortValue() : val;
-            case DECIMAL:
-                final int precision = ((DecimalType) type).getPrecision();
-                final int scale = ((DecimalType) type).getScale();
-                return val ->
-                        val instanceof BigInteger
-                                ? DecimalData.fromBigDecimal(
-                                        new BigDecimal((BigInteger) val, 0), precision, scale)
-                                : DecimalData.fromBigDecimal((BigDecimal) val, precision, scale);
-            case DATE:
-                return val ->
-                        (int) ((Date.valueOf(String.valueOf(val))).toLocalDate().toEpochDay());
-            case TIME_WITHOUT_TIME_ZONE:
-                return val ->
-                        (int)
-                                ((Time.valueOf(String.valueOf(val))).toLocalTime().toNanoOfDay()
-                                        / 1_000_000L);
-            case TIMESTAMP_WITH_TIME_ZONE:
-            case TIMESTAMP_WITHOUT_TIME_ZONE:
-                return val -> TimestampData.fromTimestamp((Timestamp) val);
-            case CHAR:
-            case VARCHAR:
-                return val -> StringData.fromString(val.toString());
-            case BINARY:
-            case VARBINARY:
-                return val -> (byte[]) val;
-            default:
-                throw new UnsupportedTypeException("Unsupported type:" + type);
-        }
-    }
+//    @Override
+//    protected IDeserializationConverter createInternalConverter(LogicalType type) {
+//        switch (type.getTypeRoot()) {
+//            case NULL:
+//                return val -> null;
+//            case BOOLEAN:
+//            case FLOAT:
+//            case DOUBLE:
+//            case INTERVAL_YEAR_MONTH:
+//            case INTERVAL_DAY_TIME:
+//            case INTEGER:
+//            case BIGINT:
+//                return val -> val;
+//            case TINYINT:
+//                return val -> val instanceof Short ? ((Short) val).byteValue() : val;
+//            case SMALLINT:
+//                return val -> val instanceof Short ? ((Short) val).shortValue() : val;
+//            case DECIMAL:
+//                final int precision = ((DecimalType) type).getPrecision();
+//                final int scale = ((DecimalType) type).getScale();
+//                return val ->
+//                        val instanceof BigInteger
+//                                ? DecimalData.fromBigDecimal(
+//                                        new BigDecimal((BigInteger) val, 0), precision, scale)
+//                                : DecimalData.fromBigDecimal((BigDecimal) val, precision, scale);
+//            case DATE:
+//                return val ->
+//                        (int) ((Date.valueOf(String.valueOf(val))).toLocalDate().toEpochDay());
+//            case TIME_WITHOUT_TIME_ZONE:
+//                return val ->
+//                        (int)
+//                                ((Time.valueOf(String.valueOf(val))).toLocalTime().toNanoOfDay()
+//                                        / 1_000_000L);
+//            case TIMESTAMP_WITH_TIME_ZONE:
+//            case TIMESTAMP_WITHOUT_TIME_ZONE:
+//                return val -> TimestampData.fromTimestamp((Timestamp) val);
+//            case CHAR:
+//            case VARCHAR:
+//                return val -> StringData.fromString(val.toString());
+//            case BINARY:
+//            case VARBINARY:
+//                return val -> (byte[]) val;
+//            default:
+//                throw new UnsupportedTypeException("Unsupported type:" + type);
+//        }
+//    }
 }

@@ -9,6 +9,7 @@
 ,chunjun-connectors/chunjun-connector-starrocks\
 ,chunjun-connectors/chunjun-connector-kafka\
 ,chunjun-connectors/chunjun-connector-rabbitmq\
+,chunjun-connectors/chunjun-connector-sqlserver\
  -am \
  -Dmaven.test.skip=true -Dspotless.check.skip=true -Dtis-repo
 

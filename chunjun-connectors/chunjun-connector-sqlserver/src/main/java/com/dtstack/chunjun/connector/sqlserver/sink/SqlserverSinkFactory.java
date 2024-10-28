@@ -22,8 +22,6 @@ import com.dtstack.chunjun.conf.SyncConf;
 import com.dtstack.chunjun.connector.jdbc.sink.JdbcOutputFormatBuilder;
 import com.dtstack.chunjun.connector.jdbc.sink.JdbcSinkFactory;
 import com.dtstack.chunjun.connector.jdbc.util.JdbcUtil;
-import com.dtstack.chunjun.connector.sqlserver.converter.SqlserverJtdsRawTypeConverter;
-import com.dtstack.chunjun.connector.sqlserver.converter.SqlserverMicroSoftRawTypeConverter;
 import com.dtstack.chunjun.connector.sqlserver.dialect.SqlserverDialect;
 import com.dtstack.chunjun.converter.RawTypeConverter;
 
@@ -37,25 +35,25 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class SqlserverSinkFactory extends JdbcSinkFactory {
 
-    private boolean useJtdsDriver;
 
     public SqlserverSinkFactory(SyncConf syncConf) {
-        super(syncConf, null);
-        useJtdsDriver = jdbcConf.getJdbcUrl().startsWith("jdbc:jtds:sqlserver");
-        jdbcDialect = new SqlserverDialect(jdbcConf.isWithNoLock(), useJtdsDriver);
+        super(syncConf, new SqlserverDialect(true));
+
     }
 
     @Override
     protected JdbcOutputFormatBuilder getBuilder() {
-        return new JdbcOutputFormatBuilder(new SqlserverOutputFormat());
+      //  return new JdbcOutputFormatBuilder(new SqlserverOutputFormat());
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public RawTypeConverter getRawTypeConverter() {
-        if (useJtdsDriver) {
-            return SqlserverJtdsRawTypeConverter::apply;
-        }
-        return SqlserverMicroSoftRawTypeConverter::apply;
+//        if (useJtdsDriver) {
+//            return SqlserverJtdsRawTypeConverter::apply;
+//        }
+//        return SqlserverMicroSoftRawTypeConverter::apply;
+        throw new UnsupportedOperationException();
     }
 
     /** table字段有可能是[schema].[table]格式 需要转换为对应的schema 和 table 字段* */
