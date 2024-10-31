@@ -286,9 +286,10 @@ public class SqlserverDialect implements JdbcDialect {
      * @return
      */
     public String getIdentityInsertOnSql(String schema, String table) {
-        String str = StringUtils.isEmpty(schema) ? table : schema + "." + table;
+        //  String str = StringUtils.isEmpty(schema) ? table : schema + "." + table;
+        final String fullTabName = buildTableInfoWithSchema(schema, table);
         return String.format(
-                SET_IDENTITY_INSERT_ON_SQL, str, buildTableInfoWithSchema(schema, table));
+                SET_IDENTITY_INSERT_ON_SQL, fullTabName, fullTabName);
     }
 
     public boolean isWithNoLock() {
