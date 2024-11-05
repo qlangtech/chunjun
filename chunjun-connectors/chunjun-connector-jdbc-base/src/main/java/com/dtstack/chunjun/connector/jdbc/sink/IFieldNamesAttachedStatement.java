@@ -7,6 +7,7 @@ import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.List;
 
 /**
@@ -74,5 +75,9 @@ public interface IFieldNamesAttachedStatement {
 
     default void setObject(int pos, Object val) throws SQLException {
         getFieldNamedPstmt().setObject(pos, val);
+    }
+
+    default void setNull(int pos) throws SQLException {
+        getFieldNamedPstmt().setNull(pos, Types.NULL);
     }
 }

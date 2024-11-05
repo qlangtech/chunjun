@@ -52,6 +52,7 @@ import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.List;
 
 /** Base class for all converters that convert between JDBC object and Flink internal object. */
@@ -76,7 +77,7 @@ public class JdbcColumnConverter
             ISerializationConverter<IFieldNamesAttachedStatement> serializationConverter, LogicalType type) {
         return (val, index, statement, statPos) -> {
             if (val.isNullAt(index)) {
-                statement.setObject(index, null);
+                statement.setNull(index);
             } else {
                 serializationConverter.serialize(val, index, statement, statPos);
             }
