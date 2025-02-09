@@ -34,6 +34,8 @@ import com.dtstack.chunjun.element.column.StringColumn;
 import com.dtstack.chunjun.element.column.TimeColumn;
 import com.dtstack.chunjun.element.column.TimestampColumn;
 
+import com.qlangtech.tis.plugin.ds.JDBCTypes;
+
 import org.apache.flink.table.data.DecimalData;
 import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
@@ -247,14 +249,18 @@ public class JdbcColumnConverter
         }
     }
 
-//    @Override
+    //    @Override
 //    protected ISerializationConverter<FieldNamedPreparedStatement> createExternalConverter(
 //            LogicalType type) {
 //        //  return createJdbcStatementValConverter(type,null);
 //        throw new UnsupportedOperationException();
 //    }
+    public static void main(String[] args) {
+        System.out.println(Integer.toBinaryString(1 & 0xFF));
+    }
 
-    public static ISerializationConverter<IFieldNamesAttachedStatement> createJdbcStatementValConverter(LogicalType type, RowData.FieldGetter valGetter) {
+    public static ISerializationConverter<IFieldNamesAttachedStatement> createJdbcStatementValConverter(
+            LogicalType type, com.qlangtech.tis.plugin.ds.DataType jdbcType, RowData.FieldGetter valGetter) {
         switch (type.getTypeRoot()) {
             case BOOLEAN:
                 return (val, index, statement, statPos) -> {
@@ -264,8 +270,19 @@ public class JdbcColumnConverter
                     );
                 };
             case TINYINT:
-                return (val, index, statement, statPos) -> statement.setByte(statPos, (Byte) valGetter.getFieldOrNull(val) //val.getByte(index)
-                );
+                //
+                if (jdbcType.getJdbcType() == JDBCTypes.BIT) {
+                    // 为了保持与DataX 的设置方式保持一致
+                    // https://github.com/alibaba/DataX/blob/7940b4fb7421701b3592aa31cf3a78164e2cfb79/plugin-rdbms-util/src/main/java/com/alibaba/datax/plugin/rdbms/writer/CommonRdbmsWriter.java#L542C24-L542C89
+                    return (val, index, statement, statPos) -> {
+                        Byte v = (Byte) valGetter.getFieldOrNull(val);
+                        statement.setString(statPos, Integer.toBinaryString(v.byteValue() & 0xFF));
+                    };
+                }
+
+                return (val, index, statement, statPos) -> {
+                    statement.setByte(statPos, (Byte) valGetter.getFieldOrNull(val));
+                };
             case SMALLINT: {
                 return (val, index, statement, statPos) -> {
 //                    short a = 0;
