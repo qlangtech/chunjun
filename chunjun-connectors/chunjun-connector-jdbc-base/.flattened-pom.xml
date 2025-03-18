@@ -5,11 +5,11 @@
   <parent>
     <groupId>com.dtstack.chunjun</groupId>
     <artifactId>chunjun-connectors</artifactId>
-    <version>1.12.5-4.1.0-SNAPSHOT</version>
+    <version>1.12.5-4.1.0</version>
   </parent>
   <groupId>com.dtstack.chunjun</groupId>
   <artifactId>chunjun-connector-jdbc-base</artifactId>
-  <version>1.12.5-4.1.0-SNAPSHOT</version>
+  <version>1.12.5-4.1.0</version>
   <name>ChunJun : Connectors : JDBC</name>
   <licenses>
     <license>
