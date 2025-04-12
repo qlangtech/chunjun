@@ -84,18 +84,21 @@ public class DorisHttpRowConverter
     }
 
     @Override
-    protected ISerializationConverter<StringJoiner> wrapIntoNullableExternalConverter(
-            ISerializationConverter<StringJoiner> ISerializationConverter, LogicalType type) {
+    protected ISerializationConverter<StringJoiner> wrapIntoNullableExternalConverter(ExternalConverter<StringJoiner, LogicalType> externalConverter) {
+        ISerializationConverter<StringJoiner> ser = externalConverter.getSerConverter();
+        LogicalType type = externalConverter.flinkType;
         return ((rowData, index, joiner, statPos) -> {
             if (rowData == null
                     || rowData.isNullAt(index)
                     || LogicalTypeRoot.NULL.equals(type.getTypeRoot())) {
                 joiner.add(NULL_VALUE);
             } else {
-                ISerializationConverter.serialize(rowData, index, joiner, statPos);
+                ser.serialize(rowData, index, joiner, statPos);
             }
         });
     }
+
+
 
     // @Override
     public static ISerializationConverter<StringJoiner> createExternalConverter(LogicalType type, Function<RowData, Object> valGetter) {

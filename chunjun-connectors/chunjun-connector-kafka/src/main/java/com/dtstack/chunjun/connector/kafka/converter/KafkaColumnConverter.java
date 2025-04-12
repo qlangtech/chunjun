@@ -216,11 +216,18 @@ public class KafkaColumnConverter extends AbstractRowConverter<String, Object, M
 //        }
 //    }
 
+
     @Override
     protected ISerializationConverter<Map<String, Object>> wrapIntoNullableExternalConverter(
-            ISerializationConverter<Map<String, Object>> serializationConverter, DataType type) {
-        return serializationConverter;
+            ExternalConverter<Map<String, Object>, DataType> externalConverter) {
+        return Objects.requireNonNull(externalConverter, "externalConverter can not be null").getSerConverter();
     }
+
+//    @Override
+//    protected ISerializationConverter<Map<String, Object>> wrapIntoNullableExternalConverter(
+//            ISerializationConverter<Map<String, Object>> serializationConverter, DataType type) {
+//        return serializationConverter;
+//    }
 
 
 //    @Override

@@ -80,7 +80,7 @@ public abstract class AbstractRowConverter<SourceT, LookupT, SinkT, T> implement
         this.toInternalConverters = toInternalConverters.stream()
                 .map((c) -> wrapIntoNullableInternalConverter(c)).collect(Collectors.toList());
         this.toExternalConverters = toExternalConverters.stream()
-                .map((c) -> wrapIntoNullableExternalConverter(c.getSerConverter(), c.flinkType)).collect(Collectors.toList());
+                .map((c) -> wrapIntoNullableExternalConverter(c)).collect(Collectors.toList());
     }
 
 
@@ -174,8 +174,7 @@ public abstract class AbstractRowConverter<SourceT, LookupT, SinkT, T> implement
         return val;
     }
 
-    protected ISerializationConverter<SinkT> wrapIntoNullableExternalConverter(
-            ISerializationConverter<SinkT> serializationConverter, T type) {
+    protected ISerializationConverter<SinkT> wrapIntoNullableExternalConverter(ExternalConverter<SinkT, T> externalConverter) {
         return null;
     }
 

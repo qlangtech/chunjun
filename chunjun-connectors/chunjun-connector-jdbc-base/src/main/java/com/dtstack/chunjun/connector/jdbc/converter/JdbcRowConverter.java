@@ -80,25 +80,47 @@ public class JdbcRowConverter
 //        }
 //    }
 
+
     @Override
-    protected ISerializationConverter<FieldNamedPreparedStatement>
-    wrapIntoNullableExternalConverter(
-            ISerializationConverter<FieldNamedPreparedStatement> serializationConverter,
-            LogicalType type) {
-        final int sqlType =
-                JdbcTypeUtil.typeInformationToSqlType(
-                        TypeConversions.fromDataTypeToLegacyInfo(
-                                TypeConversions.fromLogicalToDataType(type)));
+    protected ISerializationConverter<FieldNamedPreparedStatement> wrapIntoNullableExternalConverter(
+            ExternalConverter<FieldNamedPreparedStatement, LogicalType> externalConverter) {
+        final int sqlType = externalConverter.getDataType().getType();
+//                JdbcTypeUtil.typeInformationToSqlType(
+//                        TypeConversions.fromDataTypeToLegacyInfo(
+//                                TypeConversions.fromLogicalToDataType(type)));
+        ISerializationConverter<FieldNamedPreparedStatement> ser = externalConverter.getSerConverter();
+        LogicalType type = externalConverter.flinkType;
+
         return (val, index, statement, statPos) -> {
             if (val == null
                     || val.isNullAt(index)
                     || LogicalTypeRoot.NULL.equals(type.getTypeRoot())) {
                 statement.setNull(index, sqlType);
             } else {
-                serializationConverter.serialize(val, index, statement, statPos);
+                ser.serialize(val, index, statement, statPos);
             }
         };
     }
+
+//    @Override
+//    protected ISerializationConverter<FieldNamedPreparedStatement>
+//    wrapIntoNullableExternalConverter(
+//            ISerializationConverter<FieldNamedPreparedStatement> serializationConverter,
+//            LogicalType type) {
+//        final int sqlType =
+//                JdbcTypeUtil.typeInformationToSqlType(
+//                        TypeConversions.fromDataTypeToLegacyInfo(
+//                                TypeConversions.fromLogicalToDataType(type)));
+//        return (val, index, statement, statPos) -> {
+//            if (val == null
+//                    || val.isNullAt(index)
+//                    || LogicalTypeRoot.NULL.equals(type.getTypeRoot())) {
+//                statement.setNull(index, sqlType);
+//            } else {
+//                serializationConverter.serialize(val, index, statement, statPos);
+//            }
+//        };
+//    }
 
     @Override
     public RowData toInternal(ResultSet resultSet) throws Exception {

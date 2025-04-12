@@ -87,18 +87,34 @@ public class StarRocksColumnConverter
 
     @Override
     protected ISerializationConverter<Map<String, Object>> wrapIntoNullableExternalConverter(
-            ISerializationConverter<Map<String, Object>> ISerializationConverter,
-            LogicalType type) {
+            ExternalConverter<Map<String, Object>, LogicalType> externalConverter) {
+        ISerializationConverter<Map<String, Object>> serConverter = externalConverter.getSerConverter();
+        LogicalType type = externalConverter.flinkType;
         return (rowData, index, output, statPos) -> {
             if (rowData == null
                     || rowData.isNullAt(index)
                     || LogicalTypeRoot.NULL.equals(type.getTypeRoot())) {
                 output.put(columnList.get(index), null);
             } else {
-                ISerializationConverter.serialize(rowData, index, output, statPos);
+                serConverter.serialize(rowData, index, output, statPos);
             }
         };
     }
+
+//    @Override
+//    protected ISerializationConverter<Map<String, Object>> wrapIntoNullableExternalConverter(
+//            ISerializationConverter<Map<String, Object>> ISerializationConverter,
+//            LogicalType type) {
+//        return (rowData, index, output, statPos) -> {
+//            if (rowData == null
+//                    || rowData.isNullAt(index)
+//                    || LogicalTypeRoot.NULL.equals(type.getTypeRoot())) {
+//                output.put(columnList.get(index), null);
+//            } else {
+//                ISerializationConverter.serialize(rowData, index, output, statPos);
+//            }
+//        };
+//    }
 
     @Override
     public Map<String, Object> toExternal(RowData rowData, Map<String, Object> output)

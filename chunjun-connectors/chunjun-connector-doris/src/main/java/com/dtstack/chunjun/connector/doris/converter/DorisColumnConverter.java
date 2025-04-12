@@ -91,12 +91,14 @@ public class DorisColumnConverter
 
     @Override
     protected ISerializationConverter<StringJoiner> wrapIntoNullableExternalConverter(
-            ISerializationConverter<StringJoiner> ISerializationConverter, String type) {
+            //ISerializationConverter<StringJoiner> ISerializationConverter, String type ,
+            ExternalConverter<StringJoiner, String> externalConverter) {
+        final ISerializationConverter<StringJoiner> se = externalConverter.getSerConverter();
         return ((rowData, index, joiner, statPos) -> {
             if (rowData == null || rowData.isNullAt(index)) {
                 joiner.add(NULL_VALUE);
             } else {
-                ISerializationConverter.serialize(rowData, index, joiner, statPos);
+                se.serialize(rowData, index, joiner, statPos);
             }
         });
     }
