@@ -77,7 +77,7 @@ public interface IFieldNamesAttachedStatement {
         getFieldNamedPstmt().setObject(pos, val);
     }
 
-    default void setNull(int pos) throws SQLException {
-        getFieldNamedPstmt().setNull(pos, Types.NULL);
+    default void setNull(int pos, int sqlType) throws SQLException {
+        getFieldNamedPstmt().setNull(pos, sqlType);
     }
 }

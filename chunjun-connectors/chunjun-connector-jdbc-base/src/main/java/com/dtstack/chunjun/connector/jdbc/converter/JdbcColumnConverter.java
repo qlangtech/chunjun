@@ -81,15 +81,15 @@ public class JdbcColumnConverter
     protected ISerializationConverter<IFieldNamesAttachedStatement> wrapIntoNullableExternalConverter(
             ExternalConverter<IFieldNamesAttachedStatement, LogicalType> externalConverter) {
         ISerializationConverter<IFieldNamesAttachedStatement> ser = externalConverter.getSerConverter();
+        final int sqlType = externalConverter.getDataType().getType();
         return (val, index, statement, statPos) -> {
             if (val.isNullAt(index)) {
-                statement.setNull(index);
+                statement.setNull(index, sqlType);
             } else {
                 ser.serialize(val, index, statement, statPos);
             }
         };
     }
-
 
 
 //    @Override
