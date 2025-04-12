@@ -21,6 +21,7 @@ package com.dtstack.chunjun.connector.kafka.converter;
 import com.dtstack.chunjun.conf.ContentConf;
 import com.dtstack.chunjun.conf.FieldConf;
 import com.dtstack.chunjun.conf.SyncConf;
+import com.dtstack.chunjun.connector.jdbc.dialect.ExternalConverter;
 import com.dtstack.chunjun.connector.kafka.conf.KafkaConf;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
@@ -86,7 +87,7 @@ public class KafkaColumnConverter extends AbstractRowConverter<String, Object, M
         int fieldCount = 0;
         boolean shallFilterCols = CollectionUtils.isNotEmpty(keyTypeList);
 
-        List<Pair<ISerializationConverter<Map<String, Object>>, DataType>> toExternalConverters = Lists.newArrayList();
+        List<ExternalConverter<Map<String, Object>, DataType>> toExternalConverters = Lists.newArrayList();
         for (ContentConf contentConf : syncConf.getJob().getContent()) {
             List<FieldConf> fields = contentConf.getWriter().getFieldList();
             if (CollectionUtils.isEmpty(fields)) {
@@ -97,7 +98,8 @@ public class KafkaColumnConverter extends AbstractRowConverter<String, Object, M
                 if (shallFilterCols && !keyTypeList.contains(field.getName())) {
                     continue;
                 }
-                toExternalConverters.add(Pair.of(serializationConverterFactory.apply(field), field.getType()));
+                //   toExternalConverters.add(Pair.of(serializationConverterFactory.apply(field), field.getType()));
+                toExternalConverters.add(new ExternalConverter(serializationConverterFactory.apply(field), field.getType(), field.getType()));
             }
             break;
         }
@@ -131,7 +133,9 @@ public class KafkaColumnConverter extends AbstractRowConverter<String, Object, M
 
     private KafkaColumnConverter(
             int fieldCount, List<IDeserializationConverter> toInternalConverters
-            , List<Pair<ISerializationConverter<Map<String, Object>>, DataType>> toExternalConverters, IDecode decode, JsonDecoder jsonDecoder, KafkaConf kafkaConf) {
+            // , List<Pair<ISerializationConverter<Map<String, Object>>, DataType>> toExternalConverters
+            , List<ExternalConverter<Map<String, Object>, DataType>> toExternalConverters
+            , IDecode decode, JsonDecoder jsonDecoder, KafkaConf kafkaConf) {
         super(fieldCount, toInternalConverters, toExternalConverters);
         this.decode = decode;
         this.jsonDecoder = jsonDecoder;
@@ -164,7 +168,7 @@ public class KafkaColumnConverter extends AbstractRowConverter<String, Object, M
 //        }
 
         for (ISerializationConverter serConverter : toExternalConverters) {
-            serConverter.serialize(rowData, -1, result,-1);
+            serConverter.serialize(rowData, -1, result, -1);
         }
 
         return result;

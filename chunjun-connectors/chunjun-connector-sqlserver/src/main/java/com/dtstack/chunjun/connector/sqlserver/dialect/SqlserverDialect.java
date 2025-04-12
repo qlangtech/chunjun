@@ -20,6 +20,7 @@ package com.dtstack.chunjun.connector.sqlserver.dialect;
 
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
 import com.dtstack.chunjun.conf.SyncConf;
+import com.dtstack.chunjun.connector.jdbc.dialect.ExternalConverter;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
 import com.dtstack.chunjun.connector.jdbc.dialect.SupportUpdateMode;
 import com.dtstack.chunjun.connector.jdbc.sink.IFieldNamesAttachedStatement;
@@ -108,7 +109,7 @@ public class SqlserverDialect implements JdbcDialect {
     getColumnConverter(
             ChunJunCommonConf commonConf, int fieldCount
             , List<IDeserializationConverter> toInternalConverters
-            , List<Pair<ISerializationConverter<IFieldNamesAttachedStatement>, LogicalType>> toExternalConverters) {
+            , List<ExternalConverter<IFieldNamesAttachedStatement, LogicalType>> toExternalConverters) {
         return new SqlserverMicroSoftColumnConverter(commonConf, fieldCount, toInternalConverters, toExternalConverters);
     }
 

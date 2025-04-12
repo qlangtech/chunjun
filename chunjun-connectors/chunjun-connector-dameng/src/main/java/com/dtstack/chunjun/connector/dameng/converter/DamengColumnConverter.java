@@ -20,6 +20,7 @@ package com.dtstack.chunjun.connector.dameng.converter;
 
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
 import com.dtstack.chunjun.connector.jdbc.converter.JdbcColumnConverter;
+import com.dtstack.chunjun.connector.jdbc.dialect.ExternalConverter;
 import com.dtstack.chunjun.connector.jdbc.sink.IFieldNamesAttachedStatement;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
 import com.dtstack.chunjun.converter.ISerializationConverter;
@@ -46,7 +47,8 @@ public class DamengColumnConverter extends JdbcColumnConverter {
 
 
     public DamengColumnConverter(
-            ChunJunCommonConf commonConf, int fieldCount, List<IDeserializationConverter> toInternalConverters, List<Pair<ISerializationConverter<IFieldNamesAttachedStatement>, LogicalType>> toExternalConverters) {
+            ChunJunCommonConf commonConf, int fieldCount, List<IDeserializationConverter> toInternalConverters
+            , List<ExternalConverter<IFieldNamesAttachedStatement, LogicalType>> toExternalConverters) {
         super(commonConf, fieldCount, toInternalConverters, toExternalConverters);
     }
 

@@ -19,6 +19,7 @@
 package com.dtstack.chunjun.connector.dameng.converter;
 
 import com.dtstack.chunjun.connector.jdbc.converter.JdbcRowConverter;
+import com.dtstack.chunjun.connector.jdbc.dialect.ExternalConverter;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
 import com.dtstack.chunjun.converter.ISerializationConverter;
 import com.dtstack.chunjun.throwable.UnsupportedTypeException;
@@ -60,17 +61,17 @@ public class DamengRowConverter extends JdbcRowConverter {
 
     public DamengRowConverter(
             int fieldCount, List<IDeserializationConverter> toInternalConverters
-            , List<Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType>> toExternalConverters
+            , List<ExternalConverter<FieldNamedPreparedStatement, LogicalType>> toExternalConverters
     ) {
         super(fieldCount, toInternalConverters, toExternalConverters);
 //        ArrayList<IDeserializationConverter> toAsyncInternalConverters
 //        this.toAsyncInternalConverters = toAsyncInternalConverters;
 
         toAsyncInternalConverters = new ArrayList<>(fieldCount);
-        for (Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType> p : toExternalConverters) {
+        for (ExternalConverter<FieldNamedPreparedStatement, LogicalType> p : toExternalConverters) {
             toAsyncInternalConverters.add(
                     wrapIntoNullableInternalConverter(
-                            createAsyncInternalConverter(p.getValue())));
+                            createAsyncInternalConverter(p.flinkType)));
         }
 
     }

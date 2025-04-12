@@ -18,6 +18,7 @@
 
 package com.dtstack.chunjun.connector.jdbc.converter;
 
+import com.dtstack.chunjun.connector.jdbc.dialect.ExternalConverter;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
 import com.dtstack.chunjun.converter.ISerializationConverter;
@@ -62,7 +63,7 @@ public class JdbcRowConverter
     public JdbcRowConverter(
             int fieldCount
             , List<IDeserializationConverter> toInternalConverters
-            , List<Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType>> toExternalConverters) {
+            , List<ExternalConverter<FieldNamedPreparedStatement,LogicalType>> toExternalConverters) {
         super(fieldCount, toInternalConverters, toExternalConverters);
     }
 

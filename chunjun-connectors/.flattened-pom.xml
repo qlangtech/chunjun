@@ -5,11 +5,11 @@
   <parent>
     <groupId>com.dtstack.chunjun</groupId>
     <artifactId>chunjun</artifactId>
-    <version>1.12.5-4.1.0</version>
+    <version>1.12.5-4.2.0-SNAPSHOT</version>
   </parent>
   <groupId>com.dtstack.chunjun</groupId>
   <artifactId>chunjun-connectors</artifactId>
-  <version>1.12.5-4.1.0</version>
+  <version>1.12.5-4.2.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>ChunJun : Connectors</name>
   <licenses>

@@ -80,7 +80,8 @@ public interface JdbcDialect extends Serializable {
     getRowConverter(
             int fieldCount
             , List<IDeserializationConverter> toInternalConverters
-            , List<Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType>> toExternalConverters) {
+            //  Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType>
+            , List<ExternalConverter<FieldNamedPreparedStatement, LogicalType>> toExternalConverters) {
         return new JdbcRowConverter(fieldCount, toInternalConverters, toExternalConverters);
     }
 
@@ -118,7 +119,7 @@ public interface JdbcDialect extends Serializable {
     default AbstractRowConverter<ResultSet, JsonArray, IFieldNamesAttachedStatement, LogicalType>
     getColumnConverter(
             ChunJunCommonConf commonConf, int fieldCount, List<IDeserializationConverter> toInternalConverters
-            , List<Pair<ISerializationConverter<IFieldNamesAttachedStatement>, LogicalType>> toExternalConverters) {
+            , List<ExternalConverter<IFieldNamesAttachedStatement, LogicalType>> toExternalConverters) {
         return new JdbcColumnConverter(commonConf, fieldCount, toInternalConverters, toExternalConverters);
     }
 

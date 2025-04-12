@@ -20,6 +20,7 @@ package com.dtstack.chunjun.connector.jdbc.converter;
 
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
 import com.dtstack.chunjun.conf.FieldConf;
+import com.dtstack.chunjun.connector.jdbc.dialect.ExternalConverter;
 import com.dtstack.chunjun.connector.jdbc.sink.IFieldNamesAttachedStatement;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
@@ -69,7 +70,9 @@ public class JdbcColumnConverter
 
     public JdbcColumnConverter(
             ChunJunCommonConf commonConf, int fieldCount, List<IDeserializationConverter> toInternalConverters
-            , List<Pair<ISerializationConverter<IFieldNamesAttachedStatement>, LogicalType>> toExternalConverters) {
+            //, List<Pair<ISerializationConverter<IFieldNamesAttachedStatement>, LogicalType>> toExternalConverters
+            , List<ExternalConverter<IFieldNamesAttachedStatement, LogicalType>> toExternalConverters
+    ) {
         super(fieldCount, toInternalConverters, toExternalConverters);
         this.setCommonConf(commonConf);
     }

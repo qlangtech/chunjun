@@ -19,25 +19,12 @@
 package com.dtstack.chunjun.connector.sqlserver.converter;
 
 import com.dtstack.chunjun.connector.jdbc.converter.JdbcRowConverter;
+import com.dtstack.chunjun.connector.jdbc.dialect.ExternalConverter;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
-import com.dtstack.chunjun.converter.ISerializationConverter;
-import com.dtstack.chunjun.throwable.UnsupportedTypeException;
-
-import org.apache.commons.lang3.tuple.Pair;
 
 import org.apache.flink.connector.jdbc.statement.FieldNamedPreparedStatement;
-import org.apache.flink.table.data.DecimalData;
-import org.apache.flink.table.data.StringData;
-import org.apache.flink.table.data.TimestampData;
-import org.apache.flink.table.types.logical.DecimalType;
 import org.apache.flink.table.types.logical.LogicalType;
-import org.apache.flink.table.types.logical.RowType;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.util.List;
 
 /**
@@ -57,7 +44,7 @@ public class SqlserverMicroSoftRowConverter extends JdbcRowConverter {
 
     public SqlserverMicroSoftRowConverter(int fieldCount
             , List<IDeserializationConverter> toInternalConverters
-            , List<Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType>> toExternalConverters) {
+            , List<ExternalConverter<FieldNamedPreparedStatement, LogicalType>> toExternalConverters) {
         super(fieldCount, toInternalConverters, toExternalConverters);
     }
 

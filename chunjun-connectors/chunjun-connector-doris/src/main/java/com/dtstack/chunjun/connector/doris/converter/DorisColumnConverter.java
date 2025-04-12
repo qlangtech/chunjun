@@ -19,6 +19,7 @@
 package com.dtstack.chunjun.connector.doris.converter;
 
 import com.dtstack.chunjun.connector.doris.options.DorisConf;
+import com.dtstack.chunjun.connector.jdbc.dialect.ExternalConverter;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
 import com.dtstack.chunjun.converter.ISerializationConverter;
@@ -50,7 +51,7 @@ public class DorisColumnConverter
 
     public DorisColumnConverter(
             DorisConf options, int fieldCount, List<IDeserializationConverter> toInternalConverters
-            , List<Pair<ISerializationConverter<StringJoiner>, String>> toExternalConverters) {
+            , List<ExternalConverter<StringJoiner, String>> toExternalConverters) {
         super(fieldCount, toInternalConverters, toExternalConverters);
         this.options = options;
     }

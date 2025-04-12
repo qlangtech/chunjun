@@ -19,6 +19,7 @@
 package com.dtstack.chunjun.connector.oracle.dialect;
 
 import com.dtstack.chunjun.conf.ChunJunCommonConf;
+import com.dtstack.chunjun.connector.jdbc.dialect.ExternalConverter;
 import com.dtstack.chunjun.connector.jdbc.dialect.JdbcDialect;
 import com.dtstack.chunjun.connector.jdbc.dialect.SupportUpdateMode;
 import com.dtstack.chunjun.connector.jdbc.sink.IFieldNamesAttachedStatement;
@@ -64,7 +65,7 @@ public class OracleDialect implements JdbcDialect {
     @Override
     public AbstractRowConverter<ResultSet, JsonArray, IFieldNamesAttachedStatement, LogicalType> getColumnConverter(
             ChunJunCommonConf commonConf, int fieldCount, List<IDeserializationConverter> toInternalConverters
-            , List<Pair<ISerializationConverter<IFieldNamesAttachedStatement>, LogicalType>> toExternalConverters) {
+            , List<ExternalConverter<IFieldNamesAttachedStatement, LogicalType>> toExternalConverters) {
         return new OracleColumnConverter(commonConf, fieldCount, toInternalConverters, toExternalConverters);
     }
 
@@ -137,7 +138,7 @@ public class OracleDialect implements JdbcDialect {
     public AbstractRowConverter<ResultSet, JsonArray, FieldNamedPreparedStatement, LogicalType>
     getRowConverter(
             int fieldCount, List<IDeserializationConverter> toInternalConverters
-            , List<Pair<ISerializationConverter<FieldNamedPreparedStatement>, LogicalType>> toExternalConverters) {
+            , List<ExternalConverter<FieldNamedPreparedStatement, LogicalType>> toExternalConverters) {
         return new OracleRowConverter(fieldCount, toInternalConverters, toExternalConverters);
     }
 

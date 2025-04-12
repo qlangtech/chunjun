@@ -18,6 +18,7 @@
 
 package com.dtstack.chunjun.connector.doris.converter;
 
+import com.dtstack.chunjun.connector.jdbc.dialect.ExternalConverter;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
 import com.dtstack.chunjun.converter.ISerializationConverter;
@@ -53,7 +54,7 @@ public class DorisHttpRowConverter
 
     public DorisHttpRowConverter(
             int fieldCount, List<IDeserializationConverter> toInternalConverters
-            , List<Pair<ISerializationConverter<StringJoiner>, LogicalType>> toExternalConverters) {
+            , List<ExternalConverter<StringJoiner, LogicalType>> toExternalConverters) {
         super(fieldCount, toInternalConverters, toExternalConverters);
     }
 

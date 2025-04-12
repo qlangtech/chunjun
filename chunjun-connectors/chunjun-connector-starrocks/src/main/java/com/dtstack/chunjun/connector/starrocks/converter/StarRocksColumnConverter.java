@@ -18,6 +18,7 @@
 
 package com.dtstack.chunjun.connector.starrocks.converter;
 
+import com.dtstack.chunjun.connector.jdbc.dialect.ExternalConverter;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.converter.IDeserializationConverter;
 import com.dtstack.chunjun.converter.ISerializationConverter;
@@ -40,7 +41,7 @@ public class StarRocksColumnConverter
 
     public StarRocksColumnConverter(
             int fieldCount, List<IDeserializationConverter> toInternalConverters
-            , List<Pair<ISerializationConverter<Map<String, Object>>, LogicalType>> toExternalConverters
+            , List<ExternalConverter<Map<String, Object>, LogicalType>> toExternalConverters
             , List<String> columnList) {
         super(fieldCount, toInternalConverters, toExternalConverters);
         this.columnList = columnList;
