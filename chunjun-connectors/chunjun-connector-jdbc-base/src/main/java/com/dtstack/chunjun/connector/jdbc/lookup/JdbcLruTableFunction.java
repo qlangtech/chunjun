@@ -27,7 +27,7 @@ import com.dtstack.chunjun.lookup.AbstractLruTableFunction;
 import com.dtstack.chunjun.lookup.cache.CacheMissVal;
 import com.dtstack.chunjun.lookup.cache.CacheObj;
 import com.dtstack.chunjun.lookup.conf.LookupConf;
-import com.dtstack.chunjun.throwable.NoRestartException;
+//import com.dtstack.chunjun.throwable.NoRestartException;
 import com.dtstack.chunjun.util.DateUtil;
 import com.dtstack.chunjun.util.ThreadUtil;
 
@@ -274,7 +274,7 @@ public class JdbcLruTableFunction extends AbstractLruTableFunction {
                                     String.format(
                                             "retry ... current time [%s]", failCounter.get()));
                             if (failCounter.get() >= retryMaxNum) {
-                                future.completeExceptionally(new NoRestartException(conn.cause()));
+                                future.completeExceptionally(conn.cause());
                                 finishFlag.set(true);
                             }
                             return;
@@ -286,7 +286,8 @@ public class JdbcLruTableFunction extends AbstractLruTableFunction {
                         handleQuery(conn.result(), future, keys);
                         finishFlag.set(true);
                     } catch (Exception e) {
-                        dealFillDataError(future, e);
+                       // dealFillDataError(future, e);
+                        throw new RuntimeException(e);
                     } finally {
                         latch.countDown();
                     }

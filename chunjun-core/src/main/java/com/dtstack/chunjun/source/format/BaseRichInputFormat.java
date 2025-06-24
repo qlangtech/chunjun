@@ -22,7 +22,6 @@ import com.dtstack.chunjun.conf.ChunJunCommonConf;
 import com.dtstack.chunjun.constants.Metrics;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.dirty.DirtyConf;
-import com.dtstack.chunjun.dirty.manager.DirtyManager;
 import com.dtstack.chunjun.dirty.utils.DirtyConfUtil;
 import com.dtstack.chunjun.metrics.AccumulatorCollector;
 import com.dtstack.chunjun.metrics.BaseMetric;
@@ -30,6 +29,7 @@ import com.dtstack.chunjun.metrics.CustomReporter;
 import com.dtstack.chunjun.metrics.RowSizeCalculator;
 import com.dtstack.chunjun.restore.FormatState;
 import com.dtstack.chunjun.source.ByteRateLimiter;
+import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
 import com.dtstack.chunjun.throwable.ReadRecordException;
 import com.dtstack.chunjun.util.DataSyncFactoryUtil;
 import com.dtstack.chunjun.util.ExceptionUtil;
@@ -111,7 +111,7 @@ public abstract class BaseRichInputFormat extends RichInputFormat<RowData, Input
 //    protected List<String> columnTypeList = new ArrayList<>();
     protected List<IColMetaGetter> colsMeta;
     /** dirty manager which collects the dirty data. */
-    protected DirtyManager dirtyManager;
+   // protected DirtyManager dirtyManager;
     /** BaseRichInputFormat是否已经初始化 */
     private boolean initialized = false;
 
@@ -149,7 +149,7 @@ public abstract class BaseRichInputFormat extends RichInputFormat<RowData, Input
         ExecutionConfig.GlobalJobParameters params =
                 context.getExecutionConfig().getGlobalJobParameters();
         DirtyConf dc = DirtyConfUtil.parseFromMap(params.toMap());
-        this.dirtyManager = new DirtyManager(dc, this.context);
+       // this.dirtyManager = new DirtyManager(dc, this.context);
 
         if (inputSplit instanceof ErrorInputSplit) {
             throw new RuntimeException(((ErrorInputSplit) inputSplit).getErrorMessage());
@@ -202,7 +202,8 @@ public abstract class BaseRichInputFormat extends RichInputFormat<RowData, Input
         try {
             internalRow = nextRecordInternal(rowData);
         } catch (ReadRecordException e) {
-            dirtyManager.collect(e.getRowData(), e, null);
+          //  dirtyManager.collect(e.getRowData(), e, null);
+            throw new ChunJunRuntimeException(e);
         }
         if (internalRow != null) {
             updateDuration();
@@ -221,9 +222,9 @@ public abstract class BaseRichInputFormat extends RichInputFormat<RowData, Input
     public void close() throws IOException {
         closeInternal();
 
-        if (dirtyManager != null) {
-            dirtyManager.close();
-        }
+//        if (dirtyManager != null) {
+//            dirtyManager.close();
+//        }
     }
 
     @Override
@@ -314,10 +315,10 @@ public abstract class BaseRichInputFormat extends RichInputFormat<RowData, Input
         inputMetric.addMetric(Metrics.READ_BYTES, bytesReadCounter, true);
         inputMetric.addMetric(Metrics.READ_DURATION, durationCounter);
 
-        inputMetric.addDirtyMetric(Metrics.DIRTY_DATA_COUNT, this.dirtyManager.getConsumedMetric());
-        inputMetric.addDirtyMetric(
-                Metrics.DIRTY_DATA_COLLECT_FAILED_COUNT,
-                this.dirtyManager.getFailedConsumedMetric());
+//        inputMetric.addDirtyMetric(Metrics.DIRTY_DATA_COUNT, this.dirtyManager.getConsumedMetric());
+//        inputMetric.addDirtyMetric(
+//                Metrics.DIRTY_DATA_COLLECT_FAILED_COUNT,
+//                this.dirtyManager.getFailedConsumedMetric());
     }
 
     /** 从checkpoint状态缓存map中恢复上次任务的指标信息 */
@@ -405,9 +406,9 @@ public abstract class BaseRichInputFormat extends RichInputFormat<RowData, Input
         this.rowConverter = rowConverter;
     }
 
-    public void setDirtyManager(DirtyManager dirtyManager) {
-        this.dirtyManager = dirtyManager;
-    }
+//    public void setDirtyManager(DirtyManager dirtyManager) {
+//        this.dirtyManager = dirtyManager;
+//    }
 
     public void setUseAbstractColumn(boolean useAbstractColumn) {
         this.useAbstractColumn = useAbstractColumn;

@@ -20,7 +20,7 @@ package com.dtstack.chunjun.dirty.utils;
 
 import com.dtstack.chunjun.dirty.DirtyConf;
 import com.dtstack.chunjun.options.Options;
-import com.dtstack.chunjun.throwable.NoRestartException;
+import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
 import com.dtstack.chunjun.util.PropertiesUtil;
 
 import com.google.common.collect.Maps;
@@ -100,7 +100,7 @@ public class DirtyConfUtil {
                     DIRTY_DIR, options.getChunjunDistDir() + File.separator + DIRTY_DIR_SUFFIX);
             return parse(properties);
         } catch (Exception e) {
-            throw new NoRestartException(
+            throw new ChunJunRuntimeException(
                     String.format("Parse conf [%s] to DirtyConf failed.", options.getConfProp()),
                     e);
         }
@@ -111,7 +111,7 @@ public class DirtyConfUtil {
             Map<String, String> confMap = Maps.fromProperties(properties);
             return parseFromMap(confMap);
         } catch (Exception e) {
-            throw new NoRestartException(
+            throw new ChunJunRuntimeException(
                     String.format(
                             "Parse properties to dirtyConf failed. Properties: %s", properties),
                     e);

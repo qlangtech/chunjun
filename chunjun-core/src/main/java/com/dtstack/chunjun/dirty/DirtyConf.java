@@ -19,7 +19,7 @@
 package com.dtstack.chunjun.dirty;
 
 import com.dtstack.chunjun.options.Options;
-import com.dtstack.chunjun.throwable.NoRestartException;
+//import com.dtstack.chunjun.throwable.NoRestartException;
 
 import java.io.Serializable;
 import java.util.Properties;

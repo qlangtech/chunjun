@@ -20,6 +20,7 @@ package com.dtstack.chunjun.connector.kafka.serialization;
 import com.dtstack.chunjun.connector.kafka.conf.KafkaConf;
 import com.dtstack.chunjun.connector.kafka.converter.KafkaColumnConverter;
 import com.dtstack.chunjun.connector.kafka.sink.DynamicKafkaSerializationSchema;
+import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
 import com.dtstack.chunjun.util.JsonUtil;
 import com.dtstack.chunjun.util.MapUtil;
 
@@ -109,8 +110,9 @@ public abstract class RowSerializationSchema extends DynamicKafkaSerializationSc
                     key,
                     this.valueSerialization.serialize(element));
         } catch (Exception e) {
-            dirtyManager.collect(element, e, null);
+         //   dirtyManager.collect(element, e, null);
+            throw new ChunJunRuntimeException(e);
         }
-        return null;
+        //return null;
     }
 }

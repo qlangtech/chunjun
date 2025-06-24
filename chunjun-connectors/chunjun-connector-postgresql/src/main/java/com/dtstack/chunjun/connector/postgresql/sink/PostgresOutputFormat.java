@@ -26,7 +26,8 @@ import com.dtstack.chunjun.connector.postgresql.dialect.PostgresqlDialect;
 import com.dtstack.chunjun.constants.ConstantValue;
 import com.dtstack.chunjun.element.ColumnRowData;
 import com.dtstack.chunjun.enums.EWriteMode;
-import com.dtstack.chunjun.throwable.NoRestartException;
+//import com.dtstack.chunjun.throwable.NoRestartException;
+import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
 import com.dtstack.chunjun.throwable.WriteRecordException;
 
 import com.qlangtech.tis.plugin.ds.IColMetaGetter;
@@ -35,6 +36,7 @@ import org.apache.commons.collections.MapUtils;
 
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.table.data.RowData;
+import org.apache.flink.util.FlinkException;
 import org.apache.flink.util.StringUtils;
 
 import org.apache.commons.lang3.math.NumberUtils;
@@ -138,7 +140,7 @@ public abstract class PostgresOutputFormat extends JdbcOutputFormat {
                     processWriteException(e, index, row);
                 }
             } else {
-                throw new NoRestartException("copy mode only support data sync with out table");
+                throw new ChunJunRuntimeException("copy mode only support data sync with out table");
             }
         }
     }
@@ -169,7 +171,7 @@ public abstract class PostgresOutputFormat extends JdbcOutputFormat {
                     rowsOfCurrentTransaction += rows.size();
                 }
             } else {
-                throw new NoRestartException("copy mode only support data sync with out table");
+                throw new ChunJunRuntimeException("copy mode only support data sync with out table");
             }
         }
     }

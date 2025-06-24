@@ -30,7 +30,7 @@ import com.dtstack.chunjun.lookup.cache.CacheMissVal;
 import com.dtstack.chunjun.lookup.cache.CacheObj;
 import com.dtstack.chunjun.lookup.conf.LookupConf;
 import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
-import com.dtstack.chunjun.throwable.NoRestartException;
+//import com.dtstack.chunjun.throwable.NoRestartException;
 
 import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
@@ -122,10 +122,11 @@ public class StarRocksLruTableFunction extends AbstractLruTableFunction {
                 rowDataList.add(rowData);
             }
         } catch (Exception e) {
-            parseErrorRecords.inc();
-            if (parseErrorRecords.getCount() > lookupConf.getErrorLimit()) {
-                throw new NoRestartException("lru parse error time exceeded", e);
-            }
+          //  parseErrorRecords.inc();
+//            if (parseErrorRecords.getCount() > lookupConf.getErrorLimit()) {
+//                throw new NoRestartException("lru parse error time exceeded", e);
+//            }
+            throw new ChunJunRuntimeException(e);
         } finally {
             beReader.close();
         }

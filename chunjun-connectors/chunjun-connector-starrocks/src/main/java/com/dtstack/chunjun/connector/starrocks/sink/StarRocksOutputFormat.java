@@ -97,17 +97,17 @@ public class StarRocksOutputFormat extends BaseRichOutputFormat {
                 writeMultipleRecordsInternal();
                 numWriteCounter.add(rows.size());
             } catch (Exception e) {
-                if (e instanceof StarRocksStreamLoadFailedException) {
-                    StarRocksStreamLoadFailedException exception =
-                            (StarRocksStreamLoadFailedException) e;
-                    String errMessage = handleErrMessage(exception);
-                    StarRocksSinkBufferEntity entity = exception.getEntity();
-                    for (byte[] data : entity.getBuffer()) {
-                        dirtyManager.collect(new String(data), new Throwable(errMessage), null);
-                    }
-                } else {
+//                if (e instanceof StarRocksStreamLoadFailedException) {
+//                    StarRocksStreamLoadFailedException exception =
+//                            (StarRocksStreamLoadFailedException) e;
+//                    String errMessage = handleErrMessage(exception);
+//                    StarRocksSinkBufferEntity entity = exception.getEntity();
+//                    for (byte[] data : entity.getBuffer()) {
+//                        dirtyManager.collect(new String(data), new Throwable(errMessage), null);
+//                    }
+//                } else {
                     throw new ChunJunRuntimeException("write starRocks failed.", e);
-                }
+                //}
             } finally {
                 // Data is either recorded dirty data or written normally
                 rows.clear();

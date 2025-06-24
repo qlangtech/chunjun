@@ -27,7 +27,6 @@ import com.dtstack.chunjun.conf.ChunJunCommonConf;
 import com.dtstack.chunjun.constants.Metrics;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
 import com.dtstack.chunjun.dirty.DirtyConf;
-import com.dtstack.chunjun.dirty.manager.DirtyManager;
 import com.dtstack.chunjun.dirty.utils.DirtyConfUtil;
 import com.dtstack.chunjun.enums.Semantic;
 import com.dtstack.chunjun.factory.ChunJunThreadFactory;
@@ -37,7 +36,6 @@ import com.dtstack.chunjun.metrics.RowSizeCalculator;
 import com.dtstack.chunjun.restore.FormatState;
 import com.dtstack.chunjun.sink.DirtyDataManager;
 import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
-import com.dtstack.chunjun.throwable.NoRestartException;
 import com.dtstack.chunjun.throwable.WriteRecordException;
 import com.dtstack.chunjun.util.DataSyncFactoryUtil;
 import com.dtstack.chunjun.util.ExceptionUtil;
@@ -184,7 +182,7 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
     protected Semantic semantic;
 
     /** the manager of dirty data. */
-    protected DirtyManager dirtyManager;
+    //protected DirtyManager dirtyManager;
 
     protected boolean executeDdlAble;
     protected EventCenter eventCenter;
@@ -241,7 +239,7 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
         ExecutionConfig.GlobalJobParameters params =
                 context.getExecutionConfig().getGlobalJobParameters();
         DirtyConf dc = DirtyConfUtil.parseFromMap(params.toMap());
-        this.dirtyManager = new DirtyManager(dc, this.context);
+//        this.dirtyManager = new DirtyManager(dc, this.context);
 
         checkpointMode =
                 context.getCheckpointMode() == null
@@ -361,9 +359,9 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
             accumulatorCollector.close();
         }
 
-        if (dirtyManager != null) {
-            dirtyManager.close();
-        }
+//        if (dirtyManager != null) {
+//            dirtyManager.close();
+//        }
 
         if (closeException != null) {
             throw new RuntimeException(closeException);
@@ -399,11 +397,11 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
         outputMetric.addMetric(Metrics.SNAPSHOT_WRITES, snapshotWriteCounter);
         // outputMetric.addMetric(Metrics.WRITE_BYTES, bytesWriteCounter, true);
         outputMetric.addMetric(Metrics.WRITE_DURATION, durationCounter);
-        outputMetric.addDirtyMetric(
-                Metrics.DIRTY_DATA_COUNT, this.dirtyManager.getConsumedMetric());
-        outputMetric.addDirtyMetric(
-                Metrics.DIRTY_DATA_COLLECT_FAILED_COUNT,
-                this.dirtyManager.getFailedConsumedMetric());
+//        outputMetric.addDirtyMetric(
+//                Metrics.DIRTY_DATA_COUNT, this.dirtyManager.getConsumedMetric());
+//        outputMetric.addDirtyMetric(
+//                Metrics.DIRTY_DATA_COLLECT_FAILED_COUNT,
+//                this.dirtyManager.getFailedConsumedMetric());
     }
 
     /** 初始化累加器收集器 */
@@ -483,13 +481,14 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
             writeSingleRecordInternal(rowData);
             numWriteCounter.add(1L);
         } catch (WriteRecordException e) {
-            dirtyManager.collect(e.getRowData(), e, null);
+          //  dirtyManager.collect(e.getRowData(), e, null);
             if (LOG.isTraceEnabled()) {
                 LOG.trace(
                         "write error rowData, rowData = {}, e = {}",
                         rowData.toString(),
                         ExceptionUtil.getErrorMessage(e));
             }
+            throw new RuntimeException(e);
         }
     }
 
@@ -511,9 +510,10 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
 
     protected void checkTimerWriteException() {
         if (null != timerWriteException) {
-            if (timerWriteException instanceof NoRestartException) {
-                throw (NoRestartException) timerWriteException;
-            } else if (timerWriteException instanceof RuntimeException) {
+//            if (timerWriteException instanceof NoRestartException) {
+//                throw (NoRestartException) timerWriteException;
+//            } else
+                if (timerWriteException instanceof RuntimeException) {
                 throw (RuntimeException) timerWriteException;
             } else {
                 throw new ChunJunRuntimeException("Writing records failed.", timerWriteException);
@@ -705,9 +705,9 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
         this.rowConverter = rowConverter;
     }
 
-    public void setDirtyManager(DirtyManager dirtyManager) {
-        this.dirtyManager = dirtyManager;
-    }
+//    public void setDirtyManager(DirtyManager dirtyManager) {
+//        this.dirtyManager = dirtyManager;
+//    }
 
     public void setExecuteDdlAble(boolean executeDdlAble) {
         this.executeDdlAble = executeDdlAble;

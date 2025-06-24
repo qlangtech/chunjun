@@ -20,6 +20,7 @@ package com.dtstack.chunjun.connector.kafka.serialization;
 import com.dtstack.chunjun.connector.kafka.conf.KafkaConf;
 import com.dtstack.chunjun.connector.kafka.source.DynamicKafkaDeserializationSchema;
 import com.dtstack.chunjun.converter.AbstractRowConverter;
+import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
 import com.dtstack.chunjun.util.JsonUtil;
 
 import org.apache.flink.api.common.serialization.DeserializationSchema;
@@ -68,7 +69,8 @@ public class RowDeserializationSchema extends DynamicKafkaDeserializationSchema 
             collector.collect(
                     converter.toInternal(new String(record.value(), StandardCharsets.UTF_8)));
         } catch (Exception e) {
-            dirtyManager.collect(new String(record.value(), StandardCharsets.UTF_8), e, null);
+           // dirtyManager.collect(new String(record.value(), StandardCharsets.UTF_8), e, null);
+            throw new ChunJunRuntimeException(e);
         }
     }
 }

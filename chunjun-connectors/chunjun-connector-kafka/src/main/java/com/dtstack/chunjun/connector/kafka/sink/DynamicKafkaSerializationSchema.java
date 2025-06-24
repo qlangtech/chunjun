@@ -20,11 +20,11 @@ package com.dtstack.chunjun.connector.kafka.sink;
 
 import com.dtstack.chunjun.constants.Metrics;
 import com.dtstack.chunjun.dirty.DirtyConf;
-import com.dtstack.chunjun.dirty.manager.DirtyManager;
 import com.dtstack.chunjun.dirty.utils.DirtyConfUtil;
 import com.dtstack.chunjun.metrics.AccumulatorCollector;
 import com.dtstack.chunjun.metrics.BaseMetric;
 import com.dtstack.chunjun.restore.FormatState;
+import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
 import com.dtstack.chunjun.util.JsonUtil;
 
 import org.apache.flink.api.common.ExecutionConfig;
@@ -110,7 +110,7 @@ public class DynamicKafkaSerializationSchema
     private int[] partitions;
     private transient RuntimeContext runtimeContext;
 
-    protected DirtyManager dirtyManager;
+   // protected DirtyManager dirtyManager;
 
     public DynamicKafkaSerializationSchema(
             String topic,
@@ -156,7 +156,7 @@ public class DynamicKafkaSerializationSchema
         ExecutionConfig.GlobalJobParameters params =
                 context.getExecutionConfig().getGlobalJobParameters();
         DirtyConf dc = DirtyConfUtil.parseFromMap(params.toMap());
-        this.dirtyManager = new DirtyManager(dc, context);
+      //  this.dirtyManager = new DirtyManager(dc, context);
 
         initStatisticsAccumulator();
         initRestoreInfo();
@@ -254,9 +254,10 @@ public class DynamicKafkaSerializationSchema
 //                    valueSerialized,
 //                    readMetadata(consumedRow, KafkaDynamicSink.WritableMetadata.HEADERS));
         } catch (Exception e) {
-            dirtyManager.collect(consumedRow, e, null);
+            //dirtyManager.collect(consumedRow, e, null);
+            throw new ChunJunRuntimeException(e);
         }
-        return null;
+       // return null;
     }
 
     @Override
@@ -365,11 +366,11 @@ public class DynamicKafkaSerializationSchema
         outputMetric.addMetric(Metrics.SNAPSHOT_WRITES, snapshotWriteCounter);
         outputMetric.addMetric(Metrics.WRITE_BYTES, bytesWriteCounter, true);
         outputMetric.addMetric(Metrics.WRITE_DURATION, durationCounter);
-        outputMetric.addDirtyMetric(
-                Metrics.DIRTY_DATA_COUNT, this.dirtyManager.getConsumedMetric());
-        outputMetric.addDirtyMetric(
-                Metrics.DIRTY_DATA_COLLECT_FAILED_COUNT,
-                this.dirtyManager.getFailedConsumedMetric());
+//        outputMetric.addDirtyMetric(
+//                Metrics.DIRTY_DATA_COUNT, this.dirtyManager.getConsumedMetric());
+//        outputMetric.addDirtyMetric(
+//                Metrics.DIRTY_DATA_COLLECT_FAILED_COUNT,
+//                this.dirtyManager.getFailedConsumedMetric());
     }
 
     /** 初始化累加器收集器 */

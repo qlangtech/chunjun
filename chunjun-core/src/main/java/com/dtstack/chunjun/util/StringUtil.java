@@ -103,6 +103,10 @@ public class StringUtil {
 
         ColumnType columnType = ColumnType.getType(type.toUpperCase());
         return columnType.visit(new TypeVisitor<Object>() {
+            @Override
+            public Object boolType(DataType dataType) {
+                return Boolean.parseBoolean(str);
+            }
 
             @Override
             public Object bigInt(DataType type) {

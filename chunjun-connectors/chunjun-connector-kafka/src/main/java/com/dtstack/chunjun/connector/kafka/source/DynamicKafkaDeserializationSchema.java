@@ -20,11 +20,11 @@ package com.dtstack.chunjun.connector.kafka.source;
 
 import com.dtstack.chunjun.constants.Metrics;
 import com.dtstack.chunjun.dirty.DirtyConf;
-import com.dtstack.chunjun.dirty.manager.DirtyManager;
 import com.dtstack.chunjun.dirty.utils.DirtyConfUtil;
 import com.dtstack.chunjun.metrics.AccumulatorCollector;
 import com.dtstack.chunjun.metrics.BaseMetric;
 import com.dtstack.chunjun.restore.FormatState;
+import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
 import com.dtstack.chunjun.util.JsonUtil;
 
 import org.apache.flink.api.common.ExecutionConfig;
@@ -96,7 +96,6 @@ public class DynamicKafkaDeserializationSchema implements KafkaDeserializationSc
 
     private transient RuntimeContext runtimeContext;
 
-    protected DirtyManager dirtyManager;
 
     public DynamicKafkaDeserializationSchema(
             int physicalArity,
@@ -142,7 +141,6 @@ public class DynamicKafkaDeserializationSchema implements KafkaDeserializationSc
         ExecutionConfig.GlobalJobParameters params =
                 context.getExecutionConfig().getGlobalJobParameters();
         DirtyConf dc = DirtyConfUtil.parseFromMap(params.toMap());
-        this.dirtyManager = new DirtyManager(dc, context);
     }
 
     @Override
@@ -215,7 +213,8 @@ public class DynamicKafkaDeserializationSchema implements KafkaDeserializationSc
             }
             keyCollector.buffer.clear();
         } catch (Exception e) {
-            dirtyManager.collect(new String(record.value(), StandardCharsets.UTF_8), e, null);
+          //  dirtyManager.collect(new String(record.value(), StandardCharsets.UTF_8), e, null);
+            throw new ChunJunRuntimeException(e);
         }
     }
 
@@ -295,10 +294,10 @@ public class DynamicKafkaDeserializationSchema implements KafkaDeserializationSc
         inputMetric.addMetric(Metrics.NUM_READS, numReadCounter, true);
         inputMetric.addMetric(Metrics.READ_BYTES, bytesReadCounter, true);
         inputMetric.addMetric(Metrics.READ_DURATION, durationCounter);
-        inputMetric.addDirtyMetric(Metrics.DIRTY_DATA_COUNT, this.dirtyManager.getConsumedMetric());
-        inputMetric.addDirtyMetric(
-                Metrics.DIRTY_DATA_COLLECT_FAILED_COUNT,
-                this.dirtyManager.getFailedConsumedMetric());
+//        inputMetric.addDirtyMetric(Metrics.DIRTY_DATA_COUNT, this.dirtyManager.getConsumedMetric());
+//        inputMetric.addDirtyMetric(
+//                Metrics.DIRTY_DATA_COLLECT_FAILED_COUNT,
+//                this.dirtyManager.getFailedConsumedMetric());
     }
 
     /** 从checkpoint状态缓存map中恢复上次任务的指标信息 */

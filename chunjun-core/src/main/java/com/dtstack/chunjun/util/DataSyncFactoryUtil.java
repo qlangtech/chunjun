@@ -27,13 +27,13 @@ import com.dtstack.chunjun.conf.ChunJunCommonConf;
 import com.dtstack.chunjun.conf.MetricParam;
 import com.dtstack.chunjun.conf.SyncConf;
 import com.dtstack.chunjun.dirty.DirtyConf;
-import com.dtstack.chunjun.dirty.consumer.DirtyDataCollector;
+//import com.dtstack.chunjun.dirty.consumer.DirtyDataCollector;
 import com.dtstack.chunjun.enums.OperatorType;
 import com.dtstack.chunjun.metrics.CustomReporter;
 import com.dtstack.chunjun.sink.SinkFactory;
 import com.dtstack.chunjun.source.SourceFactory;
 import com.dtstack.chunjun.throwable.ChunJunRuntimeException;
-import com.dtstack.chunjun.throwable.NoRestartException;
+
 
 import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -112,21 +112,21 @@ public class DataSyncFactoryUtil {
         }
     }
 
-    public static DirtyDataCollector discoverDirty(DirtyConf conf) {
-        try {
-            String pluginName = conf.getType();
-            String pluginClassName = PluginUtil.getPluginClassName(pluginName, OperatorType.dirty);
-
-            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-            Class<?> clazz = classLoader.loadClass(pluginClassName);
-            Constructor<?> constructor = clazz.getConstructor();
-            final DirtyDataCollector consumer = (DirtyDataCollector) constructor.newInstance();
-            consumer.initializeConsumer(conf);
-            return consumer;
-        } catch (Exception e) {
-            throw new NoRestartException("Load dirty plugins failed!", e);
-        }
-    }
+//    public static DirtyDataCollector discoverDirty(DirtyConf conf) {
+//        try {
+//            String pluginName = conf.getType();
+//            String pluginClassName = PluginUtil.getPluginClassName(pluginName, OperatorType.dirty);
+//
+//            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+//            Class<?> clazz = classLoader.loadClass(pluginClassName);
+//            Constructor<?> constructor = clazz.getConstructor();
+//            final DirtyDataCollector consumer = (DirtyDataCollector) constructor.newInstance();
+//            consumer.initializeConsumer(conf);
+//            return consumer;
+//        } catch (Exception e) {
+//            throw new NoRestartException("Load dirty plugins failed!", e);
+//        }
+//    }
 
     public static Pair<FetcherBase, StoreBase> discoverFetchBase(
             MonitorConf monitorConf, SyncConf syncConf) {
@@ -160,7 +160,7 @@ public class DataSyncFactoryUtil {
                             });
             return Pair.of(fetcher, store);
         } catch (Exception e) {
-            throw new NoRestartException("Load restore plugins failed!", e);
+            throw new ChunJunRuntimeException("Load restore plugins failed!", e);
         }
     }
 
@@ -177,7 +177,7 @@ public class DataSyncFactoryUtil {
             fetcherBase.openSubclass();
             return fetcherBase;
         } catch (Exception e) {
-            throw new NoRestartException("Load dirty plugins failed!", e);
+            throw new ChunJunRuntimeException("Load dirty plugins failed!", e);
         }
     }
 
@@ -197,6 +197,6 @@ public class DataSyncFactoryUtil {
 //        } catch (Exception e) {
 //            throw new NoRestartException("Load ddl convent plugins failed!", e);
 //        }
-        throw new NoRestartException("not found ddl convent plugin!,plugin type is " + pluginType);
+        throw new ChunJunRuntimeException("not found ddl convent plugin!,plugin type is " + pluginType);
     }
 }
