@@ -32,6 +32,7 @@ import org.apache.flink.api.common.accumulators.LongCounter;
 import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.api.common.serialization.SerializationSchema;
 import org.apache.flink.streaming.api.CheckpointingMode;
+import org.apache.flink.streaming.api.environment.ExecutionCheckpointingOptions;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.streaming.connectors.kafka.KafkaContextAware;
 import org.apache.flink.streaming.connectors.kafka.KafkaSerializationSchema;
@@ -162,10 +163,15 @@ public class DynamicKafkaSerializationSchema
         initRestoreInfo();
         initAccumulatorCollector();
 
-        checkpointMode =
-                context.getCheckpointMode() == null
+        checkpointMode
+                = context
+                .getTaskManagerRuntimeInfo()
+                .getConfiguration()
+                .get(ExecutionCheckpointingOptions.CHECKPOINTING_MODE);
+
+        checkpointMode = checkpointMode == null
                         ? CheckpointingMode.AT_LEAST_ONCE
-                        : context.getCheckpointMode();
+                        : checkpointMode;
 
         if (partitioner != null) {
             partitioner.open(

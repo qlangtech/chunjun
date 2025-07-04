@@ -50,6 +50,7 @@ import org.apache.flink.api.common.io.InitializeOnMaster;
 import org.apache.flink.api.common.io.RichOutputFormat;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.CheckpointingMode;
+import org.apache.flink.streaming.api.environment.ExecutionCheckpointingOptions;
 import org.apache.flink.streaming.api.operators.StreamingRuntimeContext;
 import org.apache.flink.table.data.RowData;
 
@@ -241,11 +242,11 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
         DirtyConf dc = DirtyConfUtil.parseFromMap(params.toMap());
 //        this.dirtyManager = new DirtyManager(dc, this.context);
 
-        checkpointMode =
-                context.getCheckpointMode() == null
-                        ? CheckpointingMode.AT_LEAST_ONCE
-                        : context.getCheckpointMode();
-
+        checkpointMode = context.getTaskManagerRuntimeInfo().getConfiguration().get(ExecutionCheckpointingOptions.CHECKPOINTING_MODE);
+        checkpointMode = checkpointMode == null
+                ? CheckpointingMode.AT_LEAST_ONCE
+                : checkpointMode;
+             context.getMetricGroup();
         Map<String, String> vars = context.getMetricGroup().getAllVariables();
         if (vars != null) {
             jobName = vars.getOrDefault(Metrics.JOB_NAME, "defaultJobName");
@@ -481,7 +482,7 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
             writeSingleRecordInternal(rowData);
             numWriteCounter.add(1L);
         } catch (WriteRecordException e) {
-          //  dirtyManager.collect(e.getRowData(), e, null);
+            //  dirtyManager.collect(e.getRowData(), e, null);
             if (LOG.isTraceEnabled()) {
                 LOG.trace(
                         "write error rowData, rowData = {}, e = {}",
@@ -513,7 +514,7 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
 //            if (timerWriteException instanceof NoRestartException) {
 //                throw (NoRestartException) timerWriteException;
 //            } else
-                if (timerWriteException instanceof RuntimeException) {
+            if (timerWriteException instanceof RuntimeException) {
                 throw (RuntimeException) timerWriteException;
             } else {
                 throw new ChunJunRuntimeException("Writing records failed.", timerWriteException);
