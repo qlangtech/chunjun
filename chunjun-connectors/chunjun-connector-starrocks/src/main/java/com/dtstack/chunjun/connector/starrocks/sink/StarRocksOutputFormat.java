@@ -43,7 +43,7 @@ public class StarRocksOutputFormat extends BaseRichOutputFormat {
     private StarRocksWriteProcessor writeProcessor;
 
     @Override
-    protected void openInternal(int taskNumber, int numTasks) throws IOException {
+    protected void openInternal() throws IOException {
         List<String> columnNameList =
                 starRocksConf.getColumn().stream()
                         .map(FieldConf::getName)

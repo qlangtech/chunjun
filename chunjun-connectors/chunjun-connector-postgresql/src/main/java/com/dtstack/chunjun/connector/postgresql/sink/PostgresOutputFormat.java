@@ -80,8 +80,8 @@ public abstract class PostgresOutputFormat extends JdbcOutputFormat {
     }
 
     @Override
-    protected void openInternal(int taskNumber, int numTasks) {
-        super.openInternal(taskNumber, numTasks);
+    protected void openInternal() {
+        super.openInternal();
         try {
             // check is use copy mode for insert
             enableCopyMode = INSERT_SQL_MODE_TYPE.equalsIgnoreCase(jdbcConf.getInsertSqlMode());

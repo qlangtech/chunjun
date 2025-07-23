@@ -39,8 +39,8 @@ public class SqlserverOutputFormat extends JdbcOutputFormat {
     }
 
     @Override
-    protected void openInternal(int taskNumber, int numTasks) {
-        super.openInternal(taskNumber, numTasks);
+    protected void openInternal() {
+        super.openInternal();
 
         Statement statement = null;
         String sql =

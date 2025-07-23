@@ -27,11 +27,14 @@ import com.dtstack.chunjun.element.ColumnRowData;
 import com.dtstack.chunjun.enums.EWriteMode;
 import com.dtstack.chunjun.enums.Semantic;
 import com.dtstack.chunjun.sink.format.BaseRichOutputFormat;
+import com.dtstack.chunjun.throwable.ChunJunException;
 import com.dtstack.chunjun.throwable.WriteRecordException;
 import com.dtstack.chunjun.util.ExceptionUtil;
 import com.dtstack.chunjun.util.GsonUtil;
 import com.dtstack.chunjun.util.JsonUtil;
 import com.dtstack.chunjun.util.TableUtil;
+
+import org.apache.commons.lang.exception.ExceptionUtils;
 
 import org.apache.flink.connector.jdbc.statement.FieldNamedPreparedStatement;
 import org.apache.flink.table.data.GenericRowData;
@@ -96,7 +99,7 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
     }
 
     @Override
-    protected void openInternal(int taskNumber, int numTasks) {
+    protected void openInternal() {
         try {
             dbConn = getConnection();
             // 默认关闭事务自动提交，手动控制事务
@@ -195,8 +198,7 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
 //        }
 
 
-
-        this.colsMeta = Collections.unmodifiableList( this.cols.getCols() ); //Lists.newArrayList();
+        this.colsMeta = Collections.unmodifiableList(this.cols.getCols()); //Lists.newArrayList();
         /**********************************************
          * 这样能够保证'colsMeta'中的字段顺序和fieldList 字段顺序是严格保证一致的
          * 能保证组装RowData 在DTO2RowDataMapper中依赖的 List<FlinkCol> 和 TISDorisColumnConverter toExternalConverters顺序一致
@@ -251,6 +253,12 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
 
     @Override
     protected void writeMultipleRecordsInternal() throws Exception {
+        this.writeMultipleRecordsInternal(0);
+    }
+
+    // @Override
+    private void writeMultipleRecordsInternal(final int tryCount) throws Exception {
+        boolean success = false;
         try {
             for (RowData row : rows) {
                 if (stmtProxy.convertToExternal(row)) {
@@ -263,17 +271,28 @@ public abstract class JdbcOutputFormat extends BaseRichOutputFormat {
             if (Semantic.EXACTLY_ONCE == semantic) {
                 rowsOfCurrentTransaction += rows.size();
             }
+            success = true;
         } catch (Exception e) {
-            LOG.warn(
-                    "write Multiple Records error, start to rollback connection, row size = {}, first row = {}",
-                    rows.size(),
-                    rows.size() > 0 ? GsonUtil.GSON.toJson(rows.get(0)) : "null",
-                    e);
+
+            if (tryCount < 1 && (this.dbConn.isClosed() || ExceptionUtils.indexOfThrowable(e, java.sql.SQLException.class) > -1)) {
+                // 可能连接由于长时间没有连接导致，connection不可用，因此需要尝试重连一次，重新尝试一遍
+                this.openInternal();
+                this.writeMultipleRecordsInternal(tryCount + 1);
+                LOG.warn("connection reset and attempt to execute success,tryCount:{}", tryCount);
+                return;
+            }
+//            LOG.warn(
+//                    "write Multiple Records error, start to rollback connection, row size = {}, first row = {}",
+//                    rows.size(),
+//                    rows.size() > 0 ? GsonUtil.GSON.toJson(rows.get(0)) : "null",
+//                    e);
             JdbcUtil.rollBack(dbConn);
-            throw e;
+            throw new ChunJunException("tryCount:" + tryCount, e);
         } finally {
-            // 执行完后清空batch
-            stmtProxy.clearBatch();
+            if (success) {
+                // 执行完后清空batch
+                stmtProxy.clearBatch();
+            }
         }
     }
 

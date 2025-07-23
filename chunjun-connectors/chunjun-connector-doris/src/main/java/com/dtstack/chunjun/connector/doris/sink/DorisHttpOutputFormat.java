@@ -76,7 +76,7 @@ public class DorisHttpOutputFormat extends BaseRichOutputFormat {
     }
 
     @Override
-    protected void openInternal(int taskNumber, int numTasks) throws IOException {
+    protected void openInternal() throws IOException {
         LOG.info("task number : {} , number task : {}", taskNumber, numTasks);
     }
 

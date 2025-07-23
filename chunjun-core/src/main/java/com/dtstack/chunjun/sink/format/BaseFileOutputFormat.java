@@ -87,7 +87,7 @@ public abstract class BaseFileOutputFormat extends BaseRichOutputFormat {
     }
 
     @Override
-    protected void openInternal(int taskNumber, int numTasks) throws IOException {
+    protected void openInternal() throws IOException {
         if (null != formatState && formatState.getFileIndex() > -1) {
             currentFileIndex = formatState.getFileIndex() + 1;
         }

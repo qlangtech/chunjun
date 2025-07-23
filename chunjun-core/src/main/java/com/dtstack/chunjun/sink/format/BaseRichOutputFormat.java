@@ -261,7 +261,7 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
         if (initAccumulatorAndDirty) {
             initAccumulatorCollector();
         }
-        openInternal(taskNumber, numTasks);
+        openInternal();
         this.startTime = System.currentTimeMillis();
 
         LOG.info(
@@ -459,9 +459,8 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
                                             writeRecordInternal();
                                         }
                                     } catch (Exception e) {
-                                        LOG.error(
-                                                "Writing records failed. {}",
-                                                ExceptionUtil.getErrorMessage(e));
+//                                        LOG.error(
+//                                                "Writing records failed. ",e);
                                         timerWriteException = e;
                                     }
                                 }
@@ -483,12 +482,12 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
             numWriteCounter.add(1L);
         } catch (WriteRecordException e) {
             //  dirtyManager.collect(e.getRowData(), e, null);
-            if (LOG.isTraceEnabled()) {
-                LOG.trace(
-                        "write error rowData, rowData = {}, e = {}",
-                        rowData.toString(),
-                        ExceptionUtil.getErrorMessage(e));
-            }
+//            if (LOG.isTraceEnabled()) {
+//                LOG.trace(
+//                        "write error rowData, rowData = {}, e = {}",
+//                        rowData.toString(),
+//                        ExceptionUtil.getErrorMessage(e));
+//            }
             throw new RuntimeException(e);
         }
     }
@@ -604,10 +603,10 @@ public abstract class BaseRichOutputFormat extends RichOutputFormat<RowData>
     /**
      * 子类实现，打开资源
      *
-     * @param taskNumber 通道索引
-     * @param numTasks 通道数量
+//     * @param taskNumber 通道索引
+//     * @param numTasks 通道数量
      */
-    protected abstract void openInternal(int taskNumber, int numTasks) throws IOException;
+    protected abstract void openInternal() throws IOException;
 
     /**
      * 子类实现，关闭资源
