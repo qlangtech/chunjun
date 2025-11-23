@@ -162,6 +162,9 @@ public class JdbcColumnConverter
                 field = fields.get(index);
 
                 if ((indexOf = stmtFields.indexOf(field.getName())) > -1) {
+                    if(rowData.isNullAt(index)){
+                      throw new IllegalStateException("index:"+index+" of field:'"+field.getName()+"' relevant value in RowData can not be null");
+                    }
                     toExternalConverters.get(index).serialize(rowData, index, fieldNamesAttachedStatement, indexOf);
                     foundStmtFieldsCount++;
                 }
